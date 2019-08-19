@@ -13,6 +13,8 @@ import EventEmitter from "eventemitter2";
 
 import account from "../resources/Account.js";
 
+import { Storage, storage } from "../resources/Storage.js";
+
 export default class ABAppController extends EventEmitter {
     /**
      * @param {Framework7} app
@@ -526,7 +528,7 @@ export default class ABAppController extends EventEmitter {
      * @return {Promise}
      */
     reset() {
-        return AB.Platform.storage
+        return storage
             .set(this.refStatusKey(), null)
             .then(() => {
                 // make sure each of our Datacollections have resset their
