@@ -1532,6 +1532,11 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
         //      defaultHeight = minHeight;
         //  }
         // }
+//// NOTE: if we want a platform to default limit the amount of data 
+//// returned, then we default it here, like so:
+// if (!limit) {
+//     limit = 20; 
+// }
         
 return super.loadData(start, limit);
 //// Transition:  loadData is refactored to NOT accept a callback. 
