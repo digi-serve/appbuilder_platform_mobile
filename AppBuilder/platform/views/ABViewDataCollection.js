@@ -108,6 +108,9 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
                 console.log();
                 console.log('-----------');
                 console.log(':: ABApplication.Relay.on:'+ ABViewDataCollectionCore.contextKey());
+                if (this.name) {
+                    console.log(":: name:", this.name);
+                }
                 console.log(':: context:', context);
                 console.log(':: data:', data);
 

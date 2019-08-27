@@ -14,6 +14,7 @@ import ABApplicationList from "../../../applications/applications";
 import account from "../../resources/Account.js";
 import analytics from "../../resources/Analytics.js";
 import appFeedback from "../../resources/AppFeedback.js";
+import Busy from "../../resources/Busy.js";
 import camera from "../../resources/Camera.js";
 import log from "../../resources/Log.js";
 import Network from "../../resources/Network.js";
@@ -97,6 +98,7 @@ export default class AppPage extends Page {
 
                     account: account,
                     analytics: analytics,
+                    busy: Busy,
                     camera: camera,
                     log: log,
                     network: Network,
@@ -138,6 +140,9 @@ export default class AppPage extends Page {
 
         // Log function can use F7 to create alert dialogs
         log.init({ app: this.app });
+
+        // Busy indicator needs access to .app
+        Busy.setApp(this.app);
 
         // Component objects that will be referenced by F7 component code
         this.components["settings"] = new SettingsComponent(this.app);
