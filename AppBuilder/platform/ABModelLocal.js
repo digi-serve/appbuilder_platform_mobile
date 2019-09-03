@@ -402,6 +402,10 @@ module.exports =  class ABModelLocal extends ABModelCore {
 		// 	if (values[key] == null)
 		// 		delete values[key];
 		// }
+		// ensure values contains our uuid/id
+		if (!values.uuid) {
+			values.uuid = id;
+		}
 
 		return this.localStorageUpdate(values)
 			.then((data)=>{

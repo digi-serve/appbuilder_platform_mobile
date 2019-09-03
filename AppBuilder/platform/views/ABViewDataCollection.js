@@ -140,6 +140,11 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
                 }).then((normalizedData)=>{
                     this.processIncomingData(normalizedData);
                 })
+                .then(()=>{
+                    if (context.verb != "uninitialized") {
+                        this.emit("REFRESH");
+                    }
+                })
 
             }
 
@@ -1586,37 +1591,40 @@ return super.loadData(start, limit);
 
         // });
 
-        super.processIncomingData(data);
+        return super.processIncomingData(data)
+        .then(()=>{
 
 //// Web Platform:
-        // // when that is done:
-        // this.hideProgressOfComponents();
+            // // when that is done:
+            // this.hideProgressOfComponents();
 
 
-        // make sure we update our bootState!
-        if (this.bootState == "uninitialized") {
+            // make sure we update our bootState!
+            if (this.bootState == "uninitialized") {
 
-            this.bootState = "initialized";
+                this.bootState = "initialized";
 
-            // once that is done, make sure we can track our DC info
-            var lock = storage.Lock(this.refStorage());
-            return lock.acquire()
-            .then(()=>{
+                // once that is done, make sure we can track our DC info
+                var lock = storage.Lock(this.refStorage());
+                return lock.acquire()
+                .then(()=>{
 
-                return storage.get(this.refStorage())
-                .then((data)=>{
+                    return storage.get(this.refStorage())
+                    .then((data)=>{
 
-                    data = data || {};
-                    data.bootState = this.bootState;
+                        data = data || {};
+                        data.bootState = this.bootState;
 
-                    return storage.set(this.refStorage(), data);
+                        return storage.set(this.refStorage(), data);
+                    })
+
                 })
+                .then(()=>{
+                    lock.release();
+                })
+            }
 
-            })
-            .then(()=>{
-                lock.release();
-            })
-        }
+        })
     }
 
 
