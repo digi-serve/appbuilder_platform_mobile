@@ -1,19 +1,14 @@
 /**
  * ABEmitter
- * 
+ *
  * This is the platform dependent implementation of an Emitter object.
  *
  */
 
-var EventEmitter = require( 'eventemitter2' );
+var EventEmitter = require("eventemitter2");
 
-module.exports =  class ABEmitter extends EventEmitter {
-
+module.exports = class ABEmitter extends EventEmitter {
     constructor() {
-
-    	super({ maxListeners: 0 });
-
-  	}
-
-
-}
+        super({ maxListeners: 0 });
+    }
+};

@@ -791,8 +791,11 @@ class NetworkRelay extends NetworkRest {
      */
     _createJob(params, jobResponse) {
         if (!account || !account.authToken) {
-            analytics.log("NetworkRelay._createJob(): request without credentials! : " + JSON.stringify(params));
-            console.log("NetworkRelay._createJob():  params:",params);
+            analytics.log(
+                "NetworkRelay._createJob(): request without credentials! : " +
+                    JSON.stringify(params)
+            );
+            console.log("NetworkRelay._createJob():  params:", params);
             return Promise.resolve();
         }
 

@@ -191,6 +191,7 @@ export default class ABAppController extends EventEmitter {
         })[0];
         if (!field) return results;
 
+        //// TODO: refactor this to reuse ABFieldListCore.options()
         field.settings.options.forEach((o) => {
             var item = {
                 id: o.id,

@@ -1,19 +1,14 @@
 /**
  * ABFieldEmail
- * 
+ *
  * This is the platform dependent implementation of ABFieldEmail.
  *
  */
 
-var ABFieldEmailCore = require( "../../core/dataFields/ABFieldEmailCore" );
+var ABFieldEmailCore = require("../../core/dataFields/ABFieldEmailCore");
 
-
-module.exports =  class ABFieldEmail extends ABFieldEmailCore {
-
+module.exports = class ABFieldEmail extends ABFieldEmailCore {
     constructor(attributes, object) {
-
-    	super(attributes, object);
-
-  	}
-
-}
+        super(attributes, object);
+    }
+};

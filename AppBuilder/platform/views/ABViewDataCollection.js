@@ -4,7 +4,7 @@
  *
  */
 
-var ABViewDataCollectionCore = require( "../../core/views/ABViewDataCollectionCore")
+var ABViewDataCollectionCore = require("../../core/views/ABViewDataCollectionCore");
 
 var Network = require("../../../resources/Network").default;
 var storage = require("../../../resources/Storage").storage;
@@ -14,12 +14,10 @@ var storage = require("../../../resources/Storage").storage;
 // import ABWorkspaceDatatable from "../../components/ab_work_object_workspace_datatable"
 // import RowFilter from "../RowFilter"
 
-
-
 function dataCollectionNew(instance, data) {
     // get a webix data collection
     var dc = new webix.DataCollection({
-        data: data || [],
+        data: data || []
     });
 
     // Apply this data collection to support multi-selection
@@ -28,34 +26,33 @@ function dataCollectionNew(instance, data) {
 
     // Implement .onDataRequest for paging loading
     if (!instance.settings.loadAll) {
-
         dc.___AD = dc.___AD || {};
 
-        if (dc.___AD.onDataRequestEvent) dc.detachEvent(dc.___AD.onDataRequestEvent);
-        dc.___AD.onDataRequestEvent = dc.attachEvent("onDataRequest", (start, count) => {
+        if (dc.___AD.onDataRequestEvent)
+            dc.detachEvent(dc.___AD.onDataRequestEvent);
+        dc.___AD.onDataRequestEvent = dc.attachEvent(
+            "onDataRequest",
+            (start, count) => {
+                if (start < 0) start = 0;
 
-            if (start < 0) start = 0;
+                // load more data to the data collection
+                instance.loadData(start, count);
 
-            // load more data to the data collection
-            instance.loadData(start, count);
+                return false; // <-- prevent the default "onDataRequest"
+            }
+        );
 
-            return false;   // <-- prevent the default "onDataRequest"
-        });
-
-
-        if (dc.___AD.onAfterLoadEvent) dc.detachEvent(dc.___AD.onAfterLoadEvent);
+        if (dc.___AD.onAfterLoadEvent)
+            dc.detachEvent(dc.___AD.onAfterLoadEvent);
         dc.___AD.onAfterLoadEvent = dc.attachEvent("onAfterLoad", () => {
-
             instance.emit("loadData", {});
-
         });
-
     }
 
     // override unused functions of selection model
-    dc.addCss = function () { };
-    dc.removeCss = function () { };
-    dc.render = function () { };
+    dc.addCss = function() {};
+    dc.removeCss = function() {};
+    dc.render = function() {};
 
     dc.attachEvent("onAfterLoad", () => {
         instance.hideProgressOfComponents();
@@ -64,147 +61,141 @@ function dataCollectionNew(instance, data) {
     return dc;
 }
 
-
 module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
-
     /**
      * @param {obj} values  key=>value hash of ABView values
      * @param {ABApplication} application the application object this view is under
      * @param {ABView} parent the ABView this view is a child of. (can be null)
      */
     constructor(values, application, parent) {
-
         super(values, application, parent);
 
         // OP.Multilingual.translate(this, this, ['label']);
 
         this.bootState = "??";
-            // bootState represents where we are on the platform setup.
-            // "uninitialized":
-            //      the first time an app is loaded, none of our Datacollections
-            //      have requested their initial data from the server, so they
-            //      are considered "uninitialized".
-            //
-            // "initialized":
-            //      after data from the server has been requested the 1st time,
-            //      then there is some local data that we can use to begin 
-            //      operating with. 
-            //
-            // these values are setup during: .platformInit()  
-
+        // bootState represents where we are on the platform setup.
+        // "uninitialized":
+        //      the first time an app is loaded, none of our Datacollections
+        //      have requested their initial data from the server, so they
+        //      are considered "uninitialized".
+        //
+        // "initialized":
+        //      after data from the server has been requested the 1st time,
+        //      then there is some local data that we can use to begin
+        //      operating with.
+        //
+        // these values are setup during: .platformInit()
 
         this.__bindComponentIds = [];
-            // __bindComponentIds is an array of other components.id that have .bind()
-            // this ABViewDataCollection.  
+        // __bindComponentIds is an array of other components.id that have .bind()
+        // this ABViewDataCollection.
 
         this.__dataCollection = dataCollectionNew(this, []);
 
-
         // Setup a listener for this DC to catch updates from the relay
         Network.on(ABViewDataCollectionCore.contextKey(), (context, data) => {
-
             // is this update for me?
             if (context.id == this.id) {
                 console.log();
-                console.log('-----------');
-                console.log(':: ABApplication.Relay.on:'+ ABViewDataCollectionCore.contextKey());
+                console.log("-----------");
+                console.log(
+                    ":: ABApplication.Relay.on:" +
+                        ABViewDataCollectionCore.contextKey()
+                );
                 if (this.name) {
                     console.log(":: name:", this.name);
                 }
-                console.log(':: context:', context);
-                console.log(':: data:', data);
+                console.log(":: context:", context);
+                console.log(":: data:", data);
 
                 var firstStep;
-                    // will be a Promise based on which of the next steps
-                    // should be executed.
+                // will be a Promise based on which of the next steps
+                // should be executed.
 
-                // if context is from a "uninitialized" state 
+                // if context is from a "uninitialized" state
                 //    OR this datacollection is a Server Centric set of data:
                 //    OR this is a Query based datacollection
-                if ((context.verb == "uninitialized") 
-                    || (this.isServerPreferred())
-                    || (this.settings.isQuery)) {
+                if (
+                    context.verb == "uninitialized" ||
+                    this.isServerPreferred() ||
+                    this.settings.isQuery
+                ) {
                     // we need to just accept all the data that came in.
-                    firstStep = this.datasource.model().local().syncRemoteMaster(data);
+                    firstStep = this.datasource
+                        .model()
+                        .local()
+                        .syncRemoteMaster(data);
                 } else {
                     // this is a refresh, with local data that is Preferred:
-                    firstStep = this.datasource.model().local().syncLocalMaster(data);
+                    firstStep = this.datasource
+                        .model()
+                        .local()
+                        .syncLocalMaster(data);
                 }
 
                 firstStep
-                .then((normalizedData)=>{
-                    if (this.isServerPreferred()) {
-                        this.reduceCondition(normalizedData);
-                    }
-                    return normalizedData;
-                }).then((normalizedData)=>{
-                    this.processIncomingData(normalizedData);
-                })
-                .then(()=>{
-                    if (context.verb != "uninitialized") {
-                        this.emit("REFRESH");
-                    }
-                })
-
+                    .then((normalizedData) => {
+                        if (this.isServerPreferred()) {
+                            this.reduceCondition(normalizedData);
+                        }
+                        return normalizedData;
+                    })
+                    .then((normalizedData) => {
+                        this.processIncomingData(normalizedData);
+                    })
+                    .then(() => {
+                        if (context.verb != "uninitialized") {
+                            this.emit("REFRESH");
+                        }
+                    });
             }
-
         }); // end Network.on()
 
-//// TODO: test out these OBJ.on() propagations:
+        //// TODO: test out these OBJ.on() propagations:
         var OBJ = this.datasource;
         if (OBJ) {
-            OBJ.on("CREATE", (data)=>{
-
+            OBJ.on("CREATE", (data) => {
                 // if valid for this DC
                 if (this.__filterComponent.isValid(data)) {
-
                     // find which field is the PK
                     var PK = this.datasource.fieldUUID(data);
 
                     // if entry NOT currently in datacollection
                     if (!this.__dataCollection.exists(data[PK])) {
-
                         // webix datacollections need an .id field
-                        if(!data.id) {
+                        if (!data.id) {
                             data.id = data[PK];
                         }
 
                         // include it in our list:
                         this.__dataCollection.add(data);
 
-                        // alert anyone attached to us that we have CREATEd 
+                        // alert anyone attached to us that we have CREATEd
                         // data.
                         this.emit("CREATE", data);
                     }
-
                 }
-            })
+            });
 
-            OBJ.on("UPDATE", (data)=>{
-
+            OBJ.on("UPDATE", (data) => {
                 // find which field is the PK
                 var PK = this.datasource.fieldUUID(data);
                 var ID = data[PK];
 
                 // if entry IS currently in datacollection
                 if (this.__dataCollection.exists(ID)) {
-
                     // update our copy
                     this.__dataCollection.updateItem(ID, data);
 
-                    // alert anyone attached to us that we have UPDATEd 
+                    // alert anyone attached to us that we have UPDATEd
                     // data.
                     this.emit("UPDATE", data);
                 }
+            });
 
-            })
-
-            OBJ.on("DELETE", (ID)=>{
-
-
+            OBJ.on("DELETE", (ID) => {
                 // if entry IS currently in datacollection
                 if (this.__dataCollection.exists(ID)) {
-
                     // remove it from our list:
                     this.__dataCollection.remove(ID);
 
@@ -212,16 +203,13 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
                     var remainingEntries = this.QL().value();
                     this.reduceCondition(remainingEntries);
 
-                    // alert anyone attached to us that we have DELETEd 
+                    // alert anyone attached to us that we have DELETEd
                     // data.
                     this.emit("DELETE", ID);
                 }
-
-            })
+            });
         }
-
     }
-
 
     /**
      * @method save()
@@ -251,15 +239,13 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //  )
     // }
 
-
-
     ///
     /// Instance Methods
     ///
 
     isServerPreferred() {
-        return (this.settings.syncType == "1" || this.settings.syncType == 1);
-            // NOTE: syncType = "2" is client preferred.
+        return this.settings.syncType == "1" || this.settings.syncType == 1;
+        // NOTE: syncType = "2" is client preferred.
     }
 
     /**
@@ -301,18 +287,17 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     //
     //  Editor Related
     //
 
-    /** 
+    /**
      * @method editorComponent
      * return the Editor for this UI component.
-     * the editor should display either a "block" view or "preview" of 
+     * the editor should display either a "block" view or "preview" of
      * the current layout of the view.
      * @param {string} mode what mode are we in ['block', 'preview']
-     * @return {Component} 
+     * @return {Component}
      */
     // editorComponent(App, mode) {
 
@@ -401,10 +386,9 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     //
     // Property Editor
-    // 
+    //
 
     // static propertyEditorDefaultElements(App, ids, _logic, ObjectDefaults) {
 
@@ -438,7 +422,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //          $$(ids.filterPanel).show();
     //          $$(ids.sortPanel).show();
 
-
     //      }
     //      else if (query) {
 
@@ -446,7 +429,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //          $$(ids.filterPanel).hide();
     //          $$(ids.sortPanel).hide();
     //      }
-
 
     //  };
 
@@ -466,14 +448,13 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     //      view.settings.objectWorkspace.filterConditions = filterValues;
 
-
     //      var allComplete = true;
     //      filterValues.rules.forEach((f) => {
 
     //          // if all 3 fields are present, we are good.
     //          if ((f.key)
     //              && (f.rule)
-    //              && (f.value || 
+    //              && (f.value ||
     //                  // these rules do not have input value
     //                  (f.rule == 'is_current_user' ||
     //                  f.rule == 'is_not_current_user' ||
@@ -490,14 +471,13 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //      // only perform the update if a complete row is specified:
     //      if (allComplete) {
 
-    //          // we want to call .save() but give webix a chance to properly update it's 
+    //          // we want to call .save() but give webix a chance to properly update it's
     //          // select boxes before this call causes them to be removed:
     //          setTimeout(() => {
     //              this.propertyEditorSave(ids, view);
     //          }, 10);
 
     //      }
-
 
     //  };
 
@@ -728,13 +708,11 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //      view.loadData();
     //  }
 
-
     // }
 
     // static propertyEditorValues(ids, view) {
 
     //  super.propertyEditorValues(ids, view);
-
 
     //  // if object is changed, then clear filter & sort settings
     //  if (view.settings.object != $$(ids.dataSource).getValue()) {
@@ -745,7 +723,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //      };
 
     //  }
-
 
     //  view.settings.object = $$(ids.dataSource).getValue();
 
@@ -768,7 +745,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //          view.settings.objectUrl = source.urlPointer();
     //      else
     //          delete view.settings.objectUrl;
-
 
     //      var defaultLabel = view.parent.label + '.' + view.defaults.key;
 
@@ -869,7 +845,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     // static initLinkDataCollectionOptions(ids, view) {
 
     //  // get linked data collection list
@@ -922,7 +897,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     // static initLinkFieldOptions(ids, view) {
 
     //  var linkFieldOptions = [];
@@ -953,11 +927,9 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     // static initPopupEditors(App, ids, _logic) {
 
     //  var idBase = 'ABViewDataCollectionPropertyEditor';
-
 
     //  FilterComponent = new RowFilter(App, idBase + "_filter");
     //  FilterComponent.init({
@@ -972,7 +944,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //      body: FilterComponent.ui
     //  });
 
-
     //  PopupSortFieldComponent = new ABPopupSortField(App, idBase + "_sort");
     //  PopupSortFieldComponent.init({
     //      // when we make a change in the popups we want to make sure we save the new workspace to the properties to do so just fire an onChange event
@@ -980,7 +951,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //  });
 
     // }
-
 
     // static populatePopupEditors(view) {
 
@@ -992,10 +962,10 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //      var objectCopy = view.datasource.clone();
     //      if (objectCopy) {
     //          objectCopy.objectWorkspace = view.settings.objectWorkspace;
-    
+
     //          filterConditions = objectCopy.objectWorkspace.filterConditions || ABViewPropertyDefaults.objectWorkspace.filterConditions;
     //      }
-    
+
     //      // Populate data to popups
     //      FilterComponent.objectLoad(objectCopy);
     //      FilterComponent.viewLoad(view);
@@ -1003,63 +973,55 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //      view.__filterComponent.objectLoad(objectCopy);
     //      view.__filterComponent.viewLoad(view);
     //      view.__filterComponent.setValue(filterConditions);
-    
+
     //      PopupSortFieldComponent.objectLoad(objectCopy, view);
-    
+
     //  }
 
     // }
 
-
     /**
-    * @method component()
-    * return a UI component based upon this view.
-    * @param {obj} App 
-    * @return {obj} UI component
-    */
+     * @method component()
+     * return a UI component based upon this view.
+     * @param {obj} App
+     * @return {obj} UI component
+     */
     component(App) {
-
-        var _ui = {
-        };
+        var _ui = {};
 
         // make sure each of our child views get .init() called
-        var _init = (options) => {
-        };
+        var _init = (options) => {};
 
         return {
             ui: _ui,
             init: _init
         };
-
     }
 
-
     /**
-    * @method componentList
-    * return the list of components available on this view to display in the editor.
-    */
+     * @method componentList
+     * return the list of components available on this view to display in the editor.
+     */
     componentList() {
         return [];
     }
 
-
     /**
      * @property datasourceURL
      * return a url to the ABObject.
-     * 
+     *
      * @return string
      */
     // get datasourceURL() {
     //  return this.settings.objectUrl;
     // }
 
-
     /**
-    * @property datasource
-    * return a object of this component.
-    *
-    * @return ABObject
-    */
+     * @property datasource
+     * return a object of this component.
+     *
+     * @return ABObject
+     */
     // get datasource() {
 
     //  if (!this.application) return null;
@@ -1072,7 +1034,7 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     /**
      * @property datasource
      * set a object to data collection
-     * 
+     *
      * @param {ABObject} object
      */
     // set datasource(object) {
@@ -1083,11 +1045,11 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     // }
 
     /**
-    * @property sourceType
-    * return type of source.
-    *
-    * @return {string} - 'object' or 'query'
-    */
+     * @property sourceType
+     * return type of source.
+     *
+     * @return {string} - 'object' or 'query'
+     */
     // get sourceType() {
 
     //  if (this.datasource) {
@@ -1106,11 +1068,10 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     /**
      * @property model
      * return a source model
-     * 
+     *
      * @return ABModel
      */
     // get model() {
@@ -1125,39 +1086,37 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     /**
-    * @method dataCollectionRefresh
-    * create a data collection to cache
-    *
-    * @return {Promise}
-    *           .resolve()
-    */
+     * @method dataCollectionRefresh
+     * create a data collection to cache
+     *
+     * @return {Promise}
+     *           .resolve()
+     */
     init() {
-
         // prevent initialize many times
         if (this.initialized) return;
 
         super.init();
 
-// __dataCollection must implement these methods:
-// .add( {data}, indx)
-// .attachEvent("onAfterCursorChange", fn);
-// .clearAll()
-// .exists( ID )
-// .filter( fn )
-// .find( fn, bool)
-// .find({})
-// .getCursor(): return the id of the item the cursor is on
-// .getFirstId()
-// .getItem( ID ) : the row of data for row.id == ID
-// .getNextId(ID) : ID = the current row, that you want the Next one for
-// .parse({ data:[] })
-// .remove( ID )
-// .setCursor( ID )
-// .updateItem(ID, {data})
+        // __dataCollection must implement these methods:
+        // .add( {data}, indx)
+        // .attachEvent("onAfterCursorChange", fn);
+        // .clearAll()
+        // .exists( ID )
+        // .filter( fn )
+        // .find( fn, bool)
+        // .find({})
+        // .getCursor(): return the id of the item the cursor is on
+        // .getFirstId()
+        // .getItem( ID ) : the row of data for row.id == ID
+        // .getNextId(ID) : ID = the current row, that you want the Next one for
+        // .parse({ data:[] })
+        // .remove( ID )
+        // .setCursor( ID )
+        // .updateItem(ID, {data})
 
-/*
+        /*
 //// TODO: transferr these to our AB.comm.relay.*
 
         // events: tie our devined on "ab.datacollection.create" to the 
@@ -1182,105 +1141,104 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 */
     }
 
-
     /**
      * platformInit
      * make sure we are ready for operation on this platform.
      * this implies we need to make sure each ABObject we use can
-     * store information in the DB.  This is done in the 
+     * store information in the DB.  This is done in the
      * object.model().local()
      * @return {Promise}
      */
-    platformInit () {
-        return new Promise((resolve, reject)=>{
-
+    platformInit() {
+        return new Promise((resolve, reject) => {
             // Make sure our ABObject is properly setup on the platform
-            this.datasource.model().local().platformInit()
-            .then(()=>{
+            this.datasource
+                .model()
+                .local()
+                .platformInit()
+                .then(() => {
+                    // once that is done, make sure we can track our DC info
+                    var lock = storage.Lock(this.refStorage());
+                    return lock
+                        .acquire()
+                        .then(() => {
+                            return storage
+                                .get(this.refStorage())
+                                .then((data) => {
+                                    // if we already have our storage set:
+                                    if (data) {
+                                        this.bootState = data.bootState;
+                                        this._reducedConditions =
+                                            data.reducedConditions;
 
-                // once that is done, make sure we can track our DC info
-                var lock = storage.Lock(this.refStorage());
-                return lock.acquire()
-                .then(()=>{
+                                        if (this._reducedConditions) {
+                                            if (this.__filterComponent) {
+                                                this.__filterComponent.setReducedConditions(
+                                                    this._reducedConditions
+                                                );
+                                            }
+                                        }
+                                        return;
+                                    } else {
+                                        // this must be our 1st time through.
+                                        // our bootState should be "uninitialized" until
+                                        // we get our 1st response from the Server:
+                                        this.bootState = "uninitialized";
+                                        this._reducedConditions = null;
 
-                    return storage.get(this.refStorage())
-                    .then((data)=>{
-
-                        // if we already have our storage set:
-                        if (data) {
-                            this.bootState = data.bootState;
-                            this._reducedConditions = data.reducedConditions;
-
-                            if (this._reducedConditions) {
-                                if (this.__filterComponent) {
-                                    this.__filterComponent.setReducedConditions(this._reducedConditions);
-                                }
-                            }
-                            return;
-
-                        } else {
-                            // this must be our 1st time through.
-                            // our bootState should be "uninitialized" until 
-                            // we get our 1st response from the Server:
-                            this.bootState = "uninitialized";
-                            this._reducedConditions = null;
-
-                            // save our info:
-                            return storage.set(this.refStorage(), { 
-                                bootState: this.bootState,
-                                reducedConditions: this._reducedConditions
-                            })
-                        }
-                    })
-
+                                        // save our info:
+                                        return storage.set(this.refStorage(), {
+                                            bootState: this.bootState,
+                                            reducedConditions: this
+                                                ._reducedConditions
+                                        });
+                                    }
+                                });
+                        })
+                        .then(() => {
+                            lock.release();
+                        });
                 })
-                .then(()=>{
-                    lock.release();
+                .then(() => {
+                    resolve();
                 })
-                 
-            })
-            .then(()=>{
-                resolve();
-            })
-            .catch(reject);
-
-        })
+                .catch(reject);
+        });
     }
-
 
     /**
      * platformReset
-     * this is called when the App requires a hard reset(). 
+     * this is called when the App requires a hard reset().
      * Our job is to clear out any data we are storing to a new, uninitialized
      * state.
      * @return {Promise}
      */
-    platformReset () {
-        return new Promise((resolve, reject)=>{
-
+    platformReset() {
+        return new Promise((resolve, reject) => {
             // Make sure our ABObject is properly setup on the platform
-            this.datasource.model().local().platformReset()
-            .then(()=>{
-
-                // once that is done, make sure we can clear our DC info
-                var lock = storage.Lock(this.refStorage());
-                return lock.acquire()
-                .then(()=>{
-                    return storage.set(this.refStorage(), null);
+            this.datasource
+                .model()
+                .local()
+                .platformReset()
+                .then(() => {
+                    // once that is done, make sure we can clear our DC info
+                    var lock = storage.Lock(this.refStorage());
+                    return lock
+                        .acquire()
+                        .then(() => {
+                            return storage.set(this.refStorage(), null);
+                        })
+                        .then(() => {
+                            lock.release();
+                        });
                 })
-                .then(()=>{
-                    lock.release();
+                .then(() => {
+                    // now clear all our live values:
+                    this.clearAll();
+                    resolve();
                 })
-                 
-            })
-            .then(()=>{
-                // now clear all our live values:
-                this.clearAll();
-                resolve();
-            })
-            .catch(reject);
-
-        })
+                .catch(reject);
+        });
     }
 
     /**
@@ -1290,10 +1248,9 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
      *      "bootState" :  [ "uninitialized", "initialized" ]
      * @return {string}
      */
-    refStorage () {
-        return "dc-"+this.id;
+    refStorage() {
+        return "dc-" + this.id;
     }
-
 
     // /**
     // * @method dataCollectionLink
@@ -1323,39 +1280,40 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //  return object.fields((f) => f.id == this.settings.linkField)[0];
     // }
 
-
     /**
      * @method bind
-     * 
-     * 
+     *
+     *
      * @param {Object} component - a webix element instance
-    */
+     */
     bind(component) {
-
         var dc = this.__dataCollection;
 
         // prevent bind many times
-        if (this.__bindComponentIds.indexOf(component.config.id) > -1 && 
-                $$(component.config.id).data &&
-                $$(component.config.id).data.find &&
-                $$(component.config.id).data.find({}).length > 0)
+        if (
+            this.__bindComponentIds.indexOf(component.config.id) > -1 &&
+            $$(component.config.id).data &&
+            $$(component.config.id).data.find &&
+            $$(component.config.id).data.find({}).length > 0
+        )
             return;
         // keep component id to an array
-        else 
-            this.__bindComponentIds.push(component.config.id);
+        else this.__bindComponentIds.push(component.config.id);
 
-        if (component.config.view == 'datatable' ||
-            component.config.view == 'dataview' ||
-            component.config.view == 'treetable' ||
-            component.config.view == 'kanban') {
-
+        if (
+            component.config.view == "datatable" ||
+            component.config.view == "dataview" ||
+            component.config.view == "treetable" ||
+            component.config.view == "kanban"
+        ) {
             if (dc) {
-
                 var items = dc.count();
-                if (items == 0 &&
+                if (
+                    items == 0 &&
                     (this._dataStatus == this.dataStatusFlag.notInitial ||
-                    this._dataStatus == this.dataStatusFlag.initializing) &&
-                    component.showProgress) {
+                        this._dataStatus == this.dataStatusFlag.initializing) &&
+                    component.showProgress
+                ) {
                     component.showProgress({ type: "icon" });
                 }
 
@@ -1363,59 +1321,51 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
                 component.define("datathrottle", 500);
 
                 // initial data of treetable
-                if (component.config.view == 'treetable') {
-
+                if (component.config.view == "treetable") {
                     // NOTE: tree data does not support dynamic loading when scrolling
                     // https://forum.webix.com/discussion/3078/dynamic-loading-in-treetable
                     component.parse(dc.find({}));
-
-                }
-                else {
+                } else {
                     component.data.sync(dc);
                 }
 
                 // Implement .onDataRequest for paging loading
                 if (!this.settings.loadAll) {
-
                     component.___AD = component.___AD || {};
                     // if (component.___AD.onDataRequestEvent) component.detachEvent(component.___AD.onDataRequestEvent);
                     if (!component.___AD.onDataRequestEvent) {
-                        component.___AD.onDataRequestEvent = component.attachEvent("onDataRequest", (start, count) => {
+                        component.___AD.onDataRequestEvent = component.attachEvent(
+                            "onDataRequest",
+                            (start, count) => {
+                                if (component.showProgress)
+                                    component.showProgress({ type: "icon" });
 
-                            if (component.showProgress)
-                                component.showProgress({ type: "icon" });
+                                // load more data to the data collection
+                                dc.loadNext(count, start);
 
-                            // load more data to the data collection
-                            dc.loadNext(count, start);
-
-                            return false;   // <-- prevent the default "onDataRequest"
-                        });
+                                return false; // <-- prevent the default "onDataRequest"
+                            }
+                        );
                     }
 
                     // NOTE : treetable should use .parse or TreeCollection
                     // https://forum.webix.com/discussion/1694/tree-and-treetable-using-data-from-datacollection
-                    if (component.config.view == 'treetable') {
-
+                    if (component.config.view == "treetable") {
                         component.___AD = component.___AD || {};
                         if (!component.___AD.onDcLoadData) {
-                            component.___AD.onDcLoadData = this.on("loadData", () => {
-
-                                component.parse(dc.find({}));
-
-                            });
+                            component.___AD.onDcLoadData = this.on(
+                                "loadData",
+                                () => {
+                                    component.parse(dc.find({}));
+                                }
+                            );
                         }
-
                     }
-
                 }
-
-
-            }
-            else {
+            } else {
                 component.data.unsync();
             }
-        }
-        else if (component.bind) {
+        } else if (component.bind) {
             if (dc) {
                 // Do I need to check if there is any data in the collection before binding?
                 component.bind(dc);
@@ -1423,17 +1373,13 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
                 component.unbind();
             }
 
-            if (component.refresh)
-                component.refresh();
-
+            if (component.refresh) component.refresh();
         }
-
-
     }
 
     clone(settings) {
         settings = settings || this.toObj();
-        
+
         // NOTE: must send in a reference to this Class here:
         return super.clone(settings, ABViewDataCollection);
     }
@@ -1450,11 +1396,10 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
 
     // }
 
-
     // setCursor(rowId) {
 
     //  // If the static cursor is set, then this DC could not set cursor to other rows
-    //  if (this.settings.fixSelect && 
+    //  if (this.settings.fixSelect &&
     //      (this.settings.fixSelect != "_FirstRecordDefault" || this.settings.fixSelect == rowId))
     //      return;
 
@@ -1470,7 +1415,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     //  }
 
     // }
-
 
     // getCursor() {
 
@@ -1521,7 +1465,6 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     // }
 
     loadData(start, limit, callback) {
-
         // var defaultHeight = 0;
         // var obj = this.datasource;
 
@@ -1540,16 +1483,16 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
         //      defaultHeight = minHeight;
         //  }
         // }
-//// NOTE: if we want a platform to default limit the amount of data 
-//// returned, then we default it here, like so:
-// if (!limit) {
-//     limit = 20; 
-// }
-        
-return super.loadData(start, limit);
-//// Transition:  loadData is refactored to NOT accept a callback. 
-//// the processIncomingData() can replace that functionality and 
-//// make more since:
+        //// NOTE: if we want a platform to default limit the amount of data
+        //// returned, then we default it here, like so:
+        // if (!limit) {
+        //     limit = 20;
+        // }
+
+        return super.loadData(start, limit);
+        //// Transition:  loadData is refactored to NOT accept a callback.
+        //// the processIncomingData() can replace that functionality and
+        //// make more since:
 
         // var platformCallback = ( err ) => {
         //     if (err) {
@@ -1561,7 +1504,6 @@ return super.loadData(start, limit);
         // }
 
         // return super.loadData(start, limit, platformCallback)
-
     }
 
     /**
@@ -1577,8 +1519,7 @@ return super.loadData(start, limit);
      *        }
      */
     processIncomingData(data) {
-
-//// Web Platform:
+        //// Web Platform:
         // // standardize the heights
         // data.data.forEach((d) => {
 
@@ -1591,49 +1532,38 @@ return super.loadData(start, limit);
 
         // });
 
-        return super.processIncomingData(data)
-        .then(()=>{
-
-//// Web Platform:
+        return super.processIncomingData(data).then(() => {
+            //// Web Platform:
             // // when that is done:
             // this.hideProgressOfComponents();
 
-
             // make sure we update our bootState!
             if (this.bootState == "uninitialized") {
-
                 this.bootState = "initialized";
 
                 // once that is done, make sure we can track our DC info
                 var lock = storage.Lock(this.refStorage());
-                return lock.acquire()
-                .then(()=>{
+                return lock
+                    .acquire()
+                    .then(() => {
+                        return storage.get(this.refStorage()).then((data) => {
+                            data = data || {};
+                            data.bootState = this.bootState;
 
-                    return storage.get(this.refStorage())
-                    .then((data)=>{
-
-                        data = data || {};
-                        data.bootState = this.bootState;
-
-                        return storage.set(this.refStorage(), data);
+                            return storage.set(this.refStorage(), data);
+                        });
                     })
-
-                })
-                .then(()=>{
-                    lock.release();
-                })
+                    .then(() => {
+                        lock.release();
+                    });
             }
-
-        })
+        });
     }
-
-
 
     // reloadData() {
     //  this.__dataCollection.clearAll();
     //  return this.loadData(null, null, null);
     // }
-
 
     // getData(filter) {
 
@@ -1665,11 +1595,10 @@ return super.loadData(start, limit);
 
     // }
 
-
     /**
      * @method refreshLinkCursor
      * filter data in data collection by match id of link data collection
-     * 
+     *
      * @param {Object} - current data of link data collection
      */
     // refreshLinkCursor() {
@@ -1732,7 +1661,6 @@ return super.loadData(start, limit);
     //      return (linkVal.id || linkVal) == linkCursor.id;
     //  }
 
-
     // }
 
     /**
@@ -1740,7 +1668,7 @@ return super.loadData(start, limit);
      * must return the proper value for the current user that would match a "user" field
      * in an object.
      * This is platform dependent, so must be implemented by a child object.
-     * @return {string} 
+     * @return {string}
      */
     currentUserUsername() {
         return OP.User.username();
@@ -1818,15 +1746,9 @@ return super.loadData(start, limit);
     // }
 
     hideProgressOfComponents() {
-
-        this.__bindComponentIds.forEach(comId => {
-
-            if ($$(comId) &&
-                $$(comId).hideProgress)
-                $$(comId).hideProgress();
-
+        this.__bindComponentIds.forEach((comId) => {
+            if ($$(comId) && $$(comId).hideProgress) $$(comId).hideProgress();
         });
-
     }
 
     // get dataStatusFlag() {
@@ -1846,53 +1768,50 @@ return super.loadData(start, limit);
     /**
      * reduceCondition()
      * take the provided data and track the id's of the entries.
-     * Later when performing filter.isValid() operations, we can use this 
+     * Later when performing filter.isValid() operations, we can use this
      * instead of trying to parse through embedded queries and filters...
      * @param {array} values ABObject values that represent the data for this query.
      * @return {Promise} resolved when conditions are stored
      */
     reduceCondition(values) {
-        new Promise((resolve, reject)=>{
-
+        new Promise((resolve, reject) => {
             var pk = this.datasource.PK();
-            var listIDs = values.map((v)=>{ return v[pk]; });
+            var listIDs = values.map((v) => {
+                return v[pk];
+            });
             this._reducedConditions = {
                 pk: pk,
                 values: listIDs
-            }
-            
+            };
+
             if (this.__filterComponent) {
-                this.__filterComponent.setReducedConditions(this._reducedConditions);
+                this.__filterComponent.setReducedConditions(
+                    this._reducedConditions
+                );
             }
 
             //
             //  save these to disk
             //
             var lock = storage.Lock(this.refStorage());
-            return lock.acquire()
-            .then(()=>{
+            return lock
+                .acquire()
+                .then(() => {
+                    return storage.get(this.refStorage()).then((data) => {
+                        // shouldn't have uninitialized data at this point,
+                        // but just in case:
+                        data = data || {};
 
-                return storage.get(this.refStorage())
-                .then((data)=>{
+                        data.reducedConditions = this._reducedConditions;
 
-                    // shouldn't have uninitialized data at this point,
-                    // but just in case:
-                    data = data || {};
-
-                    data.reducedConditions = this._reducedConditions;
-
-                    return storage.set(this.refStorage(), data);
-
+                        return storage.set(this.refStorage(), data);
+                    });
                 })
-
-            })
-            .then(()=>{
-                lock.release();
-            })
-
-        })
+                .then(() => {
+                    lock.release();
+                });
+        });
     }
-
 
     /**
      * addReducedConditionEntry()
@@ -1910,24 +1829,21 @@ return super.loadData(start, limit);
         // create a new set of values we can send to .reduceCondition()
         // to properly update the filter and data storage.
         var mockValues = [];
-        this._reducedConditions.values.forEach((val)=>{
+        this._reducedConditions.values.forEach((val) => {
             var obj = {};
             obj[pk] = val;
             mockValues.push(obj);
-        })
+        });
 
         return this.reduceCondition(mockValues);
     }
 
-
     removeComponent(comId) {
-
         // get index
         let index = this.__bindComponentIds.indexOf(comId);
 
         // delete
         this.__bindComponentIds.splice(index, 1);
-
     }
 
     // clearAll() {
@@ -1936,6 +1852,4 @@ return super.loadData(start, limit);
 
     //  this._dataStatus = this.dataStatusFlag.notInitial;
     // }
-
-
-}
+};

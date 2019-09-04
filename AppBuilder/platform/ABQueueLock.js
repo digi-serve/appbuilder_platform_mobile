@@ -5,17 +5,14 @@
  *
  */
 
-var Lock = require( '../../resources/Lock.js');
+var Lock = require("../../resources/Lock.js");
 
 var _queues = {};
 
 class ABQueueLock {
-
     constructor() {
-
-    	this._queueLocks = _queues;
-
-  	}
+        this._queueLocks = _queues;
+    }
 
     queueLock(key) {
         if (!this._queueLocks[key]) {
@@ -23,7 +20,6 @@ class ABQueueLock {
         }
         return this._queueLocks[key];
     }
-
 }
 // this is a singleton object.
-module.exports =  new ABQueueLock();
+module.exports = new ABQueueLock();

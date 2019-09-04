@@ -210,18 +210,14 @@ class Feedback {
                 nextX = Math.round(nextX);
                 nextY = Math.round(nextY);
                 this._drawOptionsPos.nextTransform = `translate(${nextX}px, ${nextY}px)`;
-                this._drawOptions.style.transform = `${
-                    this._drawOptionsPos.currTransform
-                } ${this._drawOptionsPos.nextTransform}`;
+                this._drawOptions.style.transform = `${this._drawOptionsPos.currTransform} ${this._drawOptionsPos.nextTransform}`;
                 this._state.dragged = true;
             }
         };
         this._dragStop = (/* $event */) => {
             this._state.isDragging = false;
             if (this._state.dragged) {
-                this._drawOptionsPos.currTransform = `${
-                    this._drawOptionsPos.currTransform
-                } ${this._drawOptionsPos.nextTransform}`;
+                this._drawOptionsPos.currTransform = `${this._drawOptionsPos.currTransform} ${this._drawOptionsPos.nextTransform}`;
                 this._state.dragged = false;
             }
         };
@@ -620,9 +616,7 @@ class Feedback {
     }
     _createScreenshotContainer() {
         const screenshotContainer = document.createElement("div");
-        screenshotContainer.className = `${
-            this._options.classPrefix
-        }screenshot`;
+        screenshotContainer.className = `${this._options.classPrefix}screenshot`;
         if (this._options.allowDrawing) {
             screenshotContainer.addEventListener("click", this._openDrawer);
         }
@@ -707,12 +701,8 @@ class Feedback {
     _createHelpersContainer() {
         const helpersContainer = document.createElement("div");
         helpersContainer.className = "helpers";
-        helpersContainer.style.width = `${
-            document.documentElement.scrollWidth
-        }px`;
-        helpersContainer.style.height = `${
-            document.documentElement.scrollHeight
-        }px`;
+        helpersContainer.style.width = `${document.documentElement.scrollWidth}px`;
+        helpersContainer.style.height = `${document.documentElement.scrollHeight}px`;
         this._helpersContainer = helpersContainer;
         return helpersContainer;
     }

@@ -13,7 +13,7 @@ import { Translate, translate, t } from "./Translate";
 class Busy extends EventEmitter {
     constructor() {
         super();
-        
+
         this.dataReady = $.Deferred();
         this.busyInProgress = false;
         this.app = null;
@@ -24,9 +24,10 @@ class Busy extends EventEmitter {
     }
 
     show(text = "Saving") {
-
         if (!this.app) {
-            console.error('use of busy.show() before busy.setApp() is initialized.');
+            console.error(
+                "use of busy.show() before busy.setApp() is initialized."
+            );
             return;
         }
 
@@ -39,7 +40,9 @@ class Busy extends EventEmitter {
 
     hide() {
         if (!this.app) {
-            console.error('use of busy.hide() before busy.setApp() is initialized.');
+            console.error(
+                "use of busy.hide() before busy.setApp() is initialized."
+            );
             return;
         }
 
@@ -48,7 +51,6 @@ class Busy extends EventEmitter {
             this.app.dialog.close();
         }
     }
-    
 }
 
 var busy = new Busy();

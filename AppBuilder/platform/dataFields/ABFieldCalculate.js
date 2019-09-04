@@ -5,15 +5,10 @@
  *
  */
 
-var ABFieldCalculateCore = require( "../../core/dataFields/ABFieldCalculateCore" );
+var ABFieldCalculateCore = require("../../core/dataFields/ABFieldCalculateCore");
 
-
-module.exports =  class ABFieldCalculate extends ABFieldCalculateCore {
-
+module.exports = class ABFieldCalculate extends ABFieldCalculateCore {
     constructor(attributes, object) {
-
-    	super(attributes, object);
-
-  	}
-
-}
+        super(attributes, object);
+    }
+};

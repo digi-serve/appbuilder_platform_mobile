@@ -1,19 +1,14 @@
 /**
  * ABFieldNumber
- * 
+ *
  * This is the platform dependent implementation of ABFieldNumber.
  *
  */
 
-var ABFieldNumberCore = require( "../../core/dataFields/ABFieldNumberCore" );
+var ABFieldNumberCore = require("../../core/dataFields/ABFieldNumberCore");
 
-
-module.exports =  class ABFieldNumber extends ABFieldNumberCore {
-
+module.exports = class ABFieldNumber extends ABFieldNumberCore {
     constructor(attributes, object) {
-
-    	super(attributes, object);
-
-  	}
-
-}
+        super(attributes, object);
+    }
+};
