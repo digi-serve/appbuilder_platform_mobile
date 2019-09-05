@@ -215,6 +215,24 @@ export default class ABAppController extends EventEmitter {
     }
 
     /**
+     * listItemID()
+     * return the id (value) of a requested list item option.
+     *
+     * @param {string} objKey  either the ABObject.id or it's .name
+     * @param {string} fieldKey either the ABField.id or it's .name
+     * @param {string} optionText the .label or .text of an option
+     * @param {string} langCode the language translation of the item to return
+     * @return {array}
+     */
+    listItemID(objKey, fieldKey, optionText, langCode = "en") {
+        var statusOptions = this.listItems(objKey, fieldKey, langCode);
+        var requestedOption = statusOptions.find((o) => {
+            return o.text == optionText || o.name == optionText;
+        });
+        return requestedOption.id || null;
+    }
+
+    /**
      * object()
      * return the ABDataCollection referenced by the given key
      * @param {string} key the .name of the DataColleciton to return
