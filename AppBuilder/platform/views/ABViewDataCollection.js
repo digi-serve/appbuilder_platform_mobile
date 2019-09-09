@@ -147,6 +147,9 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
                         if (context.verb != "uninitialized") {
                             this.emit("REFRESH");
                         }
+
+                        // signal our remote data has arrived.
+                        this.emit("init.remote", {});
                     });
             }
         }); // end Network.on()

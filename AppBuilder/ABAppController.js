@@ -56,13 +56,13 @@ export default class ABAppController extends EventEmitter {
      *      "loading"           loading datacollection data
      *      "ready"             ready for operation.
      *
-     * @param {app/controller/appPage} appPage
+     * @param {lib/platform/pages/appPage} appPage
      *        the live instance of the Application Page Controller that
      *        displays this application.
      * @return {Promise}
      */
     init(appPage) {
-        // save a reference to the lib/controllers/appPage.js object.
+        // save a reference to the lib/platform/pages/appPage/appPage.js object.
         if (appPage) {
             this.appPage = appPage;
         }
@@ -120,6 +120,53 @@ export default class ABAppController extends EventEmitter {
                 .catch((err) => {
                     reject(err);
                 });
+        });
+    }
+
+    /**
+     * initRemote()
+     * Perform an init() but don't resolve until all the data from the remote
+     * models are returned.
+     *
+     * @param {lib/platform/pages/appPage} appPage
+     *        the live instance of the Application Page Controller that
+     *        displays this application.
+     * @return {Promise}
+     */
+    initRemote(appPage) {
+        var numFinished = 0; // the # of DC that have completed their update
+
+        var checkEm = (res, rej, err = null) => {
+            if (err) {
+                rej(err);
+                return;
+            }
+
+            numFinished++;
+            if (numFinished >= this.datacollections.length) {
+                res();
+            }
+        };
+
+        return new Promise((resolve, reject) => {
+            // continue if we don't have any datacollections
+            if (this.datacollections.length == 0) {
+                resolve();
+                return;
+            }
+
+            // setup listeners on all our datacollections:
+            this.datacollections.forEach((key) => {
+                var dc = this.application.datacollectionByID(key);
+                if (dc) {
+                    dc.once("init.remote", () => {
+                        checkEm(resolve, reject);
+                    });
+                }
+            });
+
+            // start the data loading process:
+            this.init(appPage);
         });
     }
 

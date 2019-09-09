@@ -480,6 +480,21 @@ export default class AppPage extends Page {
     }
 
     /**
+     * @method defaultRoute
+     * return the route that should be considered the default route to open in.
+     * @return {string} 
+     */
+    defaultRoute() {
+        var route = null;
+        this.applications.forEach((app)=>{
+            if (app.isDefault) {
+                route = app.defaultRoute();
+            }
+        })
+        return route;
+    }
+
+    /**
      * Retrieve stored value from storage. By default, the value will be saved
      * into `this[key]`.
      *
@@ -600,13 +615,15 @@ export default class AppPage extends Page {
     closeRelayLoader() {
         if (this.relayLoaderDialog) {
             this.relayLoaderDialog.close();
+        } else {
+            console.log("closeRelayLoader() called, but no .relayLoaderDialog  found.");
         }
         Network.off("job.*", this._relayObserver);
     }
 
     /**
-     * Request data through the relay, for all ABApplications, then wait for
-     * the responses to finish.
+     * @method fetchApplicationData()
+     * Make sure all applications perform a remote data update before moving on.
      *
      * A modal dialog box will be displayed during the process.
      *
@@ -628,23 +645,16 @@ export default class AppPage extends Page {
             analytics.log("Timeout (45 secs) during fetchApplicationData()");
         }, 45000);
 
-        // create a storage container for all app inits
-        var allClears = [];
-        var allResets = [];
+        // track all the inits in progress:
+        var allInits = [];
 
         // tell all apps to .init() again
         this.applications.forEach((abApp) => {
-            if (abApp.clearSystemData) {
-                allClears.push(abApp.clearSystemData());
-            }
-            allResets.push(abApp.reset());
+            allInits.push(abApp.initRemote(/* this */));
         });
 
         // listen for when inits are complete
-        return Promise.all(allClears)
-            .then(() => {
-                return Promise.all(allResets);
-            })
+        return Promise.all(allInits)
             .then(() => {
                 clearTimeout(waitToClose);
                 this.closeRelayLoader();
@@ -677,16 +687,28 @@ export default class AppPage extends Page {
         console.log("::: forceApplicationReset(): Relay.init().");
         return Network.init()
             .then(() => {
-                var allInits = [];
+                var allClears = [];
+                var allResets = [];
+
+                // tell all apps to .init() again
+                this.applications.forEach((abApp) => {
+                    if (abApp.clearSystemData) {
+                        allClears.push(abApp.clearSystemData());
+                    }
+                    allResets.push(abApp.reset());
+                });
 
                 // tell all AB apps to .init() again:
-                this.applications.forEach((abApp) => {
-                    allInits.push(abApp.reset());
-                });
+                // this.applications.forEach((abApp) => {
+                //     allInits.push(abApp.reset());
+                // });
                 console.log(
-                    "::: importSettings(): App.reset() x" + allInits.length
+                    "::: importSettings(): App.reset() x" + allResets.length
                 );
-                return Promise.all(allInits);
+                return Promise.all(allClears)
+                    .then(() => {
+                        return Promise.all(allResets);
+                    });
             })
             .then(() => {
                 this.pendingApplicationReset = false;
