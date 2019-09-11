@@ -212,8 +212,8 @@ class Translate extends EventEmitter {
 
             //var $$ = Dom7;
             setTimeout(function() {
-                $(window).trigger("resize");
-            }, 200);
+                appPage.app.navbar.size('.navbar')
+            }, 300);
         });
     }
 }
