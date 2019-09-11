@@ -20,6 +20,7 @@
 
 var needsTranslation = [];
 var loggingEnabled = false; // set to true to see if you missed any text
+var fixNavbar;
 
 import EventEmitter from "eventemitter2";
 import analytics from "./Analytics.js";
@@ -211,8 +212,13 @@ class Translate extends EventEmitter {
             // resized to fix the layout
 
             //var $$ = Dom7;
-            setTimeout(function() {
-                appPage.app.navbar.size('.navbar')
+            // if the timeout has already started lets reset it
+            // this means that other translations are happening
+            clearTimeout(fixNavbar);
+            fixNavbar = setTimeout(function() {
+                if ( $('.navbar').length ) {
+                    appPage.app.navbar.size('.navbar')
+                }
             }, 300);
         });
     }
