@@ -274,7 +274,11 @@ export default class ABAppController extends EventEmitter {
     listItemID(objKey, fieldKey, optionText, langCode = "en") {
         var statusOptions = this.listItems(objKey, fieldKey, langCode);
         var requestedOption = statusOptions.find((o) => {
-            return o.text == optionText || o.name == optionText;
+            return (
+                o.text == optionText ||
+                o.name == optionText ||
+                o.label == optionText
+            );
         });
         return requestedOption.id || null;
     }
