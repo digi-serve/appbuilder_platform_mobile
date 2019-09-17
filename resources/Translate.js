@@ -216,7 +216,7 @@ class Translate extends EventEmitter {
             // this means that other translations are happening
             clearTimeout(fixNavbar);
             fixNavbar = setTimeout(function() {
-                if ( $('.navbar').length ) {
+                if ( $('.navbar').length && appPage ) {
                     appPage.app.navbar.size('.navbar')
                 }
             }, 300);
