@@ -195,10 +195,11 @@ class Account extends EventEmitter {
                             return new Promise((ok) => {
                                 // Close the progress dialog box temporarily
 
-                                loader.$el.remove();
-                                loader.close();
-                                loader.destroy();
-
+                                if (loader && loader.$el) {
+                                    loader.$el.remove();
+                                    loader.close();
+                                    loader.destroy();
+                                }
                                 this.f7app.dialog.confirm(
                                     "<t>This will reset the data on this device</t>",
                                     "<t>Do you want to continue?</t>",
@@ -224,8 +225,10 @@ class Account extends EventEmitter {
                         // on a progress modal doesn't remove the modal (just makes
                         // it invisible, but it will intefere with clicking on the
                         // screen). So we manually remove it here:
-                        loader.$el.remove();
-                        loader.close();
+                        if (loader && loader.$el) {
+                            loader.$el.remove();
+                            loader.close();
+                        }
                         loader = this.f7app.dialog.progress(
                             "<t>Connecting your account</t>"
                         );
@@ -308,9 +311,11 @@ class Account extends EventEmitter {
                     this.importInProgress = false;
                     Log("::: importSettings(): all done!");
 
-                    loader.$el.remove();
-                    loader.close();
-                    loader.destroy();
+                    if (loader && loader.$el) {
+                        loader.$el.remove();
+                        loader.close();
+                        loader.destroy();
+                    }
 
                     if (shouldRestart) {
                         updater.restart();
@@ -325,9 +330,11 @@ class Account extends EventEmitter {
                     analytics.logError(err);
                     this.emit("importError", err);
 
-                    loader.$el.remove();
-                    loader.close();
-                    loader.destroy();
+                    if (loader && loader.$el) {
+                        loader.$el.remove();
+                        loader.close();
+                        loader.destroy();
+                    }
 
                     this.f7app.dialog.alert(
                         err.message || err,
