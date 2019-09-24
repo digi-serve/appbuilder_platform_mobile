@@ -97,7 +97,6 @@ class Translate extends EventEmitter {
         if (this.langCode == "ko") {
             this.langCode = "zh";
         }
-        this.langCode = "zh";
 
         // Set lang attribute on document body for CSS language targetting
         $(document.body).attr("lang", this.langCode);
