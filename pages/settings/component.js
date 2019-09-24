@@ -13,6 +13,7 @@ import EventEmitter from "eventemitter2";
 import { storage } from "../../resources/Storage.js";
 import log from "../../resources/Log.js";
 import analytics from "../../resources/Analytics.js";
+import { translate } from "../../resources/Translate.js";
 
 export default class Component extends EventEmitter {
     /**
@@ -50,6 +51,13 @@ export default class Component extends EventEmitter {
                     this.dataReady.resolve();
                 })
                 .catch(log);
+        });
+        
+        translate.on("recenterTitle", () => {
+            if ( $('.navbar').length ) {
+                // console.log("recenterTitle");
+                this.app.navbar.size('.navbar');
+            }
         });
 
         this.dataReady.done(() => {

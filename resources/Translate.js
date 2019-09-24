@@ -97,6 +97,7 @@ class Translate extends EventEmitter {
         if (this.langCode == "ko") {
             this.langCode = "zh";
         }
+        this.langCode = "zh";
 
         // Set lang attribute on document body for CSS language targetting
         $(document.body).attr("lang", this.langCode);
@@ -211,14 +212,12 @@ class Translate extends EventEmitter {
             // word widths, we need to trigger a resize as if the window was
             // resized to fix the layout
 
-            //var $$ = Dom7;
             // if the timeout has already started lets reset it
             // this means that other translations are happening
+            // so we can wait before calling it
             clearTimeout(fixNavbar);
-            fixNavbar = setTimeout(function() {
-                if ( $('.navbar').length && typeof appPage != "undefined" ) {
-                    appPage.app.navbar.size('.navbar')
-                }
+            fixNavbar = setTimeout(() => {
+                this.emit("recenterTitle");
             }, 300);
         });
     }
