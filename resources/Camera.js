@@ -17,7 +17,11 @@ import CameraBrowser from "./CameraBrowser";
 
 var camera = null;
 
-if (navigator.camera) {
+// `navigator.camera` is not available even on the actual device, until
+// the 'deviceready' event has fired.
+//if (navigator.camera) {
+
+if (window.cordova) {
     camera = new CameraPlatform();
 } else {
     camera = new CameraBrowser();
