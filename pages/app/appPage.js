@@ -23,6 +23,7 @@ import qrPage from "../qrScanner/qrScanner.js";
 import Shake from "shake.js";
 import { storage, Storage } from "../../resources/Storage.js";
 import updater from "../../resources/Updater.js";
+import config from "../../../config/config.js";
 
 // // import moment from 'moment';
 
@@ -343,7 +344,9 @@ export default class AppPage extends Page {
             });
 
         // Start listening for shake gesture
-        this.shakeEvent.start();
+        if (config.platform.shakeGesture) {
+            this.shakeEvent.start();
+        }
 
         // Initialize the AB applications
         this.applications.forEach((abApp) => {
