@@ -6,6 +6,7 @@
 
 var ABViewDataCollectionCore = require("../../core/views/ABViewDataCollectionCore");
 
+var Analytics = require("../../../resources/Analytics").default;
 var Network = require("../../../resources/Network").default;
 var storage = require("../../../resources/Storage").storage;
 
@@ -1155,8 +1156,23 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
     platformInit() {
         return new Promise((resolve, reject) => {
             // Make sure our ABObject is properly setup on the platform
-            this.datasource
-                .model()
+            var ds = this.datasource;
+            if (!ds) {
+                // if we couldn't find the reference to our datasource
+                // someone should know about this!
+                var dsError = new Error(
+                    "ABViewDataCollection:platformInit(): unknown datasource"
+                );
+                dsError.context = { settings: this.settings };
+                Analytics.logError(dsError);
+
+                // but continue on just in case this is a dangling DC
+                // that isn't actually being used.
+                resolve();
+                return;
+            }
+
+            ds.model()
                 .local()
                 .platformInit()
                 .then(() => {
