@@ -22,6 +22,9 @@ module.exports = class ABObject extends ABObjectCore {
                     ":: ABObject.Relay.on:" + ABObjectCore.contextKey()
                 );
                 console.log(":: context:", context);
+                if (this.name) {
+                    console.log(":: name:", this.name);
+                }
                 console.log(":: data:", data);
 
                 context.verb = context.verb || "unknown";
@@ -129,6 +132,9 @@ module.exports = class ABObject extends ABObjectCore {
                             context,
                             data
                         );
+
+                        // TODO: Legacy: remove this once Events and Profile are upgraded.
+                        this.emit("data", data);
                         break;
                 }
             }
