@@ -67,11 +67,16 @@ export default class ABMobileApp extends EventEmitter {
                 if (this.status == "initializing") {
                     // NOTE: .initializeRemoteData() will update our status
                     // to 'ready'
-                    pendingOperations.push(
-                        this.initializeRemoteDataStatusUpdate()
-                    );
                     console.log(
-                        this.id + " initializeRemoteDataStatusUpdate()"
+                        this.id + " initializeRemoteDataStatusUpdate() starting"
+                    );
+                    pendingOperations.push(
+                        this.initializeRemoteDataStatusUpdate().then(() => {
+                            console.log(
+                                this.id +
+                                    " initializeRemoteDataStatusUpdate() finished"
+                            );
+                        })
                     );
                 }
 
@@ -186,8 +191,9 @@ export default class ABMobileApp extends EventEmitter {
         }
 
         return new Promise((resolve, reject) => {
-            this[dcRef]
-                .loadDataLocal()
+            this[dcRef].model
+                .local()
+                .findAll()
                 .then((dcData) => {
                     this[dataRef] = dcData;
                     resolve();
@@ -252,6 +258,10 @@ export default class ABMobileApp extends EventEmitter {
             }); // kicks off a Relay request
             this[dcRef].removeAllListeners("data"); // prevent multiple
             this[dcRef].on("data", (dcData) => {
+                console.log(
+                    this.id + ":dcRemote:" + dcRef + " received data:",
+                    dcData
+                );
                 this[dataRef] = dcData;
                 this.emit(emitRef);
                 resolve(dcData);
@@ -329,6 +339,13 @@ export default class ABMobileApp extends EventEmitter {
             // .relay() doesn't return data immediately.
             // so listen for our 'data' event and respond with that
             obj.on("data", (allEntries) => {
+                console.log(
+                    this.id +
+                        ":lookupDataRemote:" +
+                        dataRef +
+                        " received data:",
+                    allEntries
+                );
                 this[dataRef] = allEntries || [];
 
                 if (shouldOverwriteLocal) {

@@ -127,11 +127,11 @@ module.exports = class ABObject extends ABObjectCore {
                         break;
 
                     default:
-                        console.error(
-                            "ABObject.Relay.on:  unknown context.verb",
-                            context,
-                            data
-                        );
+                        // console.error(
+                        //     "ABObject.Relay.on:  unknown context.verb",
+                        //     context,
+                        //     data
+                        // );
 
                         // TODO: Legacy: remove this once Events and Profile are upgraded.
                         this.emit("data", data);

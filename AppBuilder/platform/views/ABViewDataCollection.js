@@ -143,14 +143,18 @@ module.exports = class ABViewDataCollection extends ABViewDataCollectionCore {
                     })
                     .then((normalizedData) => {
                         this.processIncomingData(normalizedData);
+                        return normalizedData;
                     })
-                    .then(() => {
+                    .then((normalizedData) => {
                         if (context.verb != "uninitialized") {
                             this.emit("REFRESH");
                         }
 
                         // signal our remote data has arrived.
                         this.emit("init.remote", {});
+
+                        // TODO: Legacy: remove this once Events and HRIS are upgraded
+                        this.emit("data", normalizedData);
                     });
             }
         }); // end Network.on()
