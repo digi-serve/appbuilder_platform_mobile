@@ -34,6 +34,8 @@ export default class ABMobileApp extends EventEmitter {
         this.status = "bootup";
 
         this._queueLocks = {}; // a constant reference to available Queue Locks.
+
+        this.datacollections = [];
     }
 
     init(appPage) {
@@ -59,7 +61,7 @@ export default class ABMobileApp extends EventEmitter {
             })
             .then((status) => {
                 this.status = status || "initializing";
-                // this.status = 'initializing';
+                this.status = "initializing";
                 var pendingOperations = [];
 
                 // if we are initializing our data:
@@ -252,10 +254,32 @@ export default class ABMobileApp extends EventEmitter {
         }
 
         return new Promise((resolve, reject) => {
-            this[dcRef].loadData().catch((err) => {
-                console.error("::: .dcRemote().loadData() error:", err);
-                reject(err);
-            }); // kicks off a Relay request
+            var hasResolved = false;
+            var resolveIt = function(data) {
+                if (!hasResolved) {
+                    hasResolved = true;
+                    resolve(data);
+                }
+            };
+
+            this[dcRef].platformInit().then(() => {
+                return this[dcRef]
+                    .loadData()
+                    .catch((err) => {
+                        console.error("::: .dcRemote().loadData() error:", err);
+                        reject(err);
+                    })
+                    .then(() => {
+                        if (
+                            this[dcRef].dataStatus ==
+                            this[dcRef].dataStatusFlag.initialized
+                        ) {
+                            this[dataRef] = this[dcRef].getData();
+                            resolveIt(this[dataRef]);
+                        }
+                    }); // kicks off a Relay request
+            });
+
             this[dcRef].removeAllListeners("data"); // prevent multiple
             this[dcRef].on("data", (dcData) => {
                 console.log(
@@ -264,7 +288,7 @@ export default class ABMobileApp extends EventEmitter {
                 );
                 this[dataRef] = dcData;
                 this.emit(emitRef);
-                resolve(dcData);
+                resolveIt(dcData);
             });
         });
     }
