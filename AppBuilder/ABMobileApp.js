@@ -589,4 +589,19 @@ export default class ABMobileApp extends EventEmitter {
         }
         return $element.find(pattern);
     }
+
+    /**
+     * pathCSS()
+     * return the path to an associated CSS file for this app.
+     *
+     * used in www/index.js bootup process to add in any application specific
+     * css resources.
+     *
+     * if no css file is present, then return null.
+     *
+     * @return {string} path to css file:
+     */
+    pathCSS() {
+        return null;
+    }
 }

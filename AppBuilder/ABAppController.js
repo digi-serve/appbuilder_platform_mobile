@@ -496,6 +496,21 @@ export default class ABAppController extends EventEmitter {
     }
 
     /**
+     * pathCSS()
+     * return the path to an associated CSS file for this app.
+     *
+     * used in www/index.js bootup process to add in any application specific
+     * css resources.
+     *
+     * if no css file is present, then return null.
+     *
+     * @return {string} path to css file:
+     */
+    pathCSS() {
+        return null;
+    }
+
+    /**
      * Takes an array produced by lookupData() and indexes the data labels
      * according to the primary key. If it has multilingual labels, they will
      * be further indexed by language_code.
