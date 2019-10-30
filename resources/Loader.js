@@ -54,13 +54,17 @@ export default class Loader {
     }
 
     start() {
-        this.isAnimationEnabled = true;
-        window.addEventListener("resize", this.resize);
-        this.container.appendChild(this.renderer.element);
+        if (this.container) {
+            this.isAnimationEnabled = true;
+            window.addEventListener("resize", this.resize);
+            this.container.appendChild(this.renderer.element);
 
-        this.resize();
-        this.animate();
-        // this.text();
+            this.resize();
+            this.animate();
+            // this.text();
+        } else {
+            console.error("Loader: no container found.");
+        }
     }
 
     stop() {
