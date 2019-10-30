@@ -388,6 +388,9 @@ export default class ABMobileApp extends EventEmitter {
                         " received data:",
                     allEntries
                 );
+                obj.model()
+                    .local()
+                    .normalizeData(allEntries);
                 this[dataRef] = allEntries || [];
 
                 if (shouldOverwriteLocal) {
