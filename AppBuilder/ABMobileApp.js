@@ -274,7 +274,25 @@ export default class ABMobileApp extends EventEmitter {
                             this[dcRef].dataStatus ==
                             this[dcRef].dataStatusFlag.initialized
                         ) {
-                            this[dataRef] = this[dcRef].getData();
+                            // #Hack:
+                            // patching old platform to work with new:
+                            //
+                            // data passed into a datacollection will be assigned an
+                            // .id by webix if the entry doesn't already have on.
+                            // This conflicts with our  original paradigm of needing
+                            // to receive the .id back from the server.
+                            // BUT webix .id's are really high, so if the given .id
+                            // is high, we clear it so we can know we haven't gotten one
+                            // from the server:
+                            var webixData = this[dcRef].getData();
+                            webixData.forEach((d) => {
+                                if (d.id) {
+                                    if (d.id > 100000) {
+                                        delete d.id;
+                                    }
+                                }
+                            });
+                            this[dataRef] = webixData;
                             resolveIt(this[dataRef]);
                         }
                     }); // kicks off a Relay request
