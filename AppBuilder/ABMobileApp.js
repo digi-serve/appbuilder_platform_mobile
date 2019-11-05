@@ -109,6 +109,21 @@ export default class ABMobileApp extends EventEmitter {
                     });
             });
     }
+    
+    /**
+     * initRemote()
+     * Perform an init() but don't resolve until all the data from the remote
+     * models are returned.
+     *
+     * @param {lib/platform/pages/appPage} appPage
+     *        the live instance of the Application Page Controller that
+     *        displays this application.
+     * @return {Promise}
+     */
+    initRemote(appPage) {
+        // start the data loading process:
+        return this.init(appPage);
+    }
 
     /**
      * initialzieLocalData()
