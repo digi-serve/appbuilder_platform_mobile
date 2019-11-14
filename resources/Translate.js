@@ -20,7 +20,7 @@
 
 var needsTranslation = [];
 var loggingEnabled = false; // set to true to see if you missed any text
-var fixNavbar;
+// var fixNavbar;
 
 import EventEmitter from "eventemitter2";
 import analytics from "./Analytics.js";
@@ -110,7 +110,11 @@ class Translate extends EventEmitter {
                 this.dataReady.resolve();
             })
             .fail((xhr, status, err) => {
-                console.log(err);
+                console.error(
+                    "Unsupported language: ",
+                    this.langCode,
+                    " " + err
+                );
                 analytics.logError("Unsupported language: " + this.langCode);
 
                 // Data file not found/recognized. Language not supported?
@@ -214,10 +218,10 @@ class Translate extends EventEmitter {
             // if the timeout has already started lets reset it
             // this means that other translations are happening
             // so we can wait before calling it
-            clearTimeout(fixNavbar);
-            fixNavbar = setTimeout(() => {
-                this.emit("recenterTitle");
-            }, 300);
+            // clearTimeout(fixNavbar);
+            // fixNavbar = setTimeout(() => {
+            //     this.emit("recenterTitle");
+            // }, 300);
         });
     }
 }
