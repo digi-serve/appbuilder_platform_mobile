@@ -9,6 +9,7 @@
 
 import EventEmitter from "eventemitter2";
 import "./Countly.js"; // copied from Countly cordova plugin
+import { sentryRelase } from "../../../../version.js";
 
 var config = require("../../config/config.js");
 
@@ -28,7 +29,8 @@ class Analytics extends EventEmitter {
                 console.log("Sentry.io plugin required, now init");
                 this.sentry.init({
                     dsn: config.sentryio.dsn, // "https://9df6fd4623934fadb4a9ee6bb6ec887f@sentry.io/1186956",
-                    debug: true
+                    debug: true,
+                    release: sentryRelease
                 });
                 console.log("Sentry.io plugin initilized");
             } catch (err) {
