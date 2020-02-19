@@ -80,6 +80,7 @@ export default class AppPage extends Page {
         // Framework7 is the UI library
         this.app = new Framework7({
             theme: "ios",
+            iosTranslucentBars: false,
             toast: {
                 closeTimeout: 5000,
                 position: "top"
@@ -87,9 +88,6 @@ export default class AppPage extends Page {
             statusbar: {
                 iosOverlaysWebView: false,
                 overlay: false
-            },
-            panel: {
-                swipe: "both"
             },
             // All of these will be available to F7 Components
             // under `this.$root.{name}`
