@@ -2,21 +2,31 @@ import Applications from "../../applications/applications.js";
 
 ("use strict");
 
+// Template7 is required
 if (typeof Template7 == "undefined") {
     throw new Error("Template7 is required to build helpers");
 }
 
+// Applications is required...imported above
 if (typeof Applications == "undefined") {
     throw new Error("Applications is required to build helpers");
 }
 
+// moment is required
 if (typeof moment == "undefined") {
     throw new Error("moment is required to build helpers");
 }
 
+// Helper to display object properties that have two or more word names
+// ex: {{print parent 'object'}}
 Template7.registerHelper("print", (parent, object) => {
     return parent[object];
 });
+
+// Helper to format date string into usable date Information
+// default format is "YYYY-MM-DD"
+// ex: {{date parent 'object'}} outputs YYYY-MM-DD of the date passed
+// ex: {{date parent 'object' 'MM-DD-YYYY'}} outputs MM-DD-YYYY of the date passed
 Template7.registerHelper("date", (parent, object, template) => {
     var temp = "YYYY-MM-DD";
     if (typeof template == "string") {
@@ -24,9 +34,15 @@ Template7.registerHelper("date", (parent, object, template) => {
     }
     return moment(parent[object]).format(temp);
 });
+
+// Helper to get the first letter of a name/word
+// ex: {{initial parent 'object'}}
 Template7.registerHelper("initial", (parent, object) => {
     return parent[object].substring(0, 1);
 });
+
+// Helper to get the translated value of a field that was a select list
+// ex: {{listItem 'app' 'obj' 'item' selected}}
 Template7.registerHelper("listItem", (app, obj, item, selected) => {
     var thisApp = Applications.filter((x) => {
         return (x.id = app);
@@ -50,6 +66,12 @@ Template7.registerHelper("listItem", (app, obj, item, selected) => {
         return "";
     }
 });
+
+// Helper to return HTML of a list of items from a field that was a select list
+// ex: {{listItems 'app' 'obj' 'item' selected '<option %selected% value="%id%">%label%</option>'}}
+// %selected% will return selected='selected' if you are using this in a select input
+// %label% will return the translated label of the option
+// %id% will return the id/value of the option
 Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
     var thisApp = Applications.filter((x) => {
         return (x.id = app);
@@ -85,21 +107,4 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
     } else {
         return [];
     }
-});
-Template7.registerHelper("translate", (app, parent, object) => {
-    var thisApp = Applications.filter((x) => {
-        return (x.id = app);
-    })[0];
-
-    var lang = thisApp.application.languageDefault();
-
-    var translated = parent.translations.filter((f) => {
-        var itemToReturn = Object.keys(f).some((key) => {
-            if (key == object) {
-                return f;
-            }
-        });
-        return itemToReturn;
-    });
-    return translated[0][object];
 });
