@@ -20,7 +20,8 @@ if (typeof moment == "undefined") {
 // Helper to display object properties that have two or more word names
 // ex: {{print parent 'object'}}
 Template7.registerHelper("print", (parent, object, alternateObject) => {
-    return parent[object] ? parent[object] : parent[alternateObject];
+    var result = parent[object] ? parent[object] : parent[alternateObject];
+    return typeof result != "undefined" ? result : "";
 });
 
 // Helper to format date string into usable date Information
@@ -38,9 +39,10 @@ Template7.registerHelper("date", (parent, object, template) => {
 // Helper to get the first letter of a name/word
 // ex: {{initial parent 'object'}}
 Template7.registerHelper("initial", (parent, object, alternateObject) => {
-    return parent[object]
+    var result = parent[object]
         ? parent[object].substring(0, 1)
         : parent[alternateObject].substring(0, 1);
+    return typeof result != "undefined" ? result : "";
 });
 
 // Helper to get the translated value of a field that was a select list
