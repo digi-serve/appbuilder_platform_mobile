@@ -718,6 +718,7 @@ export default class AppPage extends Page {
                     analytics.event("QRInitFinished");
                     console.log("::: QRInitFinished :::");
                     this.app.panel.open("left");
+                    this.emit("resetComplete");
                 }
             })
             .catch((err) => {
