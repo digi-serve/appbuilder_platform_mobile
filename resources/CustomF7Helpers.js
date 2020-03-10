@@ -112,3 +112,8 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
         return [];
     }
 });
+
+// create a helper in template7 so we can properly display numbers with commas
+Template7.registerHelper("commas", (number) => {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+});
