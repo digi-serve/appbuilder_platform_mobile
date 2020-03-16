@@ -234,6 +234,46 @@ module.exports = class ABModel extends ABModelCore {
                     // .create()
                     return this.remote().create(values);
                 })
+
+                .then(() => {
+                    // get a list of each connected object
+                    var connFields = this.object.connectFields(true);
+                    // for each object
+                    connFields.forEach((field) => {
+                        // get the current value associated with that object and stop if there is none
+                        var currentValues = values[field.columnName];
+                        if (currentValues) {
+                            // get that ABObject
+                            var connectedObj = field.datasourceLink;
+                            // // make sure that currentValues is an array
+                            // if (!Array.isArray(currentValues))
+                            //     currentValues = [currentValues];
+                            // // perform a .remote().findAll({id:currentValue.id})
+                            // var lookUpIds = currentValues.map((val) => {
+                            //     return val[connectedObj.PK()];
+                            // });
+                            // var condition = {};
+                            // condition[connectedObj.PK()] = lookUpIds;
+                            // connectedObj
+                            //     .model()
+                            //     .remote()
+                            //     .findAll(condition);
+                            // search loaded datacollections to see if they contain the connectedObj
+                            connectedObj.application
+                                .datacollections()
+                                .forEach((dc) => {
+                                    // if datacollection has a datasource and its id matches the connectedObj
+                                    if (
+                                        dc.datasource &&
+                                        dc.datasource.id == connectedObj.id
+                                    ) {
+                                        // tell it to load data
+                                        dc.loadData();
+                                    }
+                                });
+                        }
+                    });
+                })
         );
     }
 
