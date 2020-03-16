@@ -245,19 +245,6 @@ module.exports = class ABModel extends ABModelCore {
                         if (currentValues) {
                             // get that ABObject
                             var connectedObj = field.datasourceLink;
-                            // // make sure that currentValues is an array
-                            // if (!Array.isArray(currentValues))
-                            //     currentValues = [currentValues];
-                            // // perform a .remote().findAll({id:currentValue.id})
-                            // var lookUpIds = currentValues.map((val) => {
-                            //     return val[connectedObj.PK()];
-                            // });
-                            // var condition = {};
-                            // condition[connectedObj.PK()] = lookUpIds;
-                            // connectedObj
-                            //     .model()
-                            //     .remote()
-                            //     .findAll(condition);
                             // search loaded datacollections to see if they contain the connectedObj
                             connectedObj.application
                                 .datacollections()
@@ -393,6 +380,30 @@ module.exports = class ABModel extends ABModelCore {
                     // get remoteModel
                     // .create()
                     return this.remote().update(id, values);
+                })
+
+                .then(() => {
+                    this.object.application.datacollections().forEach((dc) => {
+                        // if datacollection has a datasource and its id matches the connectedObj
+                        if (
+                            dc.datasource &&
+                            dc.datasource.id == this.object.id
+                        ) {
+                            // tell it to load data
+                            dc.loadData();
+                        }
+                        // if the datacollection has a field of the objecte we updated we need to update interval
+                        if (dc.model && dc.model.object) {
+                            dc.model.object.fields().forEach((f) => {
+                                if (
+                                    f.datasourceLink &&
+                                    f.datasourceLink.id == this.object.id
+                                ) {
+                                    dc.loadData();
+                                }
+                            });
+                        }
+                    });
                 })
         );
     }
