@@ -119,11 +119,10 @@ export default class AppPage extends Page {
                     //         return a.id == name;
                     //     });
                     // },
-
                     // return the ABApplication matching the given .id
                     getApplication: (id) => {
                         var mApp = this.applications.find((a) => {
-                            return (a.id == id || a.application.id == id);
+                            return (a.appID == id || a.application.appID == id);
                         });
                         if (mApp) {
                             return mApp;
