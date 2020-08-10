@@ -8,7 +8,7 @@
 var ABFieldNumberCore = require("../../core/dataFields/ABFieldNumberCore");
 
 module.exports = class ABFieldNumber extends ABFieldNumberCore {
-    constructor(attributes, object) {
-        super(attributes, object);
-    }
+   constructor(attributes, object) {
+      super(attributes, object);
+   }
 };

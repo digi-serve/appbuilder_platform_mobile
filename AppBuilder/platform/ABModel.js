@@ -45,366 +45,363 @@ var ABModelRelay = require("./ABModelRelay");
 // });
 
 module.exports = class ABModel extends ABModelCore {
-    constructor(object) {
-        super(object);
-    }
+   constructor(object) {
+      super(object);
+   }
 
-    local() {
-        var newModel = new ABModelLocal(this.object);
-        newModel.contextKey(this.responseContext.key);
-        newModel.contextValues(this.responseContext.context);
-        return newModel;
-    }
+   local() {
+      var newModel = new ABModelLocal(this.object);
+      newModel.contextKey(this.responseContext.key);
+      newModel.contextValues(this.responseContext.context);
+      return newModel;
+   }
 
-    relay() {
-        var newModel = new ABModelRelay(this.object);
-        newModel.contextKey(this.responseContext.key);
-        newModel.contextValues(this.responseContext.context);
-        return newModel;
-    }
+   relay() {
+      var newModel = new ABModelRelay(this.object);
+      newModel.contextKey(this.responseContext.key);
+      newModel.contextValues(this.responseContext.context);
+      return newModel;
+   }
 
-    remote() {
-        // TODO: look at project settings and determine which
-        // type of remote link we will use:
-        return this.relay();
-    }
+   remote() {
+      // TODO: look at project settings and determine which
+      // type of remote link we will use:
+      return this.relay();
+   }
 
-    //   	getLocalData() {
+   //   	getLocalData() {
 
-    // 		var storage = AB.Platform.storage;
-    // 		return storage.get(this.object.name)
-    // 			.then((allObjects)=>{
+   // 		var storage = AB.Platform.storage;
+   // 		return storage.get(this.object.name)
+   // 			.then((allObjects)=>{
 
-    // 				allObjects = allObjects || {};
-    // 				return allObjects;
-    // 			})
-    //   	}
+   // 				allObjects = allObjects || {};
+   // 				return allObjects;
+   // 			})
+   //   	}
 
-    //   	saveLocalData(allObjects) {
-    // 		var storage = AB.Platform.storage;
-    // 		return storage.set(this.object.name, allObjects);
-    //   	}
+   //   	saveLocalData(allObjects) {
+   // 		var storage = AB.Platform.storage;
+   // 		return storage.set(this.object.name, allObjects);
+   //   	}
 
-    //   	localStorageCreate(data) {
+   //   	localStorageCreate(data) {
 
-    //   		var UUID = this.object.fieldUUID();
-    //   		return this.getLocalData()
-    // 			.then((allObjects) =>{
+   //   		var UUID = this.object.fieldUUID();
+   //   		return this.getLocalData()
+   // 			.then((allObjects) =>{
 
-    // 				// if current data item is not in allObjects, add it:
-    // 				if (!allObjects[data[UUID]]) {
-    // 					allObjects[data[UUID]] = data;
-    // 				}
+   // 				// if current data item is not in allObjects, add it:
+   // 				if (!allObjects[data[UUID]]) {
+   // 					allObjects[data[UUID]] = data;
+   // 				}
 
-    // 				return allObjects;
-    // 			})
-    // 			.then((allObjects)=>{
+   // 				return allObjects;
+   // 			})
+   // 			.then((allObjects)=>{
 
-    // 				// make sure our copy of the data has all the fields in
-    // 				// the incoming data:
+   // 				// make sure our copy of the data has all the fields in
+   // 				// the incoming data:
 
-    // 				var ours = allObjects[data[UUID]];
-    // 				for (var d in data) {
-    // 					if (!ours[d]) {
-    // 						ours[d] = data[d];
-    // 					}
-    // 				}
+   // 				var ours = allObjects[data[UUID]];
+   // 				for (var d in data) {
+   // 					if (!ours[d]) {
+   // 						ours[d] = data[d];
+   // 					}
+   // 				}
 
-    // 				return allObjects;
-    // 			})
-    // 			.then((allObjects)=>{
-    // 				return this.saveLocalData(allObjects);
-    // 			})
-    //   	}
+   // 				return allObjects;
+   // 			})
+   // 			.then((allObjects)=>{
+   // 				return this.saveLocalData(allObjects);
+   // 			})
+   //   	}
 
-    //   	localStorageDestroy(id) {
+   //   	localStorageDestroy(id) {
 
-    //   		var UUID = this.object.fieldUUID();
-    //   		return this.getLocalData()
-    // 			.then((allObjects)=>{
+   //   		var UUID = this.object.fieldUUID();
+   //   		return this.getLocalData()
+   // 			.then((allObjects)=>{
 
-    // 				// if this is a UUID:
-    // 				if (parseInt(id) == NaN) {
-    // 					delete allObjects[id]
-    // 				} else {
-    // 					var PK = this.object.PK();
+   // 				// if this is a UUID:
+   // 				if (parseInt(id) == NaN) {
+   // 					delete allObjects[id]
+   // 				} else {
+   // 					var PK = this.object.PK();
 
-    // 					// search the objects and remove one with matching PK
-    // 					var newList = {};
-    // 					for(var o in allObjects) {
-    // 						var obj = allObjects[o];
-    // 						if (obj[PK] != id) {
-    // 							newList[obj[UUID]] = obj;
-    // 						}
-    // 					}
-    // 					allObjects = newList;
-    // 				}
+   // 					// search the objects and remove one with matching PK
+   // 					var newList = {};
+   // 					for(var o in allObjects) {
+   // 						var obj = allObjects[o];
+   // 						if (obj[PK] != id) {
+   // 							newList[obj[UUID]] = obj;
+   // 						}
+   // 					}
+   // 					allObjects = newList;
+   // 				}
 
-    // 				return this.saveLocalData(allObjects);
-    // 			})
-    //   	}
+   // 				return this.saveLocalData(allObjects);
+   // 			})
+   //   	}
 
-    //   	// make sure we locally store these values
-    //   	localStorageStore(allData) {
+   //   	// make sure we locally store these values
+   //   	localStorageStore(allData) {
 
-    //   		var UUID = this.object.fieldUUID();
+   //   		var UUID = this.object.fieldUUID();
 
-    //   		if (!Array.isArray(allData)) allData = [allData];
+   //   		if (!Array.isArray(allData)) allData = [allData];
 
-    //   		return this.getLocalData()
-    // 			.then((allObjects) =>{
+   //   		return this.getLocalData()
+   // 			.then((allObjects) =>{
 
-    // 				allData.forEach((data)=>{
+   // 				allData.forEach((data)=>{
 
-    // 					// if data doesn't have our UUID we can't track it:
-    // 					if (!data[UUID]) return;
+   // 					// if data doesn't have our UUID we can't track it:
+   // 					if (!data[UUID]) return;
 
-    // 					// if entry doesn't already exist, then add it:
-    // 					if (!allObjects[data[UUID]]) {
-    // 						allObjects[data[UUID]] = data;
-    // 					}
+   // 					// if entry doesn't already exist, then add it:
+   // 					if (!allObjects[data[UUID]]) {
+   // 						allObjects[data[UUID]] = data;
+   // 					}
 
-    // 				})
+   // 				})
 
-    // 				return allObjects;
-    // 			})
-    // 			.then((allObjects)=>{
-    // 				return this.saveLocalData(allObjects);
-    // 			})
-    //   	}
+   // 				return allObjects;
+   // 			})
+   // 			.then((allObjects)=>{
+   // 				return this.saveLocalData(allObjects);
+   // 			})
+   //   	}
 
-    //   	// update an entry IF WE CURRENTLY track it locally
-    //   	localStorageUpdate(data) {
+   //   	// update an entry IF WE CURRENTLY track it locally
+   //   	localStorageUpdate(data) {
 
-    //   		var UUID = this.object.fieldUUID();
+   //   		var UUID = this.object.fieldUUID();
 
-    //   		// we can't resolve this entry if it doesn't have our UUID
-    //   		if (!data[UUID]) return;
+   //   		// we can't resolve this entry if it doesn't have our UUID
+   //   		if (!data[UUID]) return;
 
-    //   		return this.getLocalData()
-    // 			.then((allObjects) =>{
+   //   		return this.getLocalData()
+   // 			.then((allObjects) =>{
 
-    // //// TODO:  be smarter here.  just because we get updated of an updated
-    // //// value from the server, doesn't mean it's more important than our value.
+   // //// TODO:  be smarter here.  just because we get updated of an updated
+   // //// value from the server, doesn't mean it's more important than our value.
 
-    // 				// if current data item is currently one we track
-    // 				if (allObjects[data[UUID]]) {
+   // 				// if current data item is currently one we track
+   // 				if (allObjects[data[UUID]]) {
 
-    // 					// update currentValue with the values provided in data
-    // 					var currentValue = allObjects[data[UUID]];
-    // 					for (var d in data) {
-    // 						currentValue[d] = data[d];
-    // 					}
-    // 				}
+   // 					// update currentValue with the values provided in data
+   // 					var currentValue = allObjects[data[UUID]];
+   // 					for (var d in data) {
+   // 						currentValue[d] = data[d];
+   // 					}
+   // 				}
 
-    // 				return allObjects;
-    // 			})
-    // 			.then((allObjects)=>{
-    // 				return this.saveLocalData(allObjects);
-    // 			})
-    //   	}
+   // 				return allObjects;
+   // 			})
+   // 			.then((allObjects)=>{
+   // 				return this.saveLocalData(allObjects);
+   // 			})
+   //   	}
 
-    /**
-     * @method create
-     * update model values on the server.
-     */
-    create(values) {
-        this.prepareMultilingualData(values);
+   /**
+    * @method create
+    * update model values on the server.
+    */
+   create(values) {
+      this.prepareMultilingualData(values);
 
-        // make sure any values we create have a UUID field set:
-        var UUID = this.object.fieldUUID(values);
-        if (!values[UUID]) values[UUID] = this.object.application.uuid();
+      // make sure any values we create have a UUID field set:
+      var UUID = this.object.fieldUUID(values);
+      if (!values[UUID]) values[UUID] = this.object.application.uuid();
 
-        return (
-            Promise.resolve()
-                .then(() => {
-                    // get localModel
-                    // localModel.create(values)
-                    return this.local().create(values);
-                })
-                .then(() => {
-                    this.object.emit("CREATE", values);
-                })
-                //// QUESTION: do we make this process wait upon the
-                //// .remote().create() to finish before this can be resolved?
-                //// or resolve after .emit() ?
-
-                .then(() => {
-                    // get remoteModel
-                    // .create()
-                    return this.remote().create(values);
-                })
-
-                .then(() => {
-                    // get a list of each connected object
-                    var connFields = this.object.connectFields(true);
-                    // for each object
-                    connFields.forEach((field) => {
-                        // get the current value associated with that object and stop if there is none
-                        var currentValues = values[field.columnName];
-                        if (currentValues) {
-                            // get that ABObject
-                            var connectedObj = field.datasourceLink;
-                            // search loaded datacollections to see if they contain the connectedObj
-                            connectedObj.application
-                                .datacollections()
-                                .forEach((dc) => {
-                                    // if datacollection has a datasource and its id matches the connectedObj
-                                    if (
-                                        dc.datasource &&
-                                        dc.datasource.id == connectedObj.id
-                                    ) {
-                                        // tell it to load data
-                                        dc.loadData();
-                                    }
-                                });
-                        }
-                    });
-                })
-        );
-    }
-
-    /**
-     * @method delete
-     * remove this model instance from from our local and remote storage
-     * @param {string} uuid  the .uuid of the instance to remove.
-     * @return {Promise}
-     */
-    delete(id) {
-        return Promise.resolve()
+      return (
+         Promise.resolve()
             .then(() => {
-                // delete from our local storage
-                return this.local().delete(id);
+               // get localModel
+               // localModel.create(values)
+               return this.local().create(values);
             })
             .then(() => {
-                this.object.emit("DELETE", id);
+               this.object.emit("CREATE", values);
             })
+            //// QUESTION: do we make this process wait upon the
+            //// .remote().create() to finish before this can be resolved?
+            //// or resolve after .emit() ?
+
             .then(() => {
-                // Delete from our Remote source
-                return this.remote().delete(id);
+               // get remoteModel
+               // .create()
+               return this.remote().create(values);
+            })
+
+            .then(() => {
+               // get a list of each connected object
+               var connFields = this.object.connectFields(true);
+               // for each object
+               connFields.forEach((field) => {
+                  // get the current value associated with that object and stop if there is none
+                  var currentValues = values[field.columnName];
+                  if (currentValues) {
+                     // get that ABObject
+                     var connectedObj = field.datasourceLink;
+                     // search loaded datacollections to see if they contain the connectedObj
+                     connectedObj.application
+                        .datacollections()
+                        .forEach((dc) => {
+                           // if datacollection has a datasource and its id matches the connectedObj
+                           if (
+                              dc.datasource &&
+                              dc.datasource.id == connectedObj.id
+                           ) {
+                              // tell it to load data
+                              dc.loadData();
+                           }
+                        });
+                  }
+               });
+            })
+      );
+   }
+
+   /**
+    * @method delete
+    * remove this model instance from from our local and remote storage
+    * @param {string} uuid  the .uuid of the instance to remove.
+    * @return {Promise}
+    */
+   delete(id) {
+      return Promise.resolve()
+         .then(() => {
+            // delete from our local storage
+            return this.local().delete(id);
+         })
+         .then(() => {
+            this.object.emit("DELETE", id);
+         })
+         .then(() => {
+            // Delete from our Remote source
+            return this.remote().delete(id);
+         });
+   }
+
+   /**
+    * @method findAll
+    * performs a data find with the provided condition.
+    */
+   findAll(cond) {
+      cond = cond || {};
+
+      // this is where the logic will get tricky:
+      // As the platform implementation of .findAll()
+      // we have to decide if we are storing/retrieving data
+      // locally, remotely, or a combination of both.
+      //
+      // Those settings should be in AB.Policy.*
+      // (however Policies aren't implemented at the moment so...)
+
+      return Promise.resolve()
+         .then(() => {
+            // if we are supposed to be working with remote data:
+            // var serviceType = AB.Policy.[someParam]
+            // var params = this.urlParamsFind(cond);
+            // return AB.Comm[serviceType].get(params, {contextParam})
+
+            // else
+            //	return [];
+
+            // for now:
+            var params = this.urlParamsFind(cond);
+            var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
+            responseContext.context.verb = "find";
+            return AB.Comm.Relay.get(params, responseContext).then(() => {
+               // a relay doesn't return the data right away so:
+               return [];
             });
-    }
+         })
+         .then((remoteData) => {
+            // if we are supposed to work with local data:
+            // 	then make the local request and return the data
+            // else
+            //	return []
 
-    /**
-     * @method findAll
-     * performs a data find with the provided condition.
-     */
-    findAll(cond) {
-        cond = cond || {};
+            // a DataCollection expects something from this initial
+            // chain.
+            return this.local().findAll(cond);
+            // 				.then((allObjects)=>{
 
-        // this is where the logic will get tricky:
-        // As the platform implementation of .findAll()
-        // we have to decide if we are storing/retrieving data
-        // locally, remotely, or a combination of both.
-        //
-        // Those settings should be in AB.Policy.*
-        // (however Policies aren't implemented at the moment so...)
+            // 					// expecting allObjects to be a hash of values:
+            // 					// {
+            // 					//		'uuid' : {obj},
+            // 					//		'abcd-abcd-...' : { id:1, uuid:'abcd-abcd-...' ... }
+            // 					// }
 
-        return Promise.resolve()
+            // 					var values = [];
+            // 					for (var o in allObjects) {
+
+            // //// TODO: make sure allObjects[o]  passes the given condition before adding here:
+            // 						values.push(allObjects[o]);
+            // 					}
+            // 					this.normalizeData(values);
+            // 					return values;
+            // 				})
+         });
+   }
+
+   /**
+    * @method update
+    * update model values on the server.
+    */
+   update(id, values) {
+      this.prepareMultilingualData(values);
+
+      values.updated_at = this.object.application.updatedAt();
+
+      // remove empty properties
+      for (var key in values) {
+         if (values[key] == null) delete values[key];
+      }
+
+      return (
+         Promise.resolve()
             .then(() => {
-                // if we are supposed to be working with remote data:
-                // var serviceType = AB.Policy.[someParam]
-                // var params = this.urlParamsFind(cond);
-                // return AB.Comm[serviceType].get(params, {contextParam})
-
-                // else
-                //	return [];
-
-                // for now:
-                var params = this.urlParamsFind(cond);
-                var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
-                responseContext.context.verb = "find";
-                return AB.Comm.Relay.get(params, responseContext).then(() => {
-                    // a relay doesn't return the data right away so:
-                    return [];
-                });
+               // get localModel
+               // localModel.create(values)
+               return this.local().update(id, values);
             })
-            .then((remoteData) => {
-                // if we are supposed to work with local data:
-                // 	then make the local request and return the data
-                // else
-                //	return []
+            .then(() => {
+               this.object.emit("UPDATE", values);
+            })
+            //// QUESTION: do we make this process wait upon the
+            //// .remote().create() to finish before this can be resolved?
+            //// or resolve after .emit() ?
 
-                // a DataCollection expects something from this initial
-                // chain.
-                return this.local().findAll(cond);
-                // 				.then((allObjects)=>{
+            .then(() => {
+               // get remoteModel
+               // .create()
+               return this.remote().update(id, values);
+            })
 
-                // 					// expecting allObjects to be a hash of values:
-                // 					// {
-                // 					//		'uuid' : {obj},
-                // 					//		'abcd-abcd-...' : { id:1, uuid:'abcd-abcd-...' ... }
-                // 					// }
-
-                // 					var values = [];
-                // 					for (var o in allObjects) {
-
-                // //// TODO: make sure allObjects[o]  passes the given condition before adding here:
-                // 						values.push(allObjects[o]);
-                // 					}
-                // 					this.normalizeData(values);
-                // 					return values;
-                // 				})
-            });
-    }
-
-    /**
-     * @method update
-     * update model values on the server.
-     */
-    update(id, values) {
-        this.prepareMultilingualData(values);
-
-        values.updated_at = this.object.application.updatedAt();
-
-        // remove empty properties
-        for (var key in values) {
-            if (values[key] == null) delete values[key];
-        }
-
-        return (
-            Promise.resolve()
-                .then(() => {
-                    // get localModel
-                    // localModel.create(values)
-                    return this.local().update(id, values);
-                })
-                .then(() => {
-                    this.object.emit("UPDATE", values);
-                })
-                //// QUESTION: do we make this process wait upon the
-                //// .remote().create() to finish before this can be resolved?
-                //// or resolve after .emit() ?
-
-                .then(() => {
-                    // get remoteModel
-                    // .create()
-                    return this.remote().update(id, values);
-                })
-
-                .then(() => {
-                    this.object.application.datacollections().forEach((dc) => {
-                        // if datacollection has a datasource and its id matches the connectedObj
+            .then(() => {
+               this.object.application.datacollections().forEach((dc) => {
+                  // if datacollection has a datasource and its id matches the connectedObj
+                  if (dc.datasource && dc.datasource.id == this.object.id) {
+                     // tell it to load data
+                     dc.loadData();
+                  }
+                  // if the datacollection has a field of the objecte we updated we need to update interval
+                  if (dc.model && dc.model.object) {
+                     dc.model.object.fields().forEach((f) => {
                         if (
-                            dc.datasource &&
-                            dc.datasource.id == this.object.id
+                           f.datasourceLink &&
+                           f.datasourceLink.id == this.object.id
                         ) {
-                            // tell it to load data
-                            dc.loadData();
+                           dc.loadData();
                         }
-                        // if the datacollection has a field of the objecte we updated we need to update interval
-                        if (dc.model && dc.model.object) {
-                            dc.model.object.fields().forEach((f) => {
-                                if (
-                                    f.datasourceLink &&
-                                    f.datasourceLink.id == this.object.id
-                                ) {
-                                    dc.loadData();
-                                }
-                            });
-                        }
-                    });
-                })
-        );
-    }
+                     });
+                  }
+               });
+            })
+      );
+   }
 };

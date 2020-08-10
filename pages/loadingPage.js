@@ -13,26 +13,26 @@
 import Page from "../resources/Page.js";
 
 class LoadingPage extends Page {
-    constructor() {
-        super("loading-animation");
-    }
+   constructor() {
+      super("loading-animation");
+   }
 
-    init() {}
+   init() {}
 
-    show() {
-        this.$element.removeClass("overlay");
-        this.$element.show();
-    }
+   show() {
+      this.$element.removeClass("overlay");
+      this.$element.show();
+   }
 
-    hide() {
-        this.$element.hide();
-    }
+   hide() {
+      this.$element.hide();
+   }
 
-    // Translucent overlay on top of another page
-    overlay() {
-        this.$element.addClass("overlay");
-        this.$element.show();
-    }
+   // Translucent overlay on top of another page
+   overlay() {
+      this.$element.addClass("overlay");
+      this.$element.show();
+   }
 }
 
 var loadingPage = new LoadingPage();

@@ -16,113 +16,112 @@
 var ABObjectQueryCore = require("../core/ABObjectQueryCore");
 
 module.exports = class ABObjectQuery extends ABObjectQueryCore {
-    constructor(attributes, application) {
-        super(attributes, application);
-    }
+   constructor(attributes, application) {
+      super(attributes, application);
+   }
 
-    ///
-    /// Static Methods
-    ///
-    /// Available to the Class level object.  These methods are not dependent
-    /// on the instance values of the Application.
-    ///
+   ///
+   /// Static Methods
+   ///
+   /// Available to the Class level object.  These methods are not dependent
+   /// on the instance values of the Application.
+   ///
 
-    ///
-    /// Instance Methods
-    ///
+   ///
+   /// Instance Methods
+   ///
 
-    /// ABApplication data methods
+   /// ABApplication data methods
 
-    /**
-     * @method destroy()
-     *
-     * destroy the current instance of ABObjectQuery
-     *
-     * also remove it from our parent application
-     *
-     * @return {Promise}
-     */
-    destroy() {
-        return this.application.queryDestroy(this);
-    }
+   /**
+    * @method destroy()
+    *
+    * destroy the current instance of ABObjectQuery
+    *
+    * also remove it from our parent application
+    *
+    * @return {Promise}
+    */
+   destroy() {
+      return this.application.queryDestroy(this);
+   }
 
-    /**
-     * @method save()
-     *
-     * persist this instance of ABObjectQuery with it's parent ABApplication
-     *
-     * @return {Promise}
-     *						.resolve( {this} )
-     */
-    save() {
-        var isAdd = false;
+   /**
+    * @method save()
+    *
+    * persist this instance of ABObjectQuery with it's parent ABApplication
+    *
+    * @return {Promise}
+    *						.resolve( {this} )
+    */
+   save() {
+      var isAdd = false;
 
-        // if this is our initial save()
-        if (!this.id) {
-            this.id = OP.Util.uuid(); // setup default .id
-            this.label = this.label || this.name;
-            this.urlPath =
-                this.urlPath || this.application.name + "/" + this.name;
-            isAdd = true;
-        }
+      // if this is our initial save()
+      if (!this.id) {
+         this.id = OP.Util.uuid(); // setup default .id
+         this.label = this.label || this.name;
+         this.urlPath = this.urlPath || this.application.name + "/" + this.name;
+         isAdd = true;
+      }
 
-        return this.application.querySave(this);
-    }
+      return this.application.querySave(this);
+   }
 
-    ///
-    /// Fields
-    ///
+   ///
+   /// Fields
+   ///
 
-    ///
-    /// Working with Client Components:
-    ///
+   ///
+   /// Working with Client Components:
+   ///
 
-    // return the column headers for this object
-    // @param {bool} isObjectWorkspace  return the settings saved for the object workspace
-    columnHeaders(isObjectWorkspace, isEditable, summaryColumns, countColumns) {
-        var headers = super.columnHeaders(
-            isObjectWorkspace,
-            isEditable,
-            summaryColumns,
-            countColumns
-        );
+   // return the column headers for this object
+   // @param {bool} isObjectWorkspace  return the settings saved for the object workspace
+   columnHeaders(isObjectWorkspace, isEditable, summaryColumns, countColumns) {
+      var headers = super.columnHeaders(
+         isObjectWorkspace,
+         isEditable,
+         summaryColumns,
+         countColumns
+      );
 
-        headers.forEach((h) => {
-            var field = this.application.urlResolve(h.fieldURL);
-            if (field) {
-                // NOTE: query v1
-                let alias = "";
-                if (Array.isArray(this.joins())) {
-                    alias = field.object.name;
-                } else {
-                    alias = h.alias;
-                }
-
-                // include object name {aliasName}.{columnName}
-                // to use it in grid headers & hidden fields
-                h.id = "{aliasName}.{columnName}"
-                    .replace("{aliasName}", alias)
-                    .replace("{columnName}", field.columnName);
-
-                // label
-                h.header = "{objectLabel}.{fieldLabel}"
-                    .replace("{objectLabel}", field.object.label)
-                    .replace("{fieldLabel}", field.label);
-
-                // icon
-                if (field.settings && field.settings.showIcon) {
-                    h.header =
-                        '<span class="webix_icon fa fa-{icon}"></span>'.replace(
-                            "{icon}",
-                            field.fieldIcon()
-                        ) + h.header;
-                }
-
-                h.adjust = true;
-                h.minWidth = 220;
+      headers.forEach((h) => {
+         var field = this.application.urlResolve(h.fieldURL);
+         if (field) {
+            // NOTE: query v1
+            let alias = "";
+            if (Array.isArray(this.joins())) {
+               alias = field.object.name;
+            } else {
+               alias = h.alias;
             }
-        });
 
-        return headers;
-    }
+            // include object name {aliasName}.{columnName}
+            // to use it in grid headers & hidden fields
+            h.id = "{aliasName}.{columnName}"
+               .replace("{aliasName}", alias)
+               .replace("{columnName}", field.columnName);
+
+            // label
+            h.header = "{objectLabel}.{fieldLabel}"
+               .replace("{objectLabel}", field.object.label)
+               .replace("{fieldLabel}", field.label);
+
+            // icon
+            if (field.settings && field.settings.showIcon) {
+               h.header =
+                  '<span class="webix_icon fa fa-{icon}"></span>'.replace(
+                     "{icon}",
+                     field.fieldIcon()
+                  ) + h.header;
+            }
+
+            h.adjust = true;
+            h.minWidth = 220;
+         }
+      });
+
+      return headers;
+   }
 };

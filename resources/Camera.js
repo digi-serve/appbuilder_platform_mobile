@@ -22,8 +22,8 @@ var camera = null;
 //if (navigator.camera) {
 
 if (window.cordova) {
-    camera = new CameraPlatform();
+   camera = new CameraPlatform();
 } else {
-    camera = new CameraBrowser();
+   camera = new CameraBrowser();
 }
 export default camera;

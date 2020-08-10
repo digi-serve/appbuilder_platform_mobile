@@ -11,46 +11,46 @@ import EventEmitter from "eventemitter2";
 import { Translate, translate, t } from "./Translate";
 
 class Busy extends EventEmitter {
-    constructor() {
-        super();
+   constructor() {
+      super();
 
-        this.dataReady = $.Deferred();
-        this.busyInProgress = false;
-        this.app = null;
-    }
+      this.dataReady = $.Deferred();
+      this.busyInProgress = false;
+      this.app = null;
+   }
 
-    setApp(app) {
-        this.app = app;
-    }
+   setApp(app) {
+      this.app = app;
+   }
 
-    show(text = "Saving") {
-        if (!this.app) {
-            console.error(
-                "use of busy.show() before busy.setApp() is initialized."
-            );
-            return;
-        }
+   show(text = "Saving") {
+      if (!this.app) {
+         console.error(
+            "use of busy.show() before busy.setApp() is initialized."
+         );
+         return;
+      }
 
-        if (!this.busyInProgress) {
-            this.busyInProgress = true;
-            var xlatedText = t(text);
-            this.app.dialog.preloader(xlatedText);
-        }
-    }
+      if (!this.busyInProgress) {
+         this.busyInProgress = true;
+         var xlatedText = t(text);
+         this.app.dialog.preloader(xlatedText);
+      }
+   }
 
-    hide() {
-        if (!this.app) {
-            console.error(
-                "use of busy.hide() before busy.setApp() is initialized."
-            );
-            return;
-        }
+   hide() {
+      if (!this.app) {
+         console.error(
+            "use of busy.hide() before busy.setApp() is initialized."
+         );
+         return;
+      }
 
-        if (this.busyInProgress) {
-            this.busyInProgress = false;
-            this.app.dialog.close();
-        }
-    }
+      if (this.busyInProgress) {
+         this.busyInProgress = false;
+         this.app.dialog.close();
+      }
+   }
 }
 
 var busy = new Busy();

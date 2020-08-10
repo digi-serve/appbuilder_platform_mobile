@@ -14,9 +14,9 @@ var network;
 
 // Return the proper network instance based upon our config settings.
 if (config.appbuilder.networkType == "relay") {
-    network = new NetworkRelay();
+   network = new NetworkRelay();
 } else {
-    network = new NetworkRest();
+   network = new NetworkRest();
 }
 
 export default network;

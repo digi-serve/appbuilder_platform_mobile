@@ -8,7 +8,7 @@
 var ABFieldFormulaCore = require("../../core/dataFields/ABFieldFormulaCore");
 
 module.exports = class ABFieldFormula extends ABFieldFormulaCore {
-    constructor(attributes, object) {
-        super(attributes, object);
-    }
+   constructor(attributes, object) {
+      super(attributes, object);
+   }
 };

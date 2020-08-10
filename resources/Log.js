@@ -34,48 +34,48 @@ var _oldConsoleError = console.error;
  * here instead.
  */
 export default function log() {
-    // Log to actual device console first
-    _oldConsoleLog.apply(console, arguments);
+   // Log to actual device console first
+   _oldConsoleLog.apply(console, arguments);
 
-    if (_liveDebug) {
-        var newMessages = [];
+   if (_liveDebug) {
+      var newMessages = [];
 
-        for (var i = 0; i < arguments.length; i++) {
-            if (arguments[i]) {
-                var value = arguments[i];
-                if (typeof value != "string") {
-                    try {
-                        value = JSON.stringify(value, null, 4).slice(0, 500);
-                    } catch (e) {
-                        _oldConsoleLog(
-                            "::: .log(): error trying to JSON.stringify() this data:",
-                            arguments[i],
-                            e
-                        );
-                        // Use flatted stringify
-                        value = stringify(arguments[i], null, 4).slice(0, 500);
-                    }
-                }
-                newMessages.push(value);
-                _history.push(value);
-                // Log to the UI
-                log.emitter.emit("message", value);
+      for (var i = 0; i < arguments.length; i++) {
+         if (arguments[i]) {
+            var value = arguments[i];
+            if (typeof value != "string") {
+               try {
+                  value = JSON.stringify(value, null, 4).slice(0, 500);
+               } catch (e) {
+                  _oldConsoleLog(
+                     "::: .log(): error trying to JSON.stringify() this data:",
+                     arguments[i],
+                     e
+                  );
+                  // Use flatted stringify
+                  value = stringify(arguments[i], null, 4).slice(0, 500);
+               }
             }
-        }
+            newMessages.push(value);
+            _history.push(value);
+            // Log to the UI
+            log.emitter.emit("message", value);
+         }
+      }
 
-        // Log to the remote server
-        if (_remoteDebug && account.authToken && _remoteDebugURL) {
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", _remoteDebugURL, true);
-            xhr.setRequestHeader("Content-type", "application/json");
-            if (!_remoteDebugCustom) {
-                // Only send the secret authToken if it is the proper
-                // server.
-                xhr.setRequestHeader("Authorization", account.authToken);
-            }
-            xhr.send(JSON.stringify({ message: newMessages.join("\n") }));
-        }
-    }
+      // Log to the remote server
+      if (_remoteDebug && account.authToken && _remoteDebugURL) {
+         var xhr = new XMLHttpRequest();
+         xhr.open("POST", _remoteDebugURL, true);
+         xhr.setRequestHeader("Content-type", "application/json");
+         if (!_remoteDebugCustom) {
+            // Only send the secret authToken if it is the proper
+            // server.
+            xhr.setRequestHeader("Authorization", account.authToken);
+         }
+         xhr.send(JSON.stringify({ message: newMessages.join("\n") }));
+      }
+   }
 }
 
 /**
@@ -93,9 +93,9 @@ log.emitter = new EventEmitter();
  *      Set the Framework7 app object to use for creating the dialog boxes.
  */
 log.init = function(options = {}) {
-    if (options.app instanceof Framework7) {
-        _f7app = options.app;
-    }
+   if (options.app instanceof Framework7) {
+      _f7app = options.app;
+   }
 };
 
 /**
@@ -106,10 +106,10 @@ log.init = function(options = {}) {
  * @param {string} title
  */
 log.alert = function(message, title) {
-    if (_f7app) {
-        _f7app.dialog.alert(message, title);
-    }
-    log(title, message);
+   if (_f7app) {
+      _f7app.dialog.alert(message, title);
+   }
+   log(title, message);
 };
 
 /**
@@ -118,7 +118,7 @@ log.alert = function(message, title) {
  * @return {array}
  */
 log.getHistory = function() {
-    return _history;
+   return _history;
 };
 
 /**
@@ -132,45 +132,45 @@ log.getHistory = function() {
  *    }
  */
 log.getStatus = function() {
-    var hostname = "",
-        port = "";
+   var hostname = "",
+      port = "";
 
-    if (_remoteDebugCustom) {
-        // Parse the remote URL
-        try {
-            var url = new URL(_remoteDebugURL);
-            hostname = url.hostname;
-            port = url.port;
-        } catch (e) {
-            _remoteDebugCustom = false;
-        }
-    }
+   if (_remoteDebugCustom) {
+      // Parse the remote URL
+      try {
+         var url = new URL(_remoteDebugURL);
+         hostname = url.hostname;
+         port = url.port;
+      } catch (e) {
+         _remoteDebugCustom = false;
+      }
+   }
 
-    return {
-        liveDebug: _liveDebug,
-        remoteDebug: _remoteDebug,
-        remoteDebugCustom: _remoteDebugCustom,
-        remoteHost: hostname,
-        remotePort: port
-    };
+   return {
+      liveDebug: _liveDebug,
+      remoteDebug: _remoteDebug,
+      remoteDebugCustom: _remoteDebugCustom,
+      remoteHost: hostname,
+      remotePort: port
+   };
 };
 
 /**
  * Clear the log history.
  */
 log.clearHistory = function() {
-    _history = [];
-    log.emitter.emit("cleared");
+   _history = [];
+   log.emitter.emit("cleared");
 };
 
 /**
  * Enable logging to a user viewable area in the app UI.
  */
 log.enableDeviceLogging = function() {
-    _liveDebug = true;
-    _remoteDebug = false;
+   _liveDebug = true;
+   _remoteDebug = false;
 
-    console.log = log;
+   console.log = log;
 };
 
 /**
@@ -182,45 +182,45 @@ log.enableDeviceLogging = function() {
  *      The port number on the remote server.
  */
 log.enableRemoteLogging = function(host = null, port = null) {
-    _liveDebug = true;
-    _remoteDebug = true;
+   _liveDebug = true;
+   _remoteDebug = true;
 
-    console.log = log;
+   console.log = log;
 
-    // Use default public server
-    if (!host || host.length == 0) {
-        _remoteDebugURL = config.appbuilder.urlRelayServer + "/log";
-        _remoteDebugCustom = false;
-    }
-    // Use custom server (no encryption)
-    else {
-        _remoteDebugURL = "http://" + host + ":" + (port || 80) + "/log";
-        _remoteDebugCustom = true;
-    }
+   // Use default public server
+   if (!host || host.length == 0) {
+      _remoteDebugURL = config.appbuilder.urlRelayServer + "/log";
+      _remoteDebugCustom = false;
+   }
+   // Use custom server (no encryption)
+   else {
+      _remoteDebugURL = "http://" + host + ":" + (port || 80) + "/log";
+      _remoteDebugCustom = true;
+   }
 };
 
 /**
  * Disable remote logging and revert console.log() to its previous state.
  */
 log.disableRemoteLogging = function() {
-    _liveDebug = false;
-    _remoteDebug = false;
+   _liveDebug = false;
+   _remoteDebug = false;
 
-    console.log = _oldConsoleLog;
+   console.log = _oldConsoleLog;
 };
 
 /**
  * expose the console.error() utility.
  */
 log.error = function() {
-    // Log to actual device console first
-    _oldConsoleError.apply(console, arguments);
+   // Log to actual device console first
+   _oldConsoleError.apply(console, arguments);
 };
 
 /**
  * expose the console.warn() utility.
  */
 log.warn = function() {
-    // Log to actual device console first
-    _oldConsoleWarn.apply(console, arguments);
+   // Log to actual device console first
+   _oldConsoleWarn.apply(console, arguments);
 };

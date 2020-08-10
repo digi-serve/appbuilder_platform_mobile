@@ -8,7 +8,7 @@
 var EventEmitter = require("eventemitter2");
 
 module.exports = class ABEmitter extends EventEmitter {
-    constructor() {
-        super({ maxListeners: 0 });
-    }
+   constructor() {
+      super({ maxListeners: 0 });
+   }
 };

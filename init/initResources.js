@@ -14,30 +14,30 @@ import { storage } from "../resources/Storage.js";
 var config = require("../../config/config.js");
 
 export default {
-    init: () => {
-        try {
-            analytics.init();
-        } catch (err) {
-            console.log(err);
-            $.alert(
-                (err.message || "") + "<br />" + (err.stack || ""),
-                "Error starting analytics system"
-            );
-        }
+   init: () => {
+      try {
+         analytics.init();
+      } catch (err) {
+         console.log(err);
+         $.alert(
+            (err.message || "") + "<br />" + (err.stack || ""),
+            "Error starting analytics system"
+         );
+      }
 
-        try {
-            notifications.init();
-        } catch (err) {
-            console.log(err);
-            $.alert(
-                (err.message || "") + "<br />" + (err.stack || ""),
-                "Error starting notifications system"
-            );
-        }
+      try {
+         notifications.init();
+      } catch (err) {
+         console.log(err);
+         $.alert(
+            (err.message || "") + "<br />" + (err.stack || ""),
+            "Error starting notifications system"
+         );
+      }
 
-        if (config.backgroundTimeout.enabled)
-            backgroundTimeout(config.backgroundTimeout.duration);
+      if (config.backgroundTimeout.enabled)
+         backgroundTimeout(config.backgroundTimeout.duration);
 
-        return Promise.resolve(); // nothing async, so just return
-    }
+      return Promise.resolve(); // nothing async, so just return
+   }
 };
