@@ -25,7 +25,7 @@ export default class ABAppController extends EventEmitter {
          wildcard: true
       });
 
-      this.options = options || {};
+      this.options = options;
 
       this.id = "??";
       this.appPage = null;
@@ -38,7 +38,7 @@ export default class ABAppController extends EventEmitter {
 
       // this.f7App = app;
 
-      this.datacollections = [];
+      this.datacollections = []; //this.application.datacollectionsIncluded();
       // keep track of which datacollections we are managing.
       // will try to initialize these when the App initializes (init()).
 
@@ -77,13 +77,12 @@ export default class ABAppController extends EventEmitter {
 
          // make sure each of our Datacollections have loaded their data:
          var allInits = [];
-         this.datacollections.forEach((key) => {
-            var dc = this.application.datacollectionByID(key);
+         this.datacollections.forEach((dc) => {
             if (dc) {
                dc.init();
                allInits.push(dc.platformInit());
             } else {
-               console.error("Could not find data collection for key:" + key);
+               console.error("Could not find data collection for key:" + dc);
             }
          });
 
@@ -97,8 +96,7 @@ export default class ABAppController extends EventEmitter {
                this.status = "loading";
 
                var allLoads = [];
-               this.datacollections.forEach((key) => {
-                  var dc = this.application.datacollectionByID(key);
+               this.datacollections.forEach((dc) => {
                   if (dc) {
                      allLoads.push(dc.loadData());
                   }
@@ -154,8 +152,7 @@ export default class ABAppController extends EventEmitter {
          }
 
          // setup listeners on all our datacollections:
-         this.datacollections.forEach((key) => {
-            var dc = this.application.datacollectionByID(key);
+         this.datacollections.forEach((dc) => {
             if (dc) {
                dc.once("init.remote", () => {
                   checkEm(resolve, reject);
@@ -617,8 +614,7 @@ export default class ABAppController extends EventEmitter {
             // make sure each of our Datacollections have resset their
             // data:
             var allResets = [];
-            this.datacollections.forEach((key) => {
-               var dc = this.application.datacollectionByID(key);
+            this.datacollections.forEach((dc) => {
                if (dc) {
                   allResets.push(dc.platformReset());
                }
@@ -631,6 +627,13 @@ export default class ABAppController extends EventEmitter {
          });
    }
 
+   loadState() {
+      return storage.get(`${this.id}-STATE`);
+   }
+
+   saveState(myState) {
+      return storage.set(`${this.id}-STATE`, myState);
+   }
    /**
     * valueLoad()
     * load a value from local storage.

@@ -139,6 +139,12 @@ module.exports = class ABObject extends ABObjectCore {
       });
    }
 
+   currentView() {
+      // The Mobile Platform does not support the Object Views of the
+      // AppBuilder designer's Object Workspace.
+      return null;
+   }
+
    /**
     * fieldUUID()
     * returns the id of the data to use as a unique identifier

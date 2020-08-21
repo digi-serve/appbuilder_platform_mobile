@@ -290,6 +290,9 @@ module.exports = class ABModel extends ABModelCore {
     * performs a data find with the provided condition.
     */
    findAll(cond) {
+      console.error("why are we getting here?");
+      debugger;
+
       cond = cond || {};
 
       // this is where the logic will get tricky:
