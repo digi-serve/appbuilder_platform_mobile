@@ -78,8 +78,6 @@ export default class AppPage extends Page {
 
       // Framework7 is the UI library
       this.app = new Framework7({
-         theme: "ios",
-         iosTranslucentBars: false,
          toast: {
             closeTimeout: 5000,
             position: "top"

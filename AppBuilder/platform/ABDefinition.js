@@ -31,7 +31,6 @@ module.exports = class ABDefinition extends ABDefinitionCore {
     */
    static loadAll(allDefs = []) {
       // this shouldn't be called ...
-      debugger;
       allDefs.forEach((def) => {
          _AllDefinitions[def.id] = def;
       });

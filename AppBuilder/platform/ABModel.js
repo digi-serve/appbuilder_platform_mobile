@@ -291,7 +291,6 @@ module.exports = class ABModel extends ABModelCore {
     */
    findAll(cond) {
       console.error("why are we getting here?");
-      debugger;
 
       cond = cond || {};
 

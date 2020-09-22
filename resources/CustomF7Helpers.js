@@ -94,7 +94,7 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
       return p.id == selectedItem;
    })[0];
 
-   if (list.length) {
+   if (list.length && chosen) {
       var html = "";
       list.forEach((l) => {
          var selectedAttr = "";

@@ -502,7 +502,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {string}
     */
    currentUserUsername() {
-      debugger;
       console.error("Who is calling .currentUserUsername()?");
       return Account.username;
    }
