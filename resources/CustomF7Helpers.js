@@ -39,6 +39,7 @@ Template7.registerHelper("date", (parent, object, template) => {
 // Helper to get the first letter of a name/word
 // ex: {{initial parent 'object'}}
 Template7.registerHelper("initial", (parent, object, alternateObject) => {
+   if (!parent[object] && !parent[alternateObject]) return "";
    var result = parent[object]
       ? parent[object].substring(0, 1)
       : parent[alternateObject].substring(0, 1);
