@@ -114,6 +114,28 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
    }
 });
 
+// Helper to get the translated value of a field that was a select list
+// ex: {{listItem 'app' 'obj' 'item' selected}}
+Template7.registerHelper("translate", (app, obj, item) => {
+   var thisApp = Applications.filter((x) => {
+      return (x.id = app);
+   })[0];
+
+   var lang = thisApp.application.languageDefault();
+
+   if (!obj.translations || !obj.translations.length) return "";
+
+   var translated = "";
+
+   obj.translations.forEach((t) => {
+      if (t.language_code == lang && typeof t[item] != "undefine") {
+         translated = t[item];
+      }
+   });
+
+   return translated;
+});
+
 // create a helper in template7 so we can properly display numbers with commas
 Template7.registerHelper("commas", (number) => {
    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
