@@ -20,6 +20,9 @@ if (typeof moment == "undefined") {
 // Helper to display object properties that have two or more word names
 // ex: {{print parent 'object'}}
 Template7.registerHelper("print", (parent, object, alternateObject) => {
+   if (!parent){
+      return ""
+   }
    var result = parent[object] ? parent[object] : parent[alternateObject];
    return typeof result != "undefined" ? result : "";
 });
@@ -48,7 +51,7 @@ Template7.registerHelper("initial", (parent, object, alternateObject) => {
 
 // Helper to get the translated value of a field that was a select list
 // ex: {{listItem 'app' 'obj' 'item' selected}}
-Template7.registerHelper("listItem", (app, obj, item, selected) => {
+Template7.registerHelper("listItem", (app, obj, item, selected, language_code) => {
    var thisApp = Applications.filter((x) => {
       return (x.id = app);
    })[0];
@@ -57,7 +60,7 @@ Template7.registerHelper("listItem", (app, obj, item, selected) => {
    var list = thisApp.listItems(
       obj,
       item,
-      thisApp.application.languageDefault()
+      language_code || thisApp.application.languageDefault()
    );
 
    var selectedItem = selected[item];
@@ -123,7 +126,7 @@ Template7.registerHelper("translate", (app, obj, item) => {
 
    var lang = thisApp.application.languageDefault();
 
-   if (!obj.translations || !obj.translations.length) return "";
+   if (!obj || !obj.translations || !obj.translations.length) return "";
 
    var translated = "";
 
