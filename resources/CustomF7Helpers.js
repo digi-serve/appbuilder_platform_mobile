@@ -63,14 +63,16 @@ Template7.registerHelper("listItem", (app, obj, item, selected, language_code) =
       language_code || thisApp.application.languageDefault()
    );
 
-   var selectedItem = selected[item];
+   if(selected[item]){
+      var selectedItem = selected[item];
 
-   var chosen = list.filter((p) => {
-      return p.id == selectedItem;
-   });
-   if (chosen[0] && chosen[0].label) {
-      return chosen[0].label;
-   } else {
+      var chosen = list.filter((p) => {
+         return p.id == selectedItem;
+      });
+      if (chosen[0] && chosen[0].label) {
+         return chosen[0].label;
+      } 
+   }else {
       return "";
    }
 });
@@ -92,17 +94,20 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
       thisApp.application.languageDefault()
    );
 
-   var selectedItem = selected[item];
+   // If data is selected, get text
+   if(selected[item]){
+      var selectedItem = selected[item];
 
-   var chosen = list.filter((p) => {
-      return p.id == selectedItem;
-   })[0];
+      var chosen = list.filter((p) => {
+         return p.id == selectedItem;
+      })[0];
+   }
 
-   if (list.length && chosen) {
+   if (list.length ) {
       var html = "";
       list.forEach((l) => {
          var selectedAttr = "";
-         if (chosen.id == l.id) {
+         if (chosen && chosen.id == l.id) {
             selectedAttr = "selected='selected'";
          }
          html += template
