@@ -20,8 +20,8 @@ if (typeof moment == "undefined") {
 // Helper to display object properties that have two or more word names
 // ex: {{print parent 'object'}}
 Template7.registerHelper("print", (parent, object, alternateObject) => {
-   if (!parent){
-      return ""
+   if (!parent) {
+      return "";
    }
    var result = parent[object] ? parent[object] : parent[alternateObject];
    return typeof result != "undefined" ? result : "";
@@ -51,31 +51,34 @@ Template7.registerHelper("initial", (parent, object, alternateObject) => {
 
 // Helper to get the translated value of a field that was a select list
 // ex: {{listItem 'app' 'obj' 'item' selected}}
-Template7.registerHelper("listItem", (app, obj, item, selected, language_code) => {
-   var thisApp = Applications.filter((x) => {
-      return (x.id = app);
-   })[0];
+Template7.registerHelper(
+   "listItem",
+   (app, obj, item, selected, language_code) => {
+      var thisApp = Applications.filter((x) => {
+         return (x.id = app);
+      })[0];
 
-   // this is a sample of how we populate list options
-   var list = thisApp.listItems(
-      obj,
-      item,
-      language_code || thisApp.application.languageDefault()
-   );
+      // this is a sample of how we populate list options
+      var list = thisApp.listItems(
+         obj,
+         item,
+         language_code || thisApp.application.languageDefault()
+      );
 
-   if(selected[item]){
-      var selectedItem = selected[item];
+      if (selected[item]) {
+         var selectedItem = selected[item];
 
-      var chosen = list.filter((p) => {
-         return p.id == selectedItem;
-      });
-      if (chosen[0] && chosen[0].label) {
-         return chosen[0].label;
-      } 
-   }else {
-      return "";
+         var chosen = list.filter((p) => {
+            return p.id == selectedItem;
+         });
+         if (chosen[0] && chosen[0].label) {
+            return chosen[0].label;
+         }
+      } else {
+         return "";
+      }
    }
-});
+);
 
 // Helper to return HTML of a list of items from a field that was a select list
 // ex: {{listItems 'app' 'obj' 'item' selected '<option %selected% value="%id%">%label%</option>'}}
@@ -95,7 +98,7 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
    );
 
    // If data is selected, get text
-   if(selected[item]){
+   if (selected[item]) {
       var selectedItem = selected[item];
 
       var chosen = list.filter((p) => {
@@ -103,7 +106,7 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
       })[0];
    }
 
-   if (list.length ) {
+   if (list.length) {
       var html = "";
       list.forEach((l) => {
          var selectedAttr = "";
@@ -147,4 +150,15 @@ Template7.registerHelper("translate", (app, obj, item) => {
 // create a helper in template7 so we can properly display numbers with commas
 Template7.registerHelper("commas", (number) => {
    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+});
+
+Template7.registerHelper("cities", (cities, selected) => {
+   var html = "";
+   cities.forEach((city) => {
+      var selectedHTML = city.uuid == selected ? "selected='selected'" : "";
+      html += `<option ${selectedHTML} value="${city.uuid}">${
+         city["City Name"]
+      }</option>`;
+   });
+   return html;
 });
