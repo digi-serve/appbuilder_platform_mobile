@@ -42,17 +42,18 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       Network.on(ABDataCollectionCore.contextKey(), (context, data) => {
          // is this update for me?
          if (context.id == this.id) {
-            console.log();
-            console.log("-----------");
-            console.log(
-               ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
-            );
+            //console.log("-----------");
+            // console.log(
+            //    ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
+            // );
             if (this.name) {
-               console.log(":: name:", this.name);
+               console.log(":: name:", this.name,{ 
+                           ":: context:": context,
+                           ":: data:": data});
+            } else {
+               console.log(":: context", context,{
+                              ":: data": data});
             }
-            console.log(":: context:", context);
-            console.log(":: data:", data);
-
             var firstStep;
             // will be a Promise based on which of the next steps
             // should be executed.
