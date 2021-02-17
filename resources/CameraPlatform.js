@@ -97,14 +97,14 @@ class CameraPlatform extends EventEmitter {
             },
             {
                saveToPhotoAlbum: false,
-               cameraDirection: window.Camera.Direction.FRONT,
+               cameraDirection: window.Camera.Direction.BACK,
                allowEdit: canEditPhoto,
                encodingType: window.Camera.EncodingType.JPEG,
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.CAMERA,
-               correctOrientation: true,
-               targetWidth: width,
-               targetHeight: height
+               correctOrientation: true
+               // targetWidth: width,
+               // targetHeight: height
             }
          );
       });
@@ -142,9 +142,9 @@ class CameraPlatform extends EventEmitter {
                allowEdit: canEditPhoto,
                encodingType: window.Camera.EncodingType.JPEG,
                mediaType: window.Camera.MediaType.PICTURE,
-               sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
-               targetWidth: width,
-               targetHeight: height
+               sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM
+               // targetWidth: width,
+               // targetHeight: height
             }
          );
       });
