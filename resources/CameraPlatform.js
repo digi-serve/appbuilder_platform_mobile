@@ -99,7 +99,7 @@ class CameraPlatform extends EventEmitter {
                saveToPhotoAlbum: false,
                cameraDirection: window.Camera.Direction.BACK,
                allowEdit: canEditPhoto,
-               encodingType: window.Camera.EncodingType.JPEG,
+               encodingType: window.Camera.EncodingType.PNG,
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.CAMERA,
                correctOrientation: true
@@ -130,7 +130,9 @@ class CameraPlatform extends EventEmitter {
          this.camera.getPicture(
             (imageURI) => {
                this.savePhoto(imageURI)
-                  .then(resolve)
+                  .then((result) => {
+                     resolve(result);
+                  })
                   .catch(reject);
             },
             (err) => {
@@ -140,7 +142,7 @@ class CameraPlatform extends EventEmitter {
             {
                saveToPhotoAlbum: false,
                allowEdit: canEditPhoto,
-               encodingType: window.Camera.EncodingType.JPEG,
+               encodingType: window.Camera.EncodingType.PNG,
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM
                // targetWidth: width,
