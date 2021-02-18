@@ -102,7 +102,7 @@ class CameraPlatform extends EventEmitter {
                encodingType: window.Camera.EncodingType.JPEG,
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.CAMERA,
-               correctOrientation: true
+               correctOrientation: true,
                targetWidth: width,
                targetHeight: height
             }
@@ -144,7 +144,7 @@ class CameraPlatform extends EventEmitter {
                allowEdit: canEditPhoto,
                encodingType: window.Camera.EncodingType.JPEG,
                mediaType: window.Camera.MediaType.PICTURE,
-               sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM
+               sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
                targetWidth: width,
                targetHeight: height
             }
