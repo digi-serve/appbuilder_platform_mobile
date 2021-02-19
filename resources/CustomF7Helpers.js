@@ -98,7 +98,7 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
    );
 
    // If data is selected, get text
-   if (selected[item]) {
+   if (selected && selected[item]) {
       var selectedItem = selected[item];
 
       var chosen = list.filter((p) => {
@@ -149,7 +149,7 @@ Template7.registerHelper("translate", (app, obj, item) => {
 
 // create a helper in template7 so we can properly display numbers with commas
 Template7.registerHelper("commas", (number) => {
-   if (number === undefined){
+   if (number === undefined) {
       return "0";
    }
    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
