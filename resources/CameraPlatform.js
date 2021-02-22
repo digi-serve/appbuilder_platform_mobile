@@ -103,8 +103,9 @@ class CameraPlatform extends EventEmitter {
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.CAMERA,
                correctOrientation: true,
-               targetWidth: width,
-               targetHeight: height
+               // targetWidth: width,
+               // targetHeight: height,
+               quality: 50
             }
          );
       });
@@ -145,8 +146,9 @@ class CameraPlatform extends EventEmitter {
                encodingType: window.Camera.EncodingType.JPEG,
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
-               targetWidth: width,
-               targetHeight: height
+               // targetWidth: width,
+               // targetHeight: height,
+               quality: 50
             }
          );
       });
