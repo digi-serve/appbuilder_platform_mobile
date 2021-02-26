@@ -47,12 +47,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             //    ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
             // );
             if (this.name) {
-               console.log(":: name:", this.name,{ 
-                           ":: context:": context,
-                           ":: data:": data});
+               console.log(":: name:", this.name, {
+                  ":: context:": context,
+                  ":: data:": data
+               });
             } else {
-               console.log(":: context", context,{
-                              ":: data": data});
+               console.log(":: context", context, {
+                  ":: data": data
+               });
             }
             var firstStep;
             // will be a Promise based on which of the next steps
@@ -1132,7 +1134,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         rule.rule == "in_data_collection" ||
                         rule.rule == "not_in_data_collection"
                      ) {
-                        var dc = this.application.dataCollections(
+                        var dc = this.application.datacollections(
                            (dc) => dc.id == rule.value
                         )[0];
                         if (dc) {
