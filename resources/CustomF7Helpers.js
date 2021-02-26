@@ -148,7 +148,8 @@ Template7.registerHelper("translate", (app, obj, item) => {
 });
 
 // create a helper in template7 so we can properly display numbers with commas
-Template7.registerHelper("commas", (number) => {
+Template7.registerHelper("commas", (parent, field) => {
+   var number = field ? parent[field] : parent;
    if (number === undefined) {
       return "0";
    }
