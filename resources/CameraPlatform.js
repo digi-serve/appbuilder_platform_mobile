@@ -17,8 +17,8 @@ import EventEmitter from "eventemitter2";
 import Log from "./Log";
 import uuid from "uuid/v1";
 
-const defaultHeight = 3200;
-const defaultWidth = 1800;
+const defaultHeight = 2000;
+const defaultWidth = 1125;
 
 var canEditPhoto = true;
 if (navigator.userAgent.match(/android/i)) {
