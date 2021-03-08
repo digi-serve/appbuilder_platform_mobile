@@ -17,8 +17,8 @@ import EventEmitter from "eventemitter2";
 import Log from "./Log";
 import uuid from "uuid/v1";
 
-const defaultHeight = 800;
-const defaultWidth = 800;
+const defaultHeight = 3200;
+const defaultWidth = 1800;
 
 var canEditPhoto = true;
 if (navigator.userAgent.match(/android/i)) {
@@ -103,8 +103,8 @@ class CameraPlatform extends EventEmitter {
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.CAMERA,
                correctOrientation: true,
-               targetWidth: width
-               // targetHeight: height,
+               targetWidth: width,
+               targetHeight: height
             }
          );
       });
@@ -145,9 +145,8 @@ class CameraPlatform extends EventEmitter {
                encodingType: window.Camera.EncodingType.JPEG,
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
-               targetWidth: width
-               // targetHeight: height,
-               // quality: 50
+               targetWidth: width,
+               targetHeight: height
             }
          );
       });
