@@ -20,7 +20,7 @@ import uuid from "uuid/v1";
 const defaultHeight = 2000;
 const defaultWidth = 2000;
 
-var canEditPhoto = true;
+var canEditPhoto = false;
 if (navigator.userAgent.match(/android/i)) {
    // Documentation says that Android devices can have unpredictable behaviour
    // when attempting to edit photos.
