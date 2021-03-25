@@ -244,6 +244,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    reduceCondition(values) {
       new Promise((resolve, reject) => {
          var pk = this.datasource.PK();
+         if (!Array.isArray(values)) values = [values];
          var listIDs = values.map((v) => {
             return v[pk];
          });

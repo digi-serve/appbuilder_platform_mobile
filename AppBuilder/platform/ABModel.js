@@ -381,7 +381,13 @@ module.exports = class ABModel extends ABModelCore {
             .then(() => {
                // get remoteModel
                // .create()
-               return this.remote().update(id, values);
+               var vals = {};
+               Object.keys(values).forEach((key) => {
+                  if (key.indexOf("__relation") == -1) {
+                     vals[key] = values[key];
+                  }
+               });
+               return this.remote().update(id, vals);
             })
 
             .then(() => {
