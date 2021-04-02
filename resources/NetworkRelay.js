@@ -338,6 +338,7 @@ class NetworkRelay extends NetworkRest {
       var encoded = "";
 
       if (data) {
+         console.log("-----> start encrypting");
          var plaintext = JSON.stringify(data);
 
          var iv = NetworkRelay.randomBytes(16);
@@ -349,6 +350,7 @@ class NetworkRelay extends NetworkRest {
 
          // <base64 encoded cipher text>:::<hex encoded IV>
          encoded = ciphertext.toString() + ":::" + iv;
+         console.log("-----> stop encrypting");
       }
 
       return encoded;
@@ -365,6 +367,7 @@ class NetworkRelay extends NetworkRest {
       var finalData = null;
 
       if (typeof data == "string" && data.match(":::")) {
+         console.log("-----> start decrypting");
          var dataParts = data.split(":::");
          var ciphertext = dataParts[0];
          var iv = dataParts[1];
@@ -393,6 +396,7 @@ class NetworkRelay extends NetworkRest {
             analytics.logError(err);
             finalData = plaintext;
          }
+         console.log("-----> stop decrypting");
       }
 
       return finalData;
