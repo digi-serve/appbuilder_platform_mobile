@@ -989,6 +989,80 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    ///// once the web and server side platforms are updated to be able to handle
    ///// modelLocal, modelRemote operations.
 
+   platformFind(model, cond) {
+      // if (bootstate==initialzied) {
+      if (this.bootState == "initialized") {
+         // We have already initialized our data, so that means
+         // we have local data that we can work with right now.
+
+         // NOTE: we will get all the local data for our Object
+         // and let our filterComponent tell us if it should be
+         // included:
+         var modelLocal = model.local();
+         return modelLocal
+            .findAll(cond)
+            .then((entries) => {
+               var validEntries = [];
+               entries.forEach((entry) => {
+                  // add it to our list if it passes our filter:
+                  if (this.__filterDatasource.isValid(entry)) {
+                     validEntries.push(entry);
+                  }
+               });
+
+               // load our valid entries:
+               this.processIncomingData(validEntries);
+
+               // we can start working on this data now
+               // NOTE: resolve() should be done in .processIncomingData() now
+               // resolve();
+            })
+            .then(() => {
+               // However, this local data might be out of date
+               // with the server.  So let's spawn a remote
+               // lookup in the background:
+
+               var modelRemote = model.remote();
+
+               // reset the context on the Model so any data updates get sent to this
+               // DataCollection
+               // NOTE: we only do this on loadData(), other operations should be
+               // received by the related Objects.
+               modelRemote.contextKey(ABDataCollectionCore.contextKey());
+               modelRemote.contextValues({
+                  id: this.id,
+                  verb: "refresh"
+               });
+               // id: the datacollection.id
+               // verb: tells our ABRelay.listener why this remote lookup was called.
+
+               // initiate the request:
+               modelRemote.findAll(cond);
+            });
+      } else {
+         //  We have not been initialized yet, so we need to
+         //  request our data from the remote source()
+         var modelRemote = model.remote();
+
+         // reset the context on the Model so any data updates get sent to this
+         // DataCollection
+         // NOTE: we only do this on loadData(), other operations should be
+         // received by the related Objects.
+         modelRemote.contextKey(ABDataCollectionCore.contextKey());
+         modelRemote.contextValues({
+            id: this.id,
+            verb: "uninitialized"
+         });
+         // id: the datacollection.id
+         // verb: tells our ABRelay.listener why this remote lookup was called.
+
+         // initiate the request:
+         return modelRemote.findAll(cond);
+         // note:  our ABRelay.listener will take incoming data and call:
+         // this.processIncomingData()
+      }
+   }
+
    /**
     * loadData
     * used by the webix data collection to import all the data
@@ -999,6 +1073,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @param {fn}  callback  a node style callback fn(err, results)
     * @return {Promise}
     */
+   /*
    loadData(start, limit, callback) {
       // mark data status is initializing
       if (this._dataStatus == this.dataStatusFlag.notInitial) {
@@ -1065,7 +1140,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
        * @param {ABViewDataCollection} DC
        *       the DC this datacollection depends on.
        * @returns {Promise}
-       */
+       * /
       var waitForDataCollectionToInitialize = (DC) => {
          return new Promise((resolve, reject) => {
             switch (DC.dataStatus) {
@@ -1164,85 +1239,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      resolve: resolve,
                      reject: reject
                   };
-
-                  // if (bootstate==initialzied) {
-                  if (this.bootState == "initialized") {
-                     // We have already initialized our data, so that means
-                     // we have local data that we can work with right now.
-
-                     // NOTE: we will get all the local data for our Object
-                     // and let our filterComponent tell us if it should be
-                     // included:
-                     var modelLocal = model.local();
-                     modelLocal
-                        .findAll(cond)
-                        .then((entries) => {
-                           var validEntries = [];
-                           entries.forEach((entry) => {
-                              // add it to our list if it passes our filter:
-                              if (this.__filterDatasource.isValid(entry)) {
-                                 validEntries.push(entry);
-                              }
-                           });
-
-                           // load our valid entries:
-                           this.processIncomingData(validEntries);
-
-                           // we can start working on this data now
-                           // NOTE: resolve() should be done in .processIncomingData() now
-                           // resolve();
-                        })
-                        .then(() => {
-                           // However, this local data might be out of date
-                           // with the server.  So let's spawn a remote
-                           // lookup in the background:
-
-                           var modelRemote = model.remote();
-
-                           // reset the context on the Model so any data updates get sent to this
-                           // DataCollection
-                           // NOTE: we only do this on loadData(), other operations should be
-                           // received by the related Objects.
-                           modelRemote.contextKey(
-                              ABDataCollectionCore.contextKey()
-                           );
-                           modelRemote.contextValues({
-                              id: this.id,
-                              verb: "refresh"
-                           });
-                           // id: the datacollection.id
-                           // verb: tells our ABRelay.listener why this remote lookup was called.
-
-                           // initiate the request:
-                           modelRemote.findAll(cond);
-                        });
-                  } else {
-                     //  We have not been initialized yet, so we need to
-                     //  request our data from the remote source()
-                     var modelRemote = model.remote();
-
-                     // reset the context on the Model so any data updates get sent to this
-                     // DataCollection
-                     // NOTE: we only do this on loadData(), other operations should be
-                     // received by the related Objects.
-                     modelRemote.contextKey(ABDataCollectionCore.contextKey());
-                     modelRemote.contextValues({
-                        id: this.id,
-                        verb: "uninitialized"
-                     });
-                     // id: the datacollection.id
-                     // verb: tells our ABRelay.listener why this remote lookup was called.
-
-                     // initiate the request:
-                     modelRemote.findAll(cond);
-                     // note:  our ABRelay.listener will take incoming data and call:
-                     // this.processIncomingData()
-                  }
                });
             })
       );
    }
-
+*/
    //
    // Query Interface
    //
