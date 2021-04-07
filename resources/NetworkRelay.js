@@ -338,7 +338,7 @@ class NetworkRelay extends NetworkRest {
       var encoded = "";
 
       if (data) {
-         console.log("-----> start encrypting");
+         var startTime = new Date().getTime();
          var plaintext = JSON.stringify(data);
 
          var iv = NetworkRelay.randomBytes(16);
@@ -350,7 +350,12 @@ class NetworkRelay extends NetworkRest {
 
          // <base64 encoded cipher text>:::<hex encoded IV>
          encoded = ciphertext.toString() + ":::" + iv;
-         console.log("-----> stop encrypting");
+         var diff = new Date().getTime() - startTime;
+         if (diff > 999) {
+            console.warn("-----> Network stop encrypting ", diff);
+         } else {
+            console.log("-----> Network stop encrypting ", diff);
+         }
       }
 
       return encoded;
@@ -367,7 +372,7 @@ class NetworkRelay extends NetworkRest {
       var finalData = null;
 
       if (typeof data == "string" && data.match(":::")) {
-         console.log("-----> start decrypting");
+         var startTime = new Date().getTime();
          var dataParts = data.split(":::");
          var ciphertext = dataParts[0];
          var iv = dataParts[1];
@@ -396,7 +401,12 @@ class NetworkRelay extends NetworkRest {
             analytics.logError(err);
             finalData = plaintext;
          }
-         console.log("-----> stop decrypting");
+         var diff = new Date().getTime() - startTime;
+         if (diff > 999) {
+            console.warn("-----> Network stop decrypting ", diff);
+         } else {
+            console.log("-----> Network stop decrypting ", diff);
+         }
       }
 
       return finalData;
@@ -526,12 +536,14 @@ class NetworkRelay extends NetworkRest {
                   // we can remove these pending job packets now
                   delete this.jobPackets[response.jobToken];
 
-                  return this.resolveJob(compiledResponse);
+                  return this.resolveJob(compiledResponse).then(() => {
+                     this.saveJobPackets();
+                  });
                }
-            })
-            .then(() => {
-               this.saveJobPackets();
             });
+         // .then(() => {
+         //    this.saveJobPackets();
+         // });
       }
    }
 
