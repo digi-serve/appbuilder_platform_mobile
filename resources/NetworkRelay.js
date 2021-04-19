@@ -338,7 +338,7 @@ class NetworkRelay extends NetworkRest {
       var encoded = "";
 
       if (data) {
-         var startTime = new Date().getTime();
+         // var startTime = new Date().getTime();
          var plaintext = JSON.stringify(data);
 
          var iv = NetworkRelay.randomBytes(16);
@@ -350,12 +350,12 @@ class NetworkRelay extends NetworkRest {
 
          // <base64 encoded cipher text>:::<hex encoded IV>
          encoded = ciphertext.toString() + ":::" + iv;
-         var diff = new Date().getTime() - startTime;
-         if (diff > 999) {
-            console.warn("-----> Network stop encrypting ", diff);
-         } else {
-            console.log("-----> Network stop encrypting ", diff);
-         }
+         // var diff = new Date().getTime() - startTime;
+         // if (diff > 999) {
+         //    console.warn("-----> Network stop encrypting ", diff);
+         // } else {
+         //    console.log("-----> Network stop encrypting ", diff);
+         // }
       }
 
       return encoded;
@@ -372,7 +372,7 @@ class NetworkRelay extends NetworkRest {
       var finalData = null;
 
       if (typeof data == "string" && data.match(":::")) {
-         var startTime = new Date().getTime();
+         // var startTime = new Date().getTime();
          var dataParts = data.split(":::");
          var ciphertext = dataParts[0];
          var iv = dataParts[1];
@@ -401,12 +401,12 @@ class NetworkRelay extends NetworkRest {
             analytics.logError(err);
             finalData = plaintext;
          }
-         var diff = new Date().getTime() - startTime;
-         if (diff > 999) {
-            console.warn("-----> Network stop decrypting ", diff);
-         } else {
-            console.log("-----> Network stop decrypting ", diff);
-         }
+         // var diff = new Date().getTime() - startTime;
+         // if (diff > 999) {
+         //    console.warn("-----> Network stop decrypting ", diff);
+         // } else {
+         //    console.log("-----> Network stop decrypting ", diff);
+         // }
       }
 
       return finalData;
