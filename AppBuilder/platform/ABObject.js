@@ -52,6 +52,16 @@ module.exports = class ABObject extends ABObjectCore {
                   //     status:"success",
                   //     data:{ data obj }
                   // }
+                  // if this is a response to one of our .updates()
+                  if (context.jobID) {
+                     // if this is the last update we sent for this object
+                     if (context.jobID !== this.latestUpdates[data.uuid]) {
+                        return;
+                     } else {
+                        delete this.latestUpdates[data.uuid];
+                     }
+                  }
+
                   if (data.status && data.status == "success") {
                      data = data.data;
                   }

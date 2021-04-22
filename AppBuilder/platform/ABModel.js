@@ -366,6 +366,35 @@ module.exports = class ABModel extends ABModelCore {
 
       return (
          Promise.resolve()
+
+            .then(() => {
+               this.object.application.datacollections().forEach((dc) => {
+                  // if datacollection has a datasource and its id matches the connectedObj
+                  if (dc.datasource && dc.datasource.id == this.object.id) {
+                     // tell it to load data
+                     if (dc.__dataCollection.exists(id)) {
+                        var entry = dc.__dataCollection.getItem(id);
+                        for (var v in values) {
+                           entry[v] = values[v];
+                        }
+                        dc.__dataCollection.updateItem(id, entry);
+                        console.log(`DC[${dc.name}] -> entry`, entry);
+                     }
+                     dc.loadDataDelayed();
+                  }
+                  // if the datacollection has a field of the objecte we updated we need to update interval
+                  if (dc.model && dc.model.object) {
+                     dc.model.object.fields().forEach((f) => {
+                        if (
+                           f.datasourceLink &&
+                           f.datasourceLink.id == this.object.id
+                        ) {
+                           dc.loadDataDelayed();
+                        }
+                     });
+                  }
+               });
+            })
             .then(() => {
                // get localModel
                // localModel.create(values)
@@ -388,27 +417,6 @@ module.exports = class ABModel extends ABModelCore {
                   }
                });
                return this.remote().update(id, vals);
-            })
-
-            .then(() => {
-               this.object.application.datacollections().forEach((dc) => {
-                  // if datacollection has a datasource and its id matches the connectedObj
-                  if (dc.datasource && dc.datasource.id == this.object.id) {
-                     // tell it to load data
-                     dc.loadData();
-                  }
-                  // if the datacollection has a field of the objecte we updated we need to update interval
-                  if (dc.model && dc.model.object) {
-                     dc.model.object.fields().forEach((f) => {
-                        if (
-                           f.datasourceLink &&
-                           f.datasourceLink.id == this.object.id
-                        ) {
-                           dc.loadData();
-                        }
-                     });
-                  }
-               });
             })
       );
    }

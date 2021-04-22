@@ -125,6 +125,9 @@ module.exports = class ABModelRelay extends ABModelCore {
          var params = this.urlParamsUpdate(id, values);
          var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
          responseContext.context.verb = "update";
+         responseContext.context.jobID = this.object.application.uuid();
+         this.object.latestUpdates = this.object.latestUpdates || {};
+         this.object.latestUpdates[id] = responseContext.context.jobID;
          return Network.put(params, responseContext).then(() => {
             // a relay doesn't return the data right away so:
             return [];

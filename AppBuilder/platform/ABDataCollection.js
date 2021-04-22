@@ -510,6 +510,18 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       return Account.username;
    }
 
+   loadDataDelayed() {
+      if (!this._pendingLoadData) {
+         this._pendingLoadData = setTimeout(() => {
+            this.loadData();
+            delete this._pendingLoadData;
+         }, 1000);
+      } else {
+         clearTimeout(this._pendingLoadData);
+         delete this._pendingLoadData;
+         this.loadDataDelayed();
+      }
+   }
    // loadDataLocal(start, limit, callback) {
    //    var obj = this.datasource;
    //    if (obj == null) return Promise.resolve([]);
