@@ -62,6 +62,7 @@ export default class Component extends EventEmitter {
 
       this.dataReady.done(() => {
          this.init();
+         this.app.getSize();
       });
    }
 
