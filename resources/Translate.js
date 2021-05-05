@@ -207,6 +207,27 @@ class Translate extends EventEmitter {
             }
          });
 
+         $nodes.each((nd) => {
+            if (
+               $nodes[nd].parentElement &&
+               $nodes[nd].parentElement.className == "item-after"
+            ) {
+               var $node = $($nodes[nd].parentElement);
+               var text = $nodes[nd].data;
+               var counter = $node.attr("translate") || 0;
+
+               if (counter < self.counter) {
+                  if ($node.is("[original-text]")) {
+                     text = $node.attr("original-text");
+                  } else {
+                     $node.attr("original-text", text);
+                  }
+                  $node.html(self.t(text));
+                  $node.attr("translate", self.counter);
+               }
+            }
+         });
+
          // The translations cause the UI shift because of the difference in
          // word widths, we need to trigger a resize as if the window was
          // resized to fix the layout
