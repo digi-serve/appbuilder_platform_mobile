@@ -175,23 +175,27 @@ class Translate extends EventEmitter {
             }
          });
 
-         $nodes
-            .find(".popover-inner .item-title, .smart-select-page .item-title")
-            .each(function() {
-               var $node = $(this);
-               var text = this.innerHTML;
-               var counter = $node.attr("translate") || 0;
+         if (this.langCode != "en") {
+            $nodes
+               .find(
+                  ".popover-inner .item-title, .smart-select-page .item-title"
+               )
+               .each(function() {
+                  var $node = $(this);
+                  var text = this.innerHTML;
+                  var counter = $node.attr("translate") || 0;
 
-               if (counter < self.counter && text == "Choose one...") {
-                  if ($node.is("[original-text]")) {
-                     text = $node.attr("original-text");
-                  } else {
-                     $node.attr("original-text", text);
+                  if (counter < self.counter && text == "Choose one...") {
+                     if ($node.is("[original-text]")) {
+                        text = $node.attr("original-text");
+                     } else {
+                        $node.attr("original-text", text);
+                     }
+                     $node.html(self.t(text));
+                     $node.attr("translate", self.counter);
                   }
-                  $node.html(self.t(text));
-                  $node.attr("translate", self.counter);
-               }
-            });
+               });
+         }
 
          $nodes.find("[placeholder]").each(function() {
             var $node = $(this);
@@ -225,26 +229,31 @@ class Translate extends EventEmitter {
             }
          });
 
-         $nodes.each((nd) => {
-            if (
-               $nodes[nd].parentElement &&
-               $nodes[nd].parentElement.className == "item-after"
-            ) {
-               var $node = $($nodes[nd].parentElement);
-               var text = $nodes[nd].data.trim();
-               var counter = $node.attr("translate") || 0;
+         if (this.langCode != "en") {
+            $nodes.each((nd) => {
+               if (
+                  $nodes[nd].parentElement &&
+                  $nodes[nd].parentElement.className == "item-after"
+               ) {
+                  var $node = $($nodes[nd].parentElement);
+                  var text = $nodes[nd].data.trim();
+                  var counter = $node.attr("translate") || 0;
 
-               if (counter < self.counter || text == "Choose one...") {
-                  if ($node.is("[original-text]") && text != "Choose one...") {
-                     text = $node.attr("original-text");
-                  } else {
-                     $node.attr("original-text", text);
+                  if (counter < self.counter || text == "Choose one...") {
+                     if (
+                        $node.is("[original-text]") &&
+                        text != "Choose one..."
+                     ) {
+                        text = $node.attr("original-text");
+                     } else {
+                        $node.attr("original-text", text);
+                     }
+                     $node.html(self.t(text));
+                     $node.attr("translate", self.counter);
                   }
-                  $node.html(self.t(text));
-                  $node.attr("translate", self.counter);
                }
-            }
-         });
+            });
+         }
 
          // The translations cause the UI shift because of the difference in
          // word widths, we need to trigger a resize as if the window was
