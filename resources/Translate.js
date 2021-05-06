@@ -175,6 +175,24 @@ class Translate extends EventEmitter {
             }
          });
 
+         $nodes
+            .find(".popover-inner .item-title, .smart-select-page .item-title")
+            .each(function() {
+               var $node = $(this);
+               var text = this.innerHTML;
+               var counter = $node.attr("translate") || 0;
+
+               if (counter < self.counter && text == "Choose one...") {
+                  if ($node.is("[original-text]")) {
+                     text = $node.attr("original-text");
+                  } else {
+                     $node.attr("original-text", text);
+                  }
+                  $node.html(self.t(text));
+                  $node.attr("translate", self.counter);
+               }
+            });
+
          $nodes.find("[placeholder]").each(function() {
             var $node = $(this);
             var text = $node.attr("placeholder");
@@ -191,7 +209,7 @@ class Translate extends EventEmitter {
             }
          });
 
-         $nodes.find(".dialog-button").each(function() {
+         $nodes.find(".dialog-button, .popup-close").each(function() {
             var $node = $(this);
             var text = this.innerHTML;
             var counter = $node.attr("translate") || 0;
@@ -213,11 +231,11 @@ class Translate extends EventEmitter {
                $nodes[nd].parentElement.className == "item-after"
             ) {
                var $node = $($nodes[nd].parentElement);
-               var text = $nodes[nd].data;
+               var text = $nodes[nd].data.trim();
                var counter = $node.attr("translate") || 0;
 
-               if (counter < self.counter) {
-                  if ($node.is("[original-text]")) {
+               if (counter < self.counter || text == "Choose one...") {
+                  if ($node.is("[original-text]") && text != "Choose one...") {
                      text = $node.attr("original-text");
                   } else {
                      $node.attr("original-text", text);
