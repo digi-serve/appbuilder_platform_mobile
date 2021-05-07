@@ -18,6 +18,7 @@ import { t } from "../resources/Translate.js";
 // import lodash from 'lodash';
 
 window.analytics = analytics; // for console debugging purposes
+window.t = t;
 
 //
 // Add Object.assign() support for older Android versions

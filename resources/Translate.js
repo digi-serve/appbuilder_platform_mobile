@@ -97,6 +97,7 @@ class Translate extends EventEmitter {
       if (this.langCode == "ko") {
          this.langCode = "zh";
       }
+      this.langCode = "zh";
 
       // Set lang attribute on document body for CSS language targetting
       $(document.body).attr("lang", this.langCode);
@@ -175,28 +176,6 @@ class Translate extends EventEmitter {
             }
          });
 
-         if (this.langCode != "en") {
-            $nodes
-               .find(
-                  ".popover-inner .item-title, .smart-select-page .item-title"
-               )
-               .each(function() {
-                  var $node = $(this);
-                  var text = this.innerHTML;
-                  var counter = $node.attr("translate") || 0;
-
-                  if (counter < self.counter && text == "Choose one...") {
-                     if ($node.is("[original-text]")) {
-                        text = $node.attr("original-text");
-                     } else {
-                        $node.attr("original-text", text);
-                     }
-                     $node.html(self.t(text));
-                     $node.attr("translate", self.counter);
-                  }
-               });
-         }
-
          $nodes.find("[placeholder]").each(function() {
             var $node = $(this);
             var text = $node.attr("placeholder");
@@ -228,32 +207,6 @@ class Translate extends EventEmitter {
                $node.attr("translate", self.counter);
             }
          });
-
-         if (this.langCode != "en") {
-            $nodes.each((nd) => {
-               if (
-                  $nodes[nd].parentElement &&
-                  $nodes[nd].parentElement.className == "item-after"
-               ) {
-                  var $node = $($nodes[nd].parentElement);
-                  var text = $nodes[nd].data.trim();
-                  var counter = $node.attr("translate") || 0;
-
-                  if (counter < self.counter || text == "Choose one...") {
-                     if (
-                        $node.is("[original-text]") &&
-                        text != "Choose one..."
-                     ) {
-                        text = $node.attr("original-text");
-                     } else {
-                        $node.attr("original-text", text);
-                     }
-                     $node.html(self.t(text));
-                     $node.attr("translate", self.counter);
-                  }
-               }
-            });
-         }
 
          // The translations cause the UI shift because of the difference in
          // word widths, we need to trigger a resize as if the window was

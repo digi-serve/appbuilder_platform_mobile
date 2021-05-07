@@ -125,6 +125,12 @@ Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
    }
 });
 
+// Translate text that our Translate.js cannot
+// ex: {{L 'text'}}
+Template7.registerHelper("L", (text) => {
+   return window.t(text);
+});
+
 // Helper to get the translated value of a field that was a select list
 // ex: {{listItem 'app' 'obj' 'item' selected}}
 Template7.registerHelper("translate", (app, obj, item) => {
