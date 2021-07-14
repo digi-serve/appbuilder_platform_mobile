@@ -16,6 +16,7 @@ import PBKDF2async from "./PBKDF2-async.js";
 var config = require("../../config/config.js");
 
 const disableEncryption = !config.platform.encryptedStorage; // false;
+const storeName = "key_value_data";
 
 class Storage extends EventEmitter {
    constructor(name = "sdc", label = "SDC", version = "1.0", sizeInMB = 2) {
@@ -29,25 +30,27 @@ class Storage extends EventEmitter {
          /* key : Lock() */
       };
 
+      // IndexedDB is standard on modern browsers
       try {
-         // this.db is a webSQL implementation ()
-         this.db = openDatabase(name, version, label, sizeInMB * 1024 * 1024);
-         this.db.transaction((tx) => {
-            tx.executeSql(
-               `
-                    CREATE TABLE IF NOT EXISTS key_value_data 
-                    (key PRIMARY KEY, value, is_encrypted)
-                `,
-               [],
-               (/* tx, result */) => {},
-               (tx, err) => {
-                  Log("DB error", err);
-                  Log("tx:", tx);
-                  analytics.logError(err);
-               }
-            );
-         });
-      } catch (err) {
+         var request = indexedDB.open(name);
+         request.onerror = (event) => {
+            Log("IndexedDB failure on init", request.error);
+            analytics.logError(request.error);
+         }
+         request.onsuccess = (event) => {
+            this.db = request.result;
+            this.db.onerror = (event) => {
+               Log("IndexedDB error", event.target.errorCode);
+            }
+         }
+         // On first time, set up the obect store
+         request.onupgradeneeded = (event) => {
+            var db = event.target.result;
+            var objectStore = db.createObjectStore(storeName);
+         }
+      } 
+      // IndexedDB not supported on this device?
+      catch (err) {
          Log(err);
          alert(
             "Error initializing the storage system:\n" +
@@ -65,6 +68,20 @@ class Storage extends EventEmitter {
       });
    }
 
+   /** 
+    * Set the password that will be used to encrypt/decrypt data.
+    * 
+    * The password is passed through a key derivation function (PBKDF2)
+    * to generate the actual crypto key.
+    *
+    * @param {string} secret
+    *   Password
+    * @param {boolean} [resetSalt]
+    *   A salt is automatically generated the first time a password is set.
+    *   You may optionally choose to force reset to a new salt. This will
+    *   premanently lose the old password and all data that was stored.
+    * @return {Promise}
+    */
    setPassword(secret, resetSalt = false) {
       return new Promise((resolve, reject) => {
          var startTime = Date.now();
@@ -278,31 +295,28 @@ class Storage extends EventEmitter {
             value = JSON.stringify(value);
          }
       }
+
       // Encrypt
       if (!options.forcePlainText && this.secret) {
          value = this.encrypt(value);
-         //value = CryptoJS.AES.encrypt(value, this.secret).toString();
          isEncrypted = 1;
       }
 
       return new Promise((resolve, reject) => {
-         this.db.transaction((tx) => {
-            tx.executeSql(
-               `
-                    REPLACE INTO key_value_data (key, value, is_encrypted)
-                    VALUES (?, ?, ?)
-                `,
-               [key, value, isEncrypted],
-               (/*tx, result*/) => {
-                  resolve();
-               },
-               (tx, err) => {
-                  Log("DB error", err);
-                  Log("tx:", tx);
-                  reject(err);
-               }
-            );
-         });
+         var transaction = this.db.transaction(storeName, "readwrite");
+         transaction.oncomplete = (event) => {
+            resolve();
+         }
+         transaction.onerror = (event) => {
+            Log("DB error during set", transaction.error)
+            reject(transaction.error);
+         }
+
+         var store = transaction.objectStore(storeName);
+         var req = store.put({
+            value: value,
+            isEncrypted: isEncrypted
+         }, key);
       });
    }
 
@@ -321,6 +335,14 @@ class Storage extends EventEmitter {
     * @return {Promise}
     */
    get(key, options = {}) {
+      if (!this.db) {
+         console.warn("DB not available yet. retrying...");
+         return this.wait(50)
+            .then(() => {
+               return this.get(key, options);
+            });
+      }
+
       var defaults = {
          resetAppOnFailure: true,
          deserialize: true
@@ -331,113 +353,112 @@ class Storage extends EventEmitter {
       options = $.extend({}, defaults, options);
 
       return new Promise((resolve, reject) => {
-         this.db.readTransaction((tx) => {
-            tx.executeSql(
-               `
-                    SELECT value, is_encrypted
-                    FROM key_value_data
-                    WHERE key = ?
-                `,
-               [key],
-               (tx, results) => {
-                  if (results.rows.length < 1) {
-                     // Not found
-                     resolve(null);
+         var transaction = this.db.transaction(storeName, "readonly");
+         transaction.onerror = (event) => {
+            Log("DB error during get", transaction.error)
+            reject(transaction.error);
+         }
+
+         var store = transaction.objectStore(storeName);
+         var req = store.get(key);
+         req.onsuccess = (event) => {
+            var row = req.result;
+            var value, isEncrypted;
+            // Parse results
+            if (row) {
+               value = row.value;
+               isEncrypted = row.isEncrypted;
+            }
+            // No results found for this key
+            else {
+               value = null;
+               isEncrypted = false;
+            }
+
+            // Decrypt
+            if (isEncrypted && this.secret) {
+               try {
+                  value = this.decrypt(value);
+               } catch (err) {
+                  // Unable to decrypt
+                  if (options.resetAppOnFailure) {
+                     document.location.reload();
                   } else {
-                     var row = results.rows.item(0);
-                     var value = row.value;
-
-                     // Decrypt
-                     if (row.is_encrypted && this.secret) {
-                        try {
-                           value = this.decrypt(value);
-                           //value = CryptoJS.AES.decrypt(value, this.secret).toString(CryptoJS.enc.Utf8);
-                        } catch (err) {
-                           // Unable to decrypt
-                           if (options.resetAppOnFailure) {
-                              document.location.reload();
-                           } else {
-                              Log("Incorrect password");
-                              reject(new Error("Incorrect password"));
-                           }
-                           return;
-                        }
-                     } else if (row.is_encrypted) {
-                        //alert('Password is required');
-                        if (options.resetAppOnFailure) {
-                           document.location.reload();
-                        } else {
-                           Log("Missing password");
-                           reject(new Error("Missing password"));
-                        }
-                        return;
-                     }
-
-                     // Deserialize
-                     if (options.deserialize) {
-                        try {
-                           value = JSON.parse(value);
-                        } catch (err) {
-                           Log("Bad saved data?", key, value);
-                           value = null;
-                        }
-                     }
-
-                     resolve(value);
+                     Log("Incorrect password");
+                     reject(new Error("Incorrect password"));
                   }
-               },
-               (tx, err) => {
-                  Log("DB error", err);
-                  analytics.logError(err);
-                  reject(err);
+                  return;
                }
-            );
-         });
+            } 
+            // No password was given
+            else if (isEncrypted) {
+               if (options.resetAppOnFailure) {
+                  document.location.reload();
+               } else {
+                  Log("Missing password");
+                  reject(new Error("Missing password"));
+               }
+               return;
+            }
+
+            // Deserialize
+            if (options.deserialize) {
+               try {
+                  value = JSON.parse(value);
+               } catch (err) {
+                  Log("Bad saved data?", key, value);
+                  value = null;
+               }
+            }
+
+            resolve(value);            
+         }
+
       });
    }
 
+
+   /** 
+    * Delete the specified record from storage.
+    * 
+    * @param {string} key
+    * @return {Promise}
+    */
    clear(key) {
       return new Promise((resolve, reject) => {
-         this.db.transaction((tx) => {
-            tx.executeSql(
-               `
-                    DELETE FROM key_value_data
-                    WHERE key = ?
-                `,
-               [key],
-               (/* tx, results */) => {
-                  resolve();
-               },
-               (tx, err) => {
-                  Log("DB error", err);
-                  Log("tx:", tx);
-                  analytics.logError(err);
-                  reject();
-               }
-            );
-         });
+         var transaction = this.db.transaction(storeName, "readwrite");
+         transaction.onerror = (event) => {
+            Log("DB error during clear", event.error);
+            analytics.logError(event.error);
+            reject(event.error);
+         }
+         var store = transaction.objectStore(storeName);
+         var req = store.delete(key);
+         req.onsuccess = (event) => {
+            resolve();
+         }
       });
    }
 
+
+   /**
+    * Delete all records from storage.
+    *
+    * @return {Promise}
+    */
    clearAll() {
       return new Promise((resolve, reject) => {
-         this.db.transaction((tx) => {
-            tx.executeSql(
-               `
-                    DELETE FROM key_value_data
-                `,
-               [],
-               (/* tx, results */) => {
-                  resolve();
-               },
-               (tx, err) => {
-                  Log("DB error", err);
-                  Log("tx:", tx);
-                  analytics.logError(err);
-                  reject(err);
-               }
-            );
-         });
+         var transaction = this.db.transaction(storeName, "readwrite");
+         transaction.onerror = (event) => {
+            Log("DB error during clearAll", event.error);
+            analytics.logError(event.error);
+            reject(event.error);
+         }
+         var store = transaction.objectStore(storeName);
+         var req = store.clear();
+         req.onsuccess = (event) => {
+            resolve();
+         }
       });
    }
 
