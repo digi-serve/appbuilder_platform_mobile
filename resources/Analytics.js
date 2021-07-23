@@ -42,12 +42,26 @@ class Analytics extends EventEmitter {
 
       // Countly for everything else
       if (window.Countly && window.cordova) {
-         Countly.init(config.countly.url, config.countly.appKey);
-         Countly.start();
-         console.log("analytics init()");
+         const features = [
+            "sessions", "views", "crashes", "events"
+         ];
+         Countly.setLoggingEnabled();
+         Countly.enableCrashReporting();
+         Countly.setRequiresConsent(true);
+         Countly.giveConsentInit(features);
+         Countly
+            .init(config.countly.url, config.countly.appKey)
+            .then((result) => {
+               Countly.giveConsent(features);
+               Countly.start();
+               console.log("analytics init()");
+               this.ready.resolve();
+            })
+            .catch((err) => {
+               console.error('Analytics init error', err);
+            });
       }
 
-      this.ready.resolve();
    }
 
    /**
@@ -154,7 +168,7 @@ class Analytics extends EventEmitter {
          if (Object.keys(data).length > 0) {
             packet.segments = data;
          }
-         Countly.sendEvent(packet);
+         Countly.recordEvent(packet);
       }
 
       if (this.sentry && !data.stack) {
