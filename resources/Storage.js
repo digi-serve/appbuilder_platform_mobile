@@ -42,6 +42,16 @@ class Storage extends EventEmitter {
             this.db.onerror = (event) => {
                Log("IndexedDB error", event.target.errorCode);
             }
+            // Test if the `key_value_data` object store is present
+            var transaction = this.db.transaction(storeName, "readonly");
+            transaction.onerror = (event) => {
+               console.log('IndexedDB store not found?', transaction.error);
+               // Store was not found. Try to create it now.
+               if (transaction.error.name == "NotFoundError") {
+                  this.db.createObjectStore(storeName);
+               }
+            }
+
          }
          // On first time, set up the obect store
          request.onupgradeneeded = (event) => {
