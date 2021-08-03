@@ -4,9 +4,11 @@
  * Manages taking photos with the device's camera, and saving them to the
  * app's data directory.
  *
- * You will probably only need to use getCameraPhoto() and getLibraryPhoto()
- * to get the cdvfile URL. The URL can then be referenced from the DOM such
- * as by <img src='cdvfile://...'> thereafter.
+ * You can use getCameraPhoto() and getLibraryPhoto() to get the image URL
+ * for putting into <img> tags or whatever.
+ * The URL is not permanent. You should store the image filename, and
+ * then later you can use loadPhotoByName() to get the new URL from the filename
+ * when you need it.
  *
  * Exports a singleton instance.
  */
@@ -72,13 +74,14 @@ class CameraPlatform extends EventEmitter {
     * @param {int} width
     * @param {int} height
     * @return {Promise}
-    *      Resolves with metadata of the saved photo.
-    *      {
-    *          filename: <stirng>,
-    *          fileEntry: <FileEntry>,
-    *          url: <string>, // only valid for current session
-    *          cdvfile: <string> // alternate Cordova URL that is persistent
-    *      }
+    *    Resolves with metadata of the saved photo.
+    *    {
+    *       filename: <string>,
+    *       fileEntry: <FileEntry>,
+    *       url: <string>, // only valid for current session
+    *       cdvfile: <string> // alternate Cordova URL that is persistent
+    *                         // this does not work on iOS anymore!
+    *    }
     */
    getCameraPhoto(width = defaultWidth, height = defaultHeight) {
       return new Promise((resolve, reject) => {
@@ -117,13 +120,14 @@ class CameraPlatform extends EventEmitter {
     * @param {int} width
     * @param {int} height
     * @return {Promise}
-    *      Resolves with metadata of the copied photo.
-    *      {
-    *          filename: <stirng>,
-    *          fileEntry: <FileEntry>,
-    *          url: <string>, // only valid for current session
-    *          cdvfile: <string> // alternate Cordova URL that is persistent
-    *      }
+    *    Resolves with metadata of the copied photo.
+    *    {
+    *       filename: <stirng>,
+    *       fileEntry: <FileEntry>,
+    *       url: <string>, // only valid for current session
+    *       cdvfile: <string> // alternate Cordova URL that is persistent
+    *                         // this does not work on iOS anymore!
+    *    }
     */
    getLibraryPhoto(width = defaultWidth, height = defaultHeight) {
       return new Promise((resolve, reject) => {
@@ -157,7 +161,7 @@ class CameraPlatform extends EventEmitter {
    ////////
 
    /**
-    * Remove a photo by it's filename.
+    * Remove a photo by its filename.
     *
     * @param {string} photoName
     * @return {Promise}
@@ -209,12 +213,13 @@ class CameraPlatform extends EventEmitter {
     *
     * @param {string} imageURI
     * @return {Promise}
-    *      {
-    *          filename: <stirng>,
-    *          fileEntry: <FileEntry>,
-    *          url: <string>, // only valid for current session
-    *          cdvfile: <string> // alternate Cordova URL that is persistent
-    *      }
+    *    {
+    *       filename: <string>,
+    *       fileEntry: <FileEntry>,
+    *       url: <string>, // only valid for current session
+    *       cdvfile: <string> // alternate Cordova URL that is persistent
+    *                         // does not work on iOS anymore!
+    *    }
     */
    savePhoto(imageURI) {
       return new Promise((resolve, reject) => {
@@ -302,12 +307,13 @@ class CameraPlatform extends EventEmitter {
     *
     * @param {string} filename
     * @return {Promise}
-    *      {
-    *          filename: <string>,
-    *          fileEntry: <FileEntry>,
-    *          url: <string>, // only valid for current session
-    *          cdvfile: <string> // alternate Cordova URL that is persistent
-    *      }
+    *    {
+    *       filename: <string>,
+    *       fileEntry: <FileEntry>,
+    *       url: <string>, // only valid for current session
+    *       cdvfile: <string> // alternate Cordova URL that is persistent
+    *                         // this does not work on iOS anymore!
+    *    }
     */
    loadPhotoByName(filename) {
       return new Promise((resolve, reject) => {
