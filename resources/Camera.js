@@ -4,9 +4,11 @@
  * Manages taking photos with the device's camera, and saving them to the
  * app's data directory.
  *
- * You will probably only need to use getCameraPhoto() and getLibraryPhoto()
- * to get the cdvfile URL. The URL can then be referenced from the DOM such
- * as by <img src='cdvfile://...'> thereafter.
+ * You can use getCameraPhoto() and getLibraryPhoto() to get the image URL
+ * for putting into <img> tags or whatever.
+ * The URL is not permanent. You should store the image filename, and
+ * then later you can use loadPhotoByName() to get the new URL from the filename
+ * when you need it.
  *
  * Exports a singleton instance.
  */
