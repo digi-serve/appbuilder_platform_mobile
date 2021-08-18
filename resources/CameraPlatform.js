@@ -4,11 +4,24 @@
  * Manages taking photos with the device's camera, and saving them to the
  * app's data directory.
  *
- * You can use getCameraPhoto() and getLibraryPhoto() to get the image URL
- * for putting into <img> tags or whatever.
- * The URL is not permanent. You should store the image filename, and
- * then later you can use loadPhotoByName() to get the new URL from the filename
- * when you need it.
+ * You can use getCameraPhoto() or getLibraryPhoto() to obtain an image file.
+ *
+ * Previously, it was possible to use the `url` or `cdvfile` value of that
+ * image to display the image in the DOM (inside an <img> tag). This is no
+ * longer possible in iOS.
+ * 
+ * To display a camera image in the DOM, you can use the base64 data. First
+ * you need the `filename` of the image that was provided earlier from 
+ * getGameraPhoto(). Then use base64ByName().
+ *
+ *      camera
+ *          .getCameraPhoto()
+ *          .then((photo) => {
+ *              return camera.base64ByName(photo.filename)
+ *          })
+ *          .then((base64Data) => {
+ *              return '<img src="data:image/jpg;base64,' + base64Data + '" />'
+ *          })
  *
  * Exports a singleton instance.
  */
