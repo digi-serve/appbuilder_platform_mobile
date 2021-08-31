@@ -336,7 +336,7 @@ class CameraPlatform extends EventEmitter {
    imageCleanUp() {
       return new Promise((resolve, reject) => {
          // make sure _testDirectoryEntry is created before trying to use:
-         if (!this._testDirectoryEntry) {
+         if (!this.directoryEntry) {
             this.init().then(() => {
                this.imageCleanUp()
                   .then((data) => {
@@ -348,7 +348,7 @@ class CameraPlatform extends EventEmitter {
          }
 
          // Get a directory reader
-         var directoryReader = this._testDirectoryEntry.createReader();
+         var directoryReader = this.directoryEntry.createReader();
          // Get a list of all the entries in the directory
          directoryReader.readEntries(this.deleteOlderFiles, this.fail);
       });
