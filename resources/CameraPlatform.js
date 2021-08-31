@@ -297,6 +297,63 @@ class CameraPlatform extends EventEmitter {
       });
    }
 
+   // Remove files with "receipt-" in their name that are move than 2 weeks old
+   deleteOlderFiles(entries) {
+      var i;
+      var currentDate = new Date();
+      var currentTime = currentDate.getTime();
+      entries.forEach((item, i) => {
+         if (item.isFile && item.name.indexOf("receipt-") > -1) {
+            item.getMetadata(
+               (file) => {
+                  var timeDiff = Math.abs(
+                     currentTime - file.modificationTime.getTime()
+                  );
+                  var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                  if (diff > 14) {
+                     item.remove(
+                        function() {
+                           console.log("File removed");
+                        },
+                        function() {
+                           console.log("Error while removing file");
+                        }
+                     );
+                  }
+               },
+               (error) => {
+                  console.log(error);
+               }
+            );
+         }
+      });
+   }
+
+   fail(error) {
+      alert("Failed during operations: " + error.code);
+   }
+
+   imageCleanUp() {
+      return new Promise((resolve, reject) => {
+         // make sure _testDirectoryEntry is created before trying to use:
+         if (!this._testDirectoryEntry) {
+            this.init().then(() => {
+               this.imageCleanUp()
+                  .then((data) => {
+                     resolve(data);
+                  })
+                  .catch(reject);
+            });
+            return;
+         }
+
+         // Get a directory reader
+         var directoryReader = this._testDirectoryEntry.createReader();
+         // Get a list of all the entries in the directory
+         directoryReader.readEntries(this.deleteOlderFiles, this.fail);
+      });
+   }
+
    /**
     * Loads the FileEntry of a previously saved photo by its filename.
     *
