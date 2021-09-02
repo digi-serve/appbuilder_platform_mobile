@@ -11,6 +11,7 @@ import analytics from "../../resources/Analytics.js";
 import Component from "./component.js";
 import Log from "../../resources/Log.js";
 import qrPage from "../qrScanner/qrScanner.js";
+import camera from "../../resources/Camera.js";
 import updater from "../../resources/Updater.js";
 
 // import relay from "../../relay.js";
@@ -34,6 +35,7 @@ export default class SettingsComponent extends Component {
       this.qrScanAttempted = "no";
       this.pfsBackupDate = null;
       this.appInfo = null;
+      this.camera = camera;
 
       updater.on("installed", () => {
          this.isUpdateReady = true;
@@ -125,6 +127,27 @@ export default class SettingsComponent extends Component {
             this.templates.updateInfo(this.appInfo)
          );
       }
+   }
+
+   /**
+    * Get stored documents size
+    */
+   getStorageSize() {
+      return new Promise((resolve, reject) => {
+         this.camera.imageLookUp().then((data) => {
+            resolve(data);
+         });
+      });
+   }
+
+   deleteLocalImages() {
+      return new Promise((resolve, reject) => {
+         this.camera.deleteLocalImages().then((data) => {
+            this.camera.imageLookUp().then((data) => {
+               resolve(data);
+            });
+         });
+      });
    }
 
    /**
