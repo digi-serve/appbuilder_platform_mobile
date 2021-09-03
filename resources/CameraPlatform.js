@@ -32,6 +32,8 @@ import EventEmitter from "eventemitter2";
 import Log from "./Log";
 import uuid from "uuid/v1";
 
+import { storage } from "../../platform/resources/Storage.js";
+
 const defaultHeight = 2000;
 const defaultWidth = 2000;
 
@@ -315,40 +317,58 @@ class CameraPlatform extends EventEmitter {
       });
    }
 
-   // Remove files with "receipt-" in their name that are move than 2 weeks old
-   deleteOlderFiles(entries) {
-      var i;
-      var currentDate = new Date();
-      var currentTime = currentDate.getTime();
-      entries.forEach((item, i) => {
-         if (item.isFile && item.name.indexOf("receipt-") > -1) {
-            item.getMetadata(
-               (file) => {
-                  var timeDiff = Math.abs(
-                     currentTime - file.modificationTime.getTime()
-                  );
-                  var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                  if (diff > 14) {
-                     item.remove(
-                        function() {
-                           console.log("File removed");
-                        },
-                        function() {
-                           console.log("Error while removing file");
-                        }
-                     );
-                  }
-               },
-               (error) => {
-                  console.log(error);
-               }
-            );
+   deleteLocalImages() {
+      return new Promise((resolve, reject) => {
+         // make sure _testDirectoryEntry is created before trying to use:
+         if (!this.directoryEntry) {
+            this.init().then(() => {
+               this.imageCleanUp()
+                  .then((data) => {
+                     resolve(data);
+                  })
+                  .catch(reject);
+            });
+            return;
          }
-      });
-   }
 
-   fail(error) {
-      alert("Failed during operations: " + error.code);
+         // Get a directory reader
+         var directoryReader = this.directoryEntry.createReader();
+         // Get a list of all the entries in the directory
+         directoryReader.readEntries(
+            (entries) => {
+               entries.forEach((item, i) => {
+                  item.remove(
+                     function() {
+                        console.log("File removed");
+                        if (item.name.indexOf("receipt-") > -1) {
+                           storage.set(
+                              "Receipt Image-" +
+                                 item.name
+                                    .replace("receipt-", "")
+                                    .replace(".jpg", ""),
+                              null
+                           );
+                           storage.set(
+                              "Local Receipt Image-" +
+                                 item.name
+                                    .replace("receipt-", "")
+                                    .replace(".jpg", ""),
+                              null
+                           );
+                        }
+                     },
+                     function() {
+                        console.log("Error while removing file");
+                     }
+                  );
+               });
+               resolve();
+            },
+            (error) => {
+               reject("Failed during operations: " + error.code);
+            }
+         );
+      });
    }
 
    imageCleanUp() {
@@ -368,7 +388,111 @@ class CameraPlatform extends EventEmitter {
          // Get a directory reader
          var directoryReader = this.directoryEntry.createReader();
          // Get a list of all the entries in the directory
-         directoryReader.readEntries(this.deleteOlderFiles, this.fail);
+         directoryReader.readEntries(
+            (entries) => {
+               var currentDate = new Date();
+               var currentTime = currentDate.getTime();
+               entries.forEach((item, i) => {
+                  if (item.isFile && item.name.indexOf("receipt-") > -1) {
+                     item.getMetadata(
+                        (file) => {
+                           var timeDiff = Math.abs(
+                              currentTime - file.modificationTime.getTime()
+                           );
+                           var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                           if (diff > 14) {
+                              item.remove(
+                                 function() {
+                                    console.log("File removed");
+                                    if (item.name.indexOf("receipt-") > -1) {
+                                       storage.set(
+                                          "Receipt Image-" +
+                                             item.name
+                                                .replace("receipt-", "")
+                                                .replace(".jpg", ""),
+                                          null
+                                       );
+                                       storage.set(
+                                          "Local Receipt Image-" +
+                                             item.name
+                                                .replace("receipt-", "")
+                                                .replace(".jpg", ""),
+                                          null
+                                       );
+                                    }
+                                 },
+                                 function() {
+                                    console.log("Error while removing file");
+                                 }
+                              );
+                           }
+                        },
+                        (error) => {
+                           reject(error);
+                        }
+                     );
+                  }
+               });
+            },
+            (error) => {
+               reject("Failed during operations: " + error.code);
+            }
+         );
+      });
+   }
+
+   imageLookUp() {
+      return new Promise((resolve, reject) => {
+         // make sure _testDirectoryEntry is created before trying to use:
+         if (!this.directoryEntry) {
+            this.init().then(() => {
+               this.imageLookUp()
+                  .then((data) => {
+                     resolve(data);
+                  })
+                  .catch((err) => {
+                     reject(err);
+                  });
+            });
+            return;
+         }
+
+         // Get a directory reader
+         var directoryReader = this.directoryEntry.createReader();
+         // Get a list of all the entries in the directory
+         directoryReader.readEntries(
+            (entries) => {
+               var totalStorage = 0;
+               var allFiles = [];
+               entries.forEach((item, i) => {
+                  if (item.isFile) {
+                     allFiles.push(
+                        new Promise((resolve, reject) => {
+                           item.file(
+                              (file) => {
+                                 console.log("File size: " + file.size);
+                                 totalStorage += file.size;
+                                 resolve(totalStorage);
+                              },
+                              (error) => {
+                                 console.log(error);
+                                 reject(error);
+                              }
+                           );
+                        })
+                     );
+                  }
+               });
+               Promise.all(allFiles).then((values) => {
+                  var totalMB = totalStorage / 1000000; //bytes to megabytes rounded to two decimal places
+                  console.log("Total Storage: " + totalMB.toFixed(2));
+                  resolve(totalMB);
+               });
+            },
+            (error) => {
+               reject("Failed during operations: " + error.code);
+            }
+         );
       });
    }
 
