@@ -256,7 +256,7 @@ class CameraPlatform extends EventEmitter {
                         fileEntry.name,
                         { create: false, exclusive: false },
                         (_fileEntry) => {
-                           targetFileEntry = _fileEntry;
+                           fileEntry = _fileEntry;
                            next();
                         },
                         (err) => {
@@ -266,7 +266,7 @@ class CameraPlatform extends EventEmitter {
                               this.tempDirectoryEntry,
                               fileEntry.name,
                               (_newFileEntry) => {
-                                 targetFileEntry = _newFileEntry;
+                                 fileEntry = _newFileEntry;
                                  next();
                               },
                               (err) => {
