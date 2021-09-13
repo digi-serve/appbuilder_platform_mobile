@@ -49,6 +49,7 @@ class CameraPlatform extends EventEmitter {
       super();
 
       this.directoryEntry = null;
+      this.tempDirectoryEntry = null;
       this.camera = {
          getPicture: () => {
             return Promise.reject(new Error("Device not ready"));
@@ -63,18 +64,49 @@ class CameraPlatform extends EventEmitter {
          "deviceready",
          () => {
             this.camera = navigator.camera;
-            var directory = cordova.file.tempDirectory || cordova.file.dataDirectory;
-            window.resolveLocalFileSystemURL(
-               directory,
-               (_directoryEntry) => {
-                  this.directoryEntry = _directoryEntry;
-                  this.emit("ready");
-               },
+
+            async.parallel(
+               [
+                  // Data directory
+                  (next) => {
+                     window.resolveLocalFileSystemURL(
+                        cordova.file.dataDirectory,
+                        (_directoryEntry) => {
+                           this.directoryEntry = _directoryEntry;
+                           next();
+                        },
+                        (err) => {
+                           console.log("Could not get data directory", err);
+                           // Should we halt here?
+                           next();
+                        }
+                     );
+                  },
+                  // Temp directory
+                  (next) => {
+                     if (!cordova.file.tempDirectory) {
+                        return next();
+                     }
+                     window.resolveLocalFileSystemURL(
+                        cordova.file.tempDirectory,
+                        (_directoryEntry) => {
+                           this.tempDirectoryEntry = _directoryEntry;
+                           next();
+                        },
+                        (err) => {
+                           console.log("Could not get temp directory", err);
+                           // Not critical. Probably just Android?
+                           next();
+                        }
+                     );
+                  }
+               ],
                (err) => {
-                  console.log("Could not get data directory", err);
-                  //throw err;
+                  if (err) {};
+                  this.emit("ready");
                }
             );
+
          },
          false
       );
@@ -177,6 +209,84 @@ class CameraPlatform extends EventEmitter {
    ////////
 
    /**
+    * Copies an existing image into the temp directory and delivers the 
+    * URL for it.
+    *
+    * This is necessary if you need to display in an <img> tag under iOS.
+    * Under Android, this will simply deliver the URL of the original
+    * image without making any copy.
+    *
+    * @param {string|FileEntry} imageFile
+    *      Either a string filename, or a FileEntry object for this image
+    *      file.
+    * @return {Promise}
+    *      Resolves with the URL to the temp image.
+    */
+   tempUrl(imageFile) {
+      return new Promise((resolve, reject) => {
+         let fileEntry;
+         async.series(
+            [
+               (next) => {
+                  // Get the FileEntry via the filename
+                  if (typeof imageFile == 'string') {
+                     this.loadPhotoByName(imageFile)
+                        .then((image) => {
+                           fileEntry = image.fileEntry;
+                           next();
+                        })
+                        .catch((err) => {
+                           next(err);
+                        });
+                  }
+                  else if (imageFile instanceof FileEntry) {
+                     // FileEntry is provided
+                     fileEntry = imageFile;
+                     next();
+                  }
+                  else {
+                     next(TypeError());
+                  }
+               },
+
+               (next) => {
+                  if (this.tempDirectoryEntry) {
+                     // Copy the image to the temp directory
+                     fileEntry.copyTo(
+                        this.tempDirectoryEntry,
+                        fileEntry.name,
+                        (_newFileEntry) => {
+                           fileEntry = _newFileEntry;
+                           next();
+                        },
+                        (err) => {
+                           Log("Error while trying to copy photo");
+                           next(err);
+                        }
+                     );
+                  }
+                  else {
+                     // No temp directory. So we will just be 
+                     // returning the URL of the original file.
+                     next();
+                  }
+               },
+
+            ],
+            (err) => {
+               if (err) {
+                  reject(err);
+               }
+               else {
+                  let url = fileEntry.toURL();
+                  resolve(url);
+               }
+            }
+         );
+      });
+   }
+
+   /**
     * Remove a photo by its filename.
     *
     * @param {string} photoName
@@ -240,6 +350,7 @@ class CameraPlatform extends EventEmitter {
    savePhoto(imageURI) {
       return new Promise((resolve, reject) => {
          var sourceFileEntry, targetFileEntry;
+         var tempFileUrl;
          var filename = uuid() + ".jpg";
 
          // Remove any querystring from the imageURI
@@ -300,6 +411,14 @@ class CameraPlatform extends EventEmitter {
                         next(err);
                      }
                   );
+               },
+               (next) => {
+                  // On iOS we can only display the image url if it is
+                  // located in a temp directory.
+                  this.tempUrl(targetFileEntry)
+                     .then((url) => {
+                        tempFileUrl = url;
+                     });
                }
             ],
 
@@ -309,7 +428,7 @@ class CameraPlatform extends EventEmitter {
                   resolve({
                      filename: filename,
                      fileEntry: targetFileEntry,
-                     url: targetFileEntry.toURL(),
+                     url: tempFileUrl,
                      cdvfile: targetFileEntry.toInternalURL()
                   });
                }
