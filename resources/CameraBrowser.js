@@ -92,13 +92,6 @@ class CameraBrowser extends CameraPlatform {
                                     .replace(".jpg", ""),
                               null
                            );
-                           storage.set(
-                              "Local Receipt Image-" +
-                                 item.name
-                                    .replace("receipt-", "")
-                                    .replace(".jpg", ""),
-                              null
-                           );
                         }
                      },
                      function() {
@@ -151,13 +144,6 @@ class CameraBrowser extends CameraPlatform {
                                     if (item.name.indexOf("receipt-") > -1) {
                                        storage.set(
                                           "Receipt Image-" +
-                                             item.name
-                                                .replace("receipt-", "")
-                                                .replace(".jpg", ""),
-                                          null
-                                       );
-                                       storage.set(
-                                          "Local Receipt Image-" +
                                              item.name
                                                 .replace("receipt-", "")
                                                 .replace(".jpg", ""),
