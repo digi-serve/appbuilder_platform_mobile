@@ -64,7 +64,7 @@ class CameraPlatform extends EventEmitter {
          () => {
             this.camera = navigator.camera;
             window.resolveLocalFileSystemURL(
-               cordova.file.tempDirectory,
+               cordova.file.cacheDirectory,
                (_directoryEntry) => {
                   this.directoryEntry = _directoryEntry;
                   this.emit("ready");
