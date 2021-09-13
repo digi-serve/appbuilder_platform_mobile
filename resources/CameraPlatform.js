@@ -251,17 +251,29 @@ class CameraPlatform extends EventEmitter {
 
                (next) => {
                   if (this.tempDirectoryEntry) {
-                     // Copy the image to the temp directory
-                     fileEntry.copyTo(
-                        this.tempDirectoryEntry,
+                     // Check if the temp file already exisits
+                     this.tempDirectoryEntry.getFile(
                         fileEntry.name,
-                        (_newFileEntry) => {
-                           fileEntry = _newFileEntry;
+                        { create: false, exclusive: false },
+                        (_fileEntry) => {
+                           targetFileEntry = _fileEntry;
                            next();
                         },
                         (err) => {
-                           Log("Error while trying to copy photo");
-                           next(err);
+                           Log("File not found copying from data directory", err);
+                           // Copy the image to the temp directory
+                           fileEntry.copyTo(
+                              this.tempDirectoryEntry,
+                              fileEntry.name,
+                              (_newFileEntry) => {
+                                 targetFileEntry = _newFileEntry;
+                                 next();
+                              },
+                              (err) => {
+                                 Log("Error while trying to copy photo");
+                                 next(err);
+                              }
+                           );
                         }
                      );
                   }
