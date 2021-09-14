@@ -430,6 +430,7 @@ class CameraPlatform extends EventEmitter {
                   this.tempUrl(targetFileEntry)
                      .then((url) => {
                         tempFileUrl = url;
+                        next();
                      });
                }
             ],
