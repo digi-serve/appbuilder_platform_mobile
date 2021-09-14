@@ -481,13 +481,6 @@ class CameraPlatform extends EventEmitter {
                                     .replace(".jpg", ""),
                               null
                            );
-                           storage.set(
-                              "Local Receipt Image-" +
-                                 item.name
-                                    .replace("receipt-", "")
-                                    .replace(".jpg", ""),
-                              null
-                           );
                         }
                      },
                      function() {
@@ -540,13 +533,6 @@ class CameraPlatform extends EventEmitter {
                                     if (item.name.indexOf("receipt-") > -1) {
                                        storage.set(
                                           "Receipt Image-" +
-                                             item.name
-                                                .replace("receipt-", "")
-                                                .replace(".jpg", ""),
-                                          null
-                                       );
-                                       storage.set(
-                                          "Local Receipt Image-" +
                                              item.name
                                                 .replace("receipt-", "")
                                                 .replace(".jpg", ""),
