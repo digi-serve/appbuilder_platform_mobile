@@ -456,7 +456,7 @@ class Storage extends EventEmitter {
     *
     * @return {Promise}
     */
-   clearAll() {
+   clearAll(keyRange) {
       return new Promise((resolve, reject) => {
          var transaction = this.db.transaction(storeName, "readwrite");
          transaction.onerror = (event) => {
@@ -465,7 +465,12 @@ class Storage extends EventEmitter {
             reject(event.error);
          }
          var store = transaction.objectStore(storeName);
-         var req = store.clear();
+         if (keyRange) {
+            debugger;
+            var req = store.delete(keyRange);
+         } else {
+            var req = store.clear();
+         }
          req.onsuccess = (event) => {
             resolve();
          }

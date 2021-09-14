@@ -81,23 +81,16 @@ class CameraBrowser extends CameraPlatform {
          directoryReader.readEntries(
             (entries) => {
                entries.forEach((item, i) => {
-                  item.remove(
-                     function() {
-                        console.log("File removed");
-                        if (item.name.indexOf("receipt-") > -1) {
-                           storage.set(
-                              "Receipt Image-" +
-                                 item.name
-                                    .replace("receipt-", "")
-                                    .replace(".jpg", ""),
-                              null
-                           );
+                  if (item.name.indexOf("receipt-") > -1) {
+                     item.remove(
+                        function() {
+                           console.log("File removed");
+                        },
+                        function() {
+                           console.log("Error while removing file");
                         }
-                     },
-                     function() {
-                        console.log("Error while removing file");
-                     }
-                  );
+                     );
+                  }
                });
                resolve();
             },
@@ -105,6 +98,8 @@ class CameraBrowser extends CameraPlatform {
                reject("Failed during operations: " + error.code);
             }
          );
+         var range = IDBKeyRange.bound("Receipt Image-0", "Receipt Image-z", false, false);
+         storage.clearAll(range);
       });
    }
 
