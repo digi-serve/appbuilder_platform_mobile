@@ -8,7 +8,7 @@
 "use strict";
 
 import EventEmitter from "eventemitter2";
-import "./Countly.js"; // copied from Countly cordova plugin
+//import "./Countly.js"; // copied from Countly cordova plugin
 import { sentryRelase } from "../../../../version.js";
 
 var config = require("../../config/config.js");
