@@ -145,7 +145,7 @@ Template7.registerHelper("translate", (app, obj, item) => {
    var translated = "";
 
    obj.translations.forEach((t) => {
-      if (t.language_code == lang && typeof t[item] != "undefine") {
+      if (t.language_code == lang && typeof t[item] != "undefined") {
          translated = t[item];
       }
    });
@@ -156,7 +156,7 @@ Template7.registerHelper("translate", (app, obj, item) => {
 // create a helper in template7 so we can properly display numbers with commas
 Template7.registerHelper("commas", (parent, field) => {
    var number = field ? parent[field] : parent;
-   if (number === undefined) {
+   if (number === undefined || number === null) {
       return "0";
    }
    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
