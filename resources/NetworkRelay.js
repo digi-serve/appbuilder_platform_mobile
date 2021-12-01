@@ -11,6 +11,7 @@ import Lock from "./Lock.js";
 import Log from "./Log";
 import NetworkRest from "./NetworkRest";
 import { storage } from "./Storage.js";
+const MAX_PACKET_SIZE = 1048576;
 
 var config = require("../../config/config.js");
 
@@ -789,7 +790,7 @@ class NetworkRelay extends NetworkRest {
     *              }
     * @return {Promise}
     */
-   _createJob(params, jobResponse) {
+   async _createJob(params, jobResponse) {
       if (!account || !account.authToken) {
          analytics.log(
             "NetworkRelay._createJob(): request without credentials! : " +
@@ -800,21 +801,42 @@ class NetworkRelay extends NetworkRest {
       }
 
       // ok, the given params, are the DATA we want to send to the RelayServer
-      var eParams = this.encrypt(params);
+      var data = this.encrypt(params);
       var jobToken = this.uuid();
 
       var relayParams = {
          url: config.appbuilder.routes.relayRequest,
          data: {
             appUUID: this.appUUID,
-            data: eParams,
-            jobToken: jobToken
+            jobToken: jobToken,
+            packet: null,
+            totalPackets: null,
+            data: null
          }
       };
 
+      // Maybe a UI spinner can listen for this
+      this.emit("job.adding");
+
       // we are Creating a new relay entry, so we do a POST
-      return super
-         .post(relayParams)
+      return Promise.resolve()
+         .then(async () => {
+            // Split up large data into smaller packets
+            var packets = [];
+            while (data.length >= MAX_PACKET_SIZE) {
+               packets.push(data.slice(0, MAX_PACKET_SIZE));
+               data = data.slice(MAX_PACKET_SIZE, data.length);
+            }
+            packets.push(data);
+            relayParams.data.totalPackets = packets.length;
+
+            // Post all the packets
+            for (let i=0; i<packets.length; i++) {
+               relayParams.data.packet = i;
+               relayParams.data.data = packets[i];
+               await super.post(relayParams);
+            }
+         })
          .catch((err) => {
             analytics.log(
                "NetworkRelay." +
