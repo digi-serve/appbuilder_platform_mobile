@@ -11,6 +11,7 @@ import Lock from "./Lock.js";
 import Log from "./Log";
 import NetworkRest from "./NetworkRest";
 import { storage } from "./Storage.js";
+import async from "async";
 const MAX_PACKET_SIZE = 1048576;
 
 var config = require("../../config/config.js");
@@ -790,7 +791,7 @@ class NetworkRelay extends NetworkRest {
     *              }
     * @return {Promise}
     */
-   async _createJob(params, jobResponse) {
+   _createJob(params, jobResponse) {
       if (!account || !account.authToken) {
          analytics.log(
             "NetworkRelay._createJob(): request without credentials! : " +
@@ -820,7 +821,7 @@ class NetworkRelay extends NetworkRest {
 
       // we are Creating a new relay entry, so we do a POST
       return Promise.resolve()
-         .then(async () => {
+         .then(() => {
             // Split up large data into smaller packets
             var packets = [];
             while (data.length >= MAX_PACKET_SIZE) {
@@ -830,12 +831,16 @@ class NetworkRelay extends NetworkRest {
             packets.push(data);
             relayParams.data.totalPackets = packets.length;
 
-            // Post all the packets
+            // Post all the packets in series
+            let p = Promise.resolve();
             for (let i=0; i<packets.length; i++) {
                relayParams.data.packet = i;
                relayParams.data.data = packets[i];
-               await super.post(relayParams);
+               p = p.then(() => {
+                  super.post(relayParams);
+               });
             }
+            return p;
          })
          .catch((err) => {
             analytics.log(
