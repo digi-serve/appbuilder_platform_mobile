@@ -12,9 +12,10 @@ import Log from "./Log";
 import NetworkRest from "./NetworkRest";
 import { storage } from "./Storage.js";
 import async from "async";
-const MAX_PACKET_SIZE = 1048576;
 
 var config = require("../../config/config.js");
+const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
+
 
 class NetworkRelay extends NetworkRest {
    /**
