@@ -103,6 +103,113 @@ class CameraBrowser extends CameraPlatform {
       });
    }
 
+   /**
+    * Prompt the user to select an existing photo from their library, and
+    * obtain a copy of the chosen photo.
+    *
+    * @param {int} width
+    * @param {int} height
+    * @return {Promise}
+    *    Resolves with metadata of the copied photo.
+    *    {
+    *       filename: <stirng>,
+    *       fileEntry: <FileEntry>,
+    *       url: <string>, // only valid for current session
+    *       cdvfile: <string> // alternate Cordova URL that is persistent
+    *                         // this does not work on iOS anymore!
+    *    }
+    */
+   getLibraryPhoto() {
+      return new Promise((resolve, reject) => {
+         // make sure _testDirectoryEntry is created before trying to use:
+         if (!this._testDirectoryEntry) {
+            this.init().then(() => {
+               this.imageCleanUp()
+                  .then((data) => {
+                     resolve(data);
+                  })
+                  .catch(reject);
+            });
+            return;
+         }
+         // Get a directory reader
+         var directoryReader = this._testDirectoryEntry.createReader();
+         // Get a list of all the entries in the directory
+         directoryReader.readEntries(
+            (entries) => {
+               var currentDate = new Date();
+               var currentTime = currentDate.getTime();
+               if (entries.length) {
+                  this.loadPhotoByName(entries[0].name).then(resolve).catch(reject);
+               } else {
+                  alert("No images found");
+                  reject("No images found");
+               }
+               // entries.forEach((item, i) => {
+               //    if (item.isFile && item.name.indexOf("receipt-") > -1) {
+               //       item.getMetadata(
+               //          (file) => {
+               //             var timeDiff = Math.abs(
+               //                currentTime - file.modificationTime.getTime()
+               //             );
+               //             var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+               //             if (diff > 14) {
+               //                item.remove(
+               //                   function() {
+               //                      console.log("File removed");
+               //                      if (item.name.indexOf("receipt-") > -1) {
+               //                         storage.set(
+               //                            "Receipt Image-" +
+               //                               item.name
+               //                                  .replace("receipt-", "")
+               //                                  .replace(".jpg", ""),
+               //                            null
+               //                         );
+               //                      }
+               //                   },
+               //                   function() {
+               //                      console.log("Error while removing file");
+               //                   }
+               //                );
+               //             }
+               //          },
+               //          (error) => {
+               //             reject(error);
+               //          }
+               //       );
+               //    }
+               // });
+            },
+            (error) => {
+               reject("Failed during operations: " + error.code);
+            }
+         );
+         // this.camera.getPicture(
+         //    (imageURI) => {
+         //       this.savePhoto(imageURI)
+         //          .then((result) => {
+         //             resolve(result);
+         //          })
+         //          .catch(reject);
+         //    },
+         //    (err) => {
+         //       Log("Error", err);
+         //       reject(err);
+         //    },
+         //    {
+         //       saveToPhotoAlbum: false,
+         //       allowEdit: canEditPhoto,
+         //       encodingType: window.Camera.EncodingType.JPEG,
+         //       mediaType: window.Camera.MediaType.PICTURE,
+         //       sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
+         //       targetWidth: width,
+         //       targetHeight: height
+         //    }
+         // );
+      });
+   }
+
+
    imageCleanUp() {
       return new Promise((resolve, reject) => {
          // make sure _testDirectoryEntry is created before trying to use:
