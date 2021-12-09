@@ -818,7 +818,7 @@ class NetworkRelay extends NetworkRest {
       };
 
       // Maybe a UI spinner can listen for this
-      this.emit("job.adding");
+      this.emit("sending.start");
 
       // we are Creating a new relay entry, so we do a POST
       return Promise.resolve()
@@ -849,6 +849,7 @@ class NetworkRelay extends NetworkRest {
                   params.type +
                   "(): error communicating with RelayServer"
             );
+            this.emit("sending.stop");
             analytics.logError(err);
 
             // throw err again to pass it back to calling routine:
@@ -873,6 +874,7 @@ class NetworkRelay extends NetworkRest {
             return this.tokenLock.release();
          })
          .then(() => {
+            this.emit("sending.stop");
             this.emit("job.added", "added");
          });
    }
