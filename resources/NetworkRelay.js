@@ -838,7 +838,7 @@ class NetworkRelay extends NetworkRest {
                relayParams.data.packet = i;
                relayParams.data.data = packets[i];
                p = p.then(() => {
-                  super.post(relayParams);
+                  return super.post(relayParams);
                });
             }
             return p;
@@ -850,6 +850,7 @@ class NetworkRelay extends NetworkRest {
                   "(): error communicating with RelayServer"
             );
             this.emit("sending.stop");
+            this.emit("error.sending");
             analytics.logError(err);
 
             // throw err again to pass it back to calling routine:
