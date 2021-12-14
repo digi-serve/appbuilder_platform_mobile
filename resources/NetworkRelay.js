@@ -432,6 +432,7 @@ class NetworkRelay extends NetworkRest {
                this.relayState.aesKeySent &&
                this.isNetworkConnected()
             ) {
+               this.emit('receiving.start');
                super
                   .get({
                      url: config.appbuilder.routes.relayRequest, // "/mobile/relayrequest",
@@ -458,6 +459,7 @@ class NetworkRelay extends NetworkRest {
                      if (!anyLeft) {
                         this.pollFrequency =
                            config.appbuilder.relayPollFrequencyNormal;
+                        this.emit('receiving.stop');
                      }
                   })
                   .then(() => {
