@@ -459,13 +459,14 @@ class NetworkRelay extends NetworkRest {
                      if (!anyLeft) {
                         this.pollFrequency =
                            config.appbuilder.relayPollFrequencyNormal;
-                        this.emit('receiving.stop');
                      }
                   })
                   .then(() => {
+                     this.emit('receiving.stop');
                      this.pollTimerID = setTimeout(checkIn, this.pollFrequency);
                   })
                   .catch((err) => {
+                     this.emit('receiving.stop');
                      analytics.log(
                         "Relay.poll().checkin(): an error was returned:"
                      );
