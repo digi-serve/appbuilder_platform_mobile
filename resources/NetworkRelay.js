@@ -541,14 +541,12 @@ class NetworkRelay extends NetworkRest {
                   // we can remove these pending job packets now
                   delete this.jobPackets[response.jobToken];
 
-                  return this.resolveJob(compiledResponse).then(() => {
-                     this.saveJobPackets();
-                  });
+                  return this.resolveJob(compiledResponse);
                }
+            })
+            .then(() => {
+               this.saveJobPackets();
             });
-         // .then(() => {
-         //    this.saveJobPackets();
-         // });
       }
    }
 
