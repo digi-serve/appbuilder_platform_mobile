@@ -165,9 +165,10 @@ class NetworkRest extends EventEmitter {
     * perform the actual AJAX request for this operation.
     * @param {obj} params  the jQuery.ajax() formatted params
     * @param {obj} jobRequest  the information about the request's response.
+    * @param {integer} numRetries Number of times to retry a failed request
     * @return {Promise}
     */
-   _request(params, jobResponse) {
+   _request(params, jobResponse, numRetries=1) {
       return new Promise((resolve, reject) => {
          params.url = params.url || "/";
          if (params.url[0] == "/") {
@@ -176,84 +177,84 @@ class NetworkRest extends EventEmitter {
 
          params.headers = params.headers || {};
          params.headers.Authorization = account.authToken;
-
          // params.timeout = params.timeout || 6000;
 
          if (this.isNetworkConnected()) {
-            // setup our error handler
-            params.error = (jqXHR, text, err) => {
-               // failing here is probably a problem with the physical
-               // connection to the machine, or bad route.
+            $.ajax(params)
+               .done((packet) => {
+                  // Log('--- .done():', packet);
+                  // the returned data packet should look like:
+                  // {
+                  //  status:'success',
+                  //  data:{returned Data here}
+                  // }
+                  // we just want to return the .data portion
+                  var data = packet;
+                  if (data.data) data = data.data;
+                  resolve(data);
+               })
+               .fail((jqXHR, text, err) => {
+                  // if this is a network connection error, send the attempt again:
+                  if (text == "timeout" || jqXHR.readyState == 0) {
+                     //// Network Error: conneciton refused, access denied, etc...
+                     Log(
+                        "*** NetworkRest._request():network connection error detected."
+                     );
+                     analytics.log(
+                        "NetworkRest._request():network connection error detected."
+                     );
+                     // retry the attempt:
+                     if (numRetries > 0) {
+                        Log("Trying again");
+                        this._request(params, jobResponse, numRetries-1)
+                           .then((data) => {
+                              Log.warn(
+                                 "*** NetworkRest._request().then(): attempt resolved."
+                              );
+                              resolve(data);
+                           })
+                           .catch((err) => {
+                              Log.error(
+                                 "*** NetworkRest._request().catch(): retry failed:",
+                              );
+                              reject(err);
+                           });
+                           return;
+                     }
+                     // no more retries left
+                     else {
+                        // reject() will be called below
+                     }
+                  } else if (jqXHR.readyState == 4) {
+                     //// an HTTP error
+                     Log("HTTP error while communicating with relay server");
+                     Log("status code: " + jqXHR.status);
 
-               // if this is a network connection error, send the attempt again:
-               if (text == "timeout" || jqXHR.readyState == 0) {
-                  //// Network Error: conneciton refused, access denied, etc...
-                  Log(
-                     "*** NetworkRest._request():network connection error detected. Trying again"
-                  );
-                  analytics.log(
-                     "NetworkRest._request():network connection error detected. Trying again"
-                  );
-                  // retry the attempt:
-                  this._request(params)
-                     .then((data) => {
-                        // console.log('--- timeout.then():',data);
-                        Log.warn(
-                           "*** NetworkRest._request().then(): attempt resolved."
-                        );
-                        resolve(data);
-                     })
-                     .catch((err) => {
-                        Log.error(
-                           "*** NetworkRest._request().catch(): retry failed:",
-                           err
-                        );
-                        reject(err);
-                     });
-
-                  return;
-               } else if (jqXHR.readyState == 4) {
-                  //// an HTTP error
-                  Log("HTTP error while communicating with relay server");
-                  Log("status code: " + jqXHR.status);
-
-                  if (jqXHR.status == 403) {
-                     this.emit("error.badAuth", err);
-                  } else if (jqXHR.status >= 400 && jqXHR.status < 500) {
-                     this.emit("error.badRequest", err);
-                  } else if (jqXHR.status >= 500) {
-                     this.emit("error.badServer", err);
+                     if (jqXHR.status == 403) {
+                        this.emit("error.badAuth", err);
+                     } else if (jqXHR.status >= 400 && jqXHR.status < 500) {
+                        this.emit("error.badRequest", err);
+                     } else if (jqXHR.status >= 500) {
+                        this.emit("error.badServer", err);
+                     }
                   }
-               }
 
-               // unknown error here:
-               var error = new Error(
-                  "NetworkRest._request() error with .ajax() command:"
-               );
-               error.response = jqXHR.responseText;
-               error.text = text;
-               error.err = err;
-               analytics.logError(error);
-               Log.error(error);
-               // TODO: insert some default error handling for expected
-               // situations:
-               reject(error);
-            };
+                  var error = new Error(
+                     "NetworkRest._request() error with .ajax() command:"
+                  );
+                  error.response = jqXHR.responseText;
+                  error.text = text;
+                  error.err = err;
+                  analytics.logError(error);
+                  Log.error(error);
+                  // TODO: insert some default error handling for expected
+                  // situations:
+                  reject(error);
+               });
+         } 
 
-            $.ajax(params).done((packet) => {
-               // Log('--- .done():', packet);
-               // the returned data packet should look like:
-               // {
-               //  status:'success',
-               //  data:{returned Data here}
-               // }
-               // we just want to return the .data portion
-               var data = packet;
-               if (data.data) data = data.data;
-
-               resolve(data);
-            });
-         } else {
+         // Network is not connected
+         else {
             // now Queue this request params.
             analytics.log(
                "NetworkRest:_request(): Network is offline. Queuing request."

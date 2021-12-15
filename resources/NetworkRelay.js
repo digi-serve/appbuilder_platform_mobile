@@ -11,8 +11,11 @@ import Lock from "./Lock.js";
 import Log from "./Log";
 import NetworkRest from "./NetworkRest";
 import { storage } from "./Storage.js";
+import async from "async";
 
 var config = require("../../config/config.js");
+const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
+
 
 class NetworkRelay extends NetworkRest {
    /**
@@ -429,6 +432,7 @@ class NetworkRelay extends NetworkRest {
                this.relayState.aesKeySent &&
                this.isNetworkConnected()
             ) {
+               this.emit('receiving.start');
                super
                   .get({
                      url: config.appbuilder.routes.relayRequest, // "/mobile/relayrequest",
@@ -458,9 +462,11 @@ class NetworkRelay extends NetworkRest {
                      }
                   })
                   .then(() => {
+                     this.emit('receiving.stop');
                      this.pollTimerID = setTimeout(checkIn, this.pollFrequency);
                   })
                   .catch((err) => {
+                     this.emit('receiving.stop');
                      analytics.log(
                         "Relay.poll().checkin(): an error was returned:"
                      );
@@ -536,14 +542,12 @@ class NetworkRelay extends NetworkRest {
                   // we can remove these pending job packets now
                   delete this.jobPackets[response.jobToken];
 
-                  return this.resolveJob(compiledResponse).then(() => {
-                     this.saveJobPackets();
-                  });
+                  return this.resolveJob(compiledResponse);
                }
+            })
+            .then(() => {
+               this.saveJobPackets();
             });
-         // .then(() => {
-         //    this.saveJobPackets();
-         // });
       }
    }
 
@@ -800,27 +804,54 @@ class NetworkRelay extends NetworkRest {
       }
 
       // ok, the given params, are the DATA we want to send to the RelayServer
-      var eParams = this.encrypt(params);
+      var data = this.encrypt(params);
       var jobToken = this.uuid();
 
       var relayParams = {
          url: config.appbuilder.routes.relayRequest,
          data: {
             appUUID: this.appUUID,
-            data: eParams,
-            jobToken: jobToken
+            jobToken: jobToken,
+            packet: null,
+            totalPackets: null,
+            data: null
          }
       };
 
+      // Maybe a UI spinner can listen for this
+      this.emit("sending.start");
+
       // we are Creating a new relay entry, so we do a POST
-      return super
-         .post(relayParams)
+      return Promise.resolve()
+         .then(() => {
+            // Split up large data into smaller packets
+            var packets = [];
+            while (data.length >= MAX_PACKET_SIZE) {
+               packets.push(data.slice(0, MAX_PACKET_SIZE));
+               data = data.slice(MAX_PACKET_SIZE, data.length);
+            }
+            packets.push(data);
+            relayParams.data.totalPackets = packets.length;
+
+            // Post all the packets in series
+            let p = Promise.resolve();
+            for (let i=0; i<packets.length; i++) {
+               relayParams.data.packet = i;
+               relayParams.data.data = packets[i];
+               p = p.then(() => {
+                  return super.post(relayParams);
+               });
+            }
+            return p;
+         })
          .catch((err) => {
             analytics.log(
                "NetworkRelay." +
                   params.type +
                   "(): error communicating with RelayServer"
             );
+            this.emit("sending.stop");
+            this.emit("error.sending");
             analytics.logError(err);
 
             // throw err again to pass it back to calling routine:
@@ -845,6 +876,7 @@ class NetworkRelay extends NetworkRest {
             return this.tokenLock.release();
          })
          .then(() => {
+            this.emit("sending.stop");
             this.emit("job.added", "added");
          });
    }
