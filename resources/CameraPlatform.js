@@ -199,7 +199,7 @@ class CameraPlatform extends EventEmitter {
       var tempImg = new Image();
       var filename = uuid() + ".jpg";
       tempImg.src = url;
-      tempImg.onload = function () {
+      tempImg.onload = (data) => {
          // Get image size and aspect ratio.
          var targetWidth = tempImg.width;
          var targetHeight = tempImg.height;
@@ -227,7 +227,7 @@ class CameraPlatform extends EventEmitter {
          // Take image from top left corner to bottom right corner and draw the image
          // on canvas to completely fill into.
          ctx.drawImage(
-            this,
+            data.currentTarget,
             0,
             0,
             tempImg.width,
