@@ -44,7 +44,7 @@ class CameraPlatform extends EventEmitter {
       this.camera = {
          getPicture: () => {
             return Promise.reject(new Error("Device not ready"));
-         }
+         },
       };
 
       this.init();
@@ -90,14 +90,14 @@ class CameraPlatform extends EventEmitter {
                            next();
                         }
                      );
-                  }
+                  },
                ],
                (err) => {
-                  if (err) {};
+                  if (err) {
+                  }
                   this.emit("ready");
                }
             );
-
          },
          false
       );
@@ -146,7 +146,7 @@ class CameraPlatform extends EventEmitter {
                sourceType: window.Camera.PictureSourceType.CAMERA,
                correctOrientation: true,
                targetWidth: width,
-               targetHeight: height
+               targetHeight: height,
             }
          );
       });
@@ -172,11 +172,7 @@ class CameraPlatform extends EventEmitter {
       return new Promise((resolve, reject) => {
          this.camera.getPicture(
             (imageURI) => {
-               this.savePhoto(imageURI)
-                  .then((result) => {
-                     resolve(result);
-                  })
-                  .catch(reject);
+               this.resizeImage(width, imageURI);
             },
             (err) => {
                Log("Error", err);
@@ -189,7 +185,7 @@ class CameraPlatform extends EventEmitter {
                mediaType: window.Camera.MediaType.PICTURE,
                sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
                targetWidth: width,
-               targetHeight: height
+               targetHeight: height,
             }
          );
       });
@@ -199,8 +195,59 @@ class CameraPlatform extends EventEmitter {
    // Photo file management
    ////////
 
+   resizeImage(longSideMax = defaultWidth, url) {
+      var tempImg = new Image();
+      tempImg.src = url;
+      tempImg.onload = function () {
+         // Get image size and aspect ratio.
+         var targetWidth = tempImg.width;
+         var targetHeight = tempImg.height;
+         var aspect = tempImg.width / tempImg.height;
+
+         // Calculate shorter side length, keeping aspect ratio on image.
+         // If source image size is less than given longSideMax, then it need to be
+         // considered instead.
+         if (tempImg.width > tempImg.height) {
+            longSideMax = Math.min(tempImg.width, longSideMax);
+            targetWidth = longSideMax;
+            targetHeight = longSideMax / aspect;
+         } else {
+            longSideMax = Math.min(tempImg.height, longSideMax);
+            targetHeight = longSideMax;
+            targetWidth = longSideMax * aspect;
+         }
+
+         // Create canvas of required size.
+         var canvas = document.createElement("canvas");
+         canvas.width = targetWidth;
+         canvas.height = targetHeight;
+
+         var ctx = canvas.getContext("2d");
+         // Take image from top left corner to bottom right corner and draw the image
+         // on canvas to completely fill into.
+         ctx.drawImage(
+            this,
+            0,
+            0,
+            tempImg.width,
+            tempImg.height,
+            0,
+            0,
+            targetWidth,
+            targetHeight
+         );
+
+         // callback(canvas.toDataURL("image/jpeg"));
+         this.savePhoto(canvas.toDataURL("image/jpeg"))
+            .then((result) => {
+               resolve(result);
+            })
+            .catch(reject);
+      };
+   }
+
    /**
-    * Copies an existing image into the temp directory and delivers the 
+    * Copies an existing image into the temp directory and delivers the
     * URL for it.
     *
     * This is necessary if you need to display in an <img> tag under iOS.
@@ -220,7 +267,7 @@ class CameraPlatform extends EventEmitter {
             [
                (next) => {
                   // Get the FileEntry via the filename
-                  if (typeof imageFile == 'string') {
+                  if (typeof imageFile == "string") {
                      this.loadPhotoByName(imageFile)
                         .then((image) => {
                            fileEntry = image.fileEntry;
@@ -229,13 +276,11 @@ class CameraPlatform extends EventEmitter {
                         .catch((err) => {
                            next(err);
                         });
-                  }
-                  else if (imageFile instanceof FileEntry) {
+                  } else if (imageFile instanceof FileEntry) {
                      // FileEntry is provided
                      fileEntry = imageFile;
                      next();
-                  }
-                  else {
+                  } else {
                      next(TypeError());
                   }
                },
@@ -251,7 +296,10 @@ class CameraPlatform extends EventEmitter {
                            next();
                         },
                         (err) => {
-                           Log("File not found copying from data directory", err);
+                           Log(
+                              "File not found copying from data directory",
+                              err
+                           );
                            // Copy the image to the temp directory
                            fileEntry.copyTo(
                               this.tempDirectoryEntry,
@@ -267,20 +315,17 @@ class CameraPlatform extends EventEmitter {
                            );
                         }
                      );
-                  }
-                  else {
-                     // No temp directory. So we will just be 
+                  } else {
+                     // No temp directory. So we will just be
                      // returning the URL of the original file.
                      next();
                   }
                },
-
             ],
             (err) => {
                if (err) {
                   reject(err);
-               }
-               else {
+               } else {
                   let url = fileEntry.toURL();
                   resolve(url);
                }
@@ -313,16 +358,16 @@ class CameraPlatform extends EventEmitter {
 
                (next) => {
                   fileEntry.remove(
-                     function(/* file */) {
+                     function (/* file */) {
                         // File deleted successfully
                         next();
                      },
-                     function(err) {
+                     function (err) {
                         // Error while removing File
                         next(err);
                      }
                   );
-               }
+               },
             ],
 
             (err) => {
@@ -418,12 +463,11 @@ class CameraPlatform extends EventEmitter {
                (next) => {
                   // On iOS we can only display the image url if it is
                   // located in a temp directory.
-                  this.tempUrl(targetFileEntry)
-                     .then((url) => {
-                        tempFileUrl = url;
-                        next();
-                     });
-               }
+                  this.tempUrl(targetFileEntry).then((url) => {
+                     tempFileUrl = url;
+                     next();
+                  });
+               },
             ],
 
             (err) => {
@@ -433,7 +477,7 @@ class CameraPlatform extends EventEmitter {
                      filename: filename,
                      fileEntry: targetFileEntry,
                      url: tempFileUrl,
-                     cdvfile: targetFileEntry.toInternalURL()
+                     cdvfile: targetFileEntry.toInternalURL(),
                   });
                }
             }
@@ -463,10 +507,10 @@ class CameraPlatform extends EventEmitter {
                entries.forEach((item, i) => {
                   if (item.name.indexOf("receipt-") > -1) {
                      item.remove(
-                        function() {
+                        function () {
                            console.log("File removed");
                         },
-                        function() {
+                        function () {
                            console.log("Error while removing file");
                         }
                      );
@@ -478,7 +522,12 @@ class CameraPlatform extends EventEmitter {
                reject("Failed during operations: " + error.code);
             }
          );
-         var range = IDBKeyRange.bound("Receipt Image-0", "Receipt Image-z", false, false);
+         var range = IDBKeyRange.bound(
+            "Receipt Image-0",
+            "Receipt Image-z",
+            false,
+            false
+         );
          storage.clearAll(range);
       });
    }
@@ -514,7 +563,7 @@ class CameraPlatform extends EventEmitter {
                            var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
                            if (diff > 14) {
                               item.remove(
-                                 function() {
+                                 function () {
                                     console.log("File removed");
                                     if (item.name.indexOf("receipt-") > -1) {
                                        storage.set(
@@ -526,7 +575,7 @@ class CameraPlatform extends EventEmitter {
                                        );
                                     }
                                  },
-                                 function() {
+                                 function () {
                                     console.log("Error while removing file");
                                  }
                               );
@@ -625,7 +674,7 @@ class CameraPlatform extends EventEmitter {
                   filename: filename,
                   fileEntry: _fileEntry,
                   url: _fileEntry.toURL(),
-                  cdvfile: _fileEntry.toInternalURL()
+                  cdvfile: _fileEntry.toInternalURL(),
                });
             },
             (err) => {
@@ -671,7 +720,7 @@ class CameraPlatform extends EventEmitter {
                metadata.fileEntry.file((file) => {
                   // Read the file's data
                   var reader = new FileReader();
-                  reader.onloadend = function() {
+                  reader.onloadend = function () {
                      var binary = this.result;
                      var base64 = window.btoa(binary);
                      resolve(base64);
@@ -752,7 +801,7 @@ class CameraPlatform extends EventEmitter {
                         next(err);
                      }
                   );
-               }
+               },
             ],
             (err) => {
                if (err) reject(err);
@@ -761,39 +810,43 @@ class CameraPlatform extends EventEmitter {
          );
       });
    }
-   
-    /**
-     * Convert a base64 string in a Blob according to the data and contentType.
-     * 
-     * @param b64Data {String} Pure base64 string without contentType
-     * @param contentType {String} the content type of the file i.e (image/jpeg - image/png - text/plain)
-     * @param sliceSize {Int} SliceSize to process the byteCharacters
-     * @see http://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
-     * @return Blob
-     */
-    b64toBlob(b64Data, contentType, sliceSize) {
-            contentType = contentType || '';
-            sliceSize = sliceSize || 512;
 
-            var byteCharacters = atob(b64Data);
-            var byteArrays = [];
+   /**
+    * Convert a base64 string in a Blob according to the data and contentType.
+    *
+    * @param b64Data {String} Pure base64 string without contentType
+    * @param contentType {String} the content type of the file i.e (image/jpeg - image/png - text/plain)
+    * @param sliceSize {Int} SliceSize to process the byteCharacters
+    * @see http://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
+    * @return Blob
+    */
+   b64toBlob(b64Data, contentType, sliceSize) {
+      contentType = contentType || "";
+      sliceSize = sliceSize || 512;
 
-            for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-                var slice = byteCharacters.slice(offset, offset + sliceSize);
+      var byteCharacters = atob(b64Data);
+      var byteArrays = [];
 
-                var byteNumbers = new Array(slice.length);
-                for (var i = 0; i < slice.length; i++) {
-                    byteNumbers[i] = slice.charCodeAt(i);
-                }
+      for (
+         var offset = 0;
+         offset < byteCharacters.length;
+         offset += sliceSize
+      ) {
+         var slice = byteCharacters.slice(offset, offset + sliceSize);
 
-                var byteArray = new Uint8Array(byteNumbers);
+         var byteNumbers = new Array(slice.length);
+         for (var i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+         }
 
-                byteArrays.push(byteArray);
-            }
+         var byteArray = new Uint8Array(byteNumbers);
 
-          var blob = new Blob(byteArrays, {type: contentType});
-          return blob;
-    }
+         byteArrays.push(byteArray);
+      }
+
+      var blob = new Blob(byteArrays, { type: contentType });
+      return blob;
+   }
 
    /**
     * Save binary data to a file.
@@ -836,7 +889,7 @@ class CameraPlatform extends EventEmitter {
 
                      fileWriter.write(data);
                   });
-               }
+               },
             ],
             (err) => {
                if (err) reject(err);
@@ -845,7 +898,7 @@ class CameraPlatform extends EventEmitter {
                      filename: filename,
                      fileEntry: fileEntry,
                      url: fileEntry.toURL(),
-                     cdvfile: fileEntry.toInternalURL()
+                     cdvfile: fileEntry.toInternalURL(),
                   });
             }
          );
