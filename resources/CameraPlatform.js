@@ -172,7 +172,7 @@ class CameraPlatform extends EventEmitter {
       return new Promise((resolve, reject) => {
          this.camera.getPicture(
             (imageURI) => {
-               this.resizeImage(width, imageURI);
+               this.resizeImage(width, imageURI, resolve, reject);
             },
             (err) => {
                Log("Error", err);
@@ -195,55 +195,61 @@ class CameraPlatform extends EventEmitter {
    // Photo file management
    ////////
 
-   resizeImage(longSideMax = defaultWidth, url) {
-      var tempImg = new Image();
-      tempImg.src = url;
-      tempImg.onload = function () {
-         // Get image size and aspect ratio.
-         var targetWidth = tempImg.width;
-         var targetHeight = tempImg.height;
-         var aspect = tempImg.width / tempImg.height;
+   resizeImage(longSideMax = defaultWidth, filename, resolve, reject) {
+      this.loadPhotoByName(filename)
+         .then((url) => {
+            var tempImg = new Image();
+            tempImg.src = url;
+            tempImg.onload = function () {
+               // Get image size and aspect ratio.
+               var targetWidth = tempImg.width;
+               var targetHeight = tempImg.height;
+               var aspect = tempImg.width / tempImg.height;
 
-         // Calculate shorter side length, keeping aspect ratio on image.
-         // If source image size is less than given longSideMax, then it need to be
-         // considered instead.
-         if (tempImg.width > tempImg.height) {
-            longSideMax = Math.min(tempImg.width, longSideMax);
-            targetWidth = longSideMax;
-            targetHeight = longSideMax / aspect;
-         } else {
-            longSideMax = Math.min(tempImg.height, longSideMax);
-            targetHeight = longSideMax;
-            targetWidth = longSideMax * aspect;
-         }
+               // Calculate shorter side length, keeping aspect ratio on image.
+               // If source image size is less than given longSideMax, then it need to be
+               // considered instead.
+               if (tempImg.width > tempImg.height) {
+                  longSideMax = Math.min(tempImg.width, longSideMax);
+                  targetWidth = longSideMax;
+                  targetHeight = longSideMax / aspect;
+               } else {
+                  longSideMax = Math.min(tempImg.height, longSideMax);
+                  targetHeight = longSideMax;
+                  targetWidth = longSideMax * aspect;
+               }
 
-         // Create canvas of required size.
-         var canvas = document.createElement("canvas");
-         canvas.width = targetWidth;
-         canvas.height = targetHeight;
+               // Create canvas of required size.
+               var canvas = document.createElement("canvas");
+               canvas.width = targetWidth;
+               canvas.height = targetHeight;
 
-         var ctx = canvas.getContext("2d");
-         // Take image from top left corner to bottom right corner and draw the image
-         // on canvas to completely fill into.
-         ctx.drawImage(
-            this,
-            0,
-            0,
-            tempImg.width,
-            tempImg.height,
-            0,
-            0,
-            targetWidth,
-            targetHeight
-         );
+               var ctx = canvas.getContext("2d");
+               // Take image from top left corner to bottom right corner and draw the image
+               // on canvas to completely fill into.
+               ctx.drawImage(
+                  this,
+                  0,
+                  0,
+                  tempImg.width,
+                  tempImg.height,
+                  0,
+                  0,
+                  targetWidth,
+                  targetHeight
+               );
 
-         // callback(canvas.toDataURL("image/jpeg"));
-         this.savePhoto(canvas.toDataURL("image/jpeg"))
-            .then((result) => {
-               resolve(result);
-            })
-            .catch(reject);
-      };
+               // callback(canvas.toDataURL("image/jpeg"));
+               canvas.toBlob((dataImage) => {
+                  this.saveBinaryToName(dataImage, filename).then((results) => {
+                     this.loadPhotoByName(results.filename)
+                        .then(resolve)
+                        .catch(reject);
+                  });
+               });
+            };
+         })
+         .catch(reject);
    }
 
    /**

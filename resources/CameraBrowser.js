@@ -46,7 +46,7 @@ class CameraBrowser extends CameraPlatform {
 
          navigator.webkitPersistentStorage.requestQuota(
             requestedBytes,
-            function(grantedBytes) {
+            function (grantedBytes) {
                window.webkitRequestFileSystem(
                   PERSISTENT,
                   grantedBytes,
@@ -54,7 +54,7 @@ class CameraBrowser extends CameraPlatform {
                   errorHandler
                );
             },
-            function(e) {
+            function (e) {
                Log("CameraBrowser.js:init():requestQuota():Error", e);
             }
          );
@@ -83,10 +83,10 @@ class CameraBrowser extends CameraPlatform {
                entries.forEach((item, i) => {
                   if (item.name.indexOf("receipt-") > -1) {
                      item.remove(
-                        function() {
+                        function () {
                            console.log("File removed");
                         },
-                        function() {
+                        function () {
                            console.log("Error while removing file");
                         }
                      );
@@ -98,7 +98,12 @@ class CameraBrowser extends CameraPlatform {
                reject("Failed during operations: " + error.code);
             }
          );
-         var range = IDBKeyRange.bound("Receipt Image-0", "Receipt Image-z", false, false);
+         var range = IDBKeyRange.bound(
+            "Receipt Image-0",
+            "Receipt Image-z",
+            false,
+            false
+         );
          storage.clearAll(range);
       });
    }
@@ -140,75 +145,74 @@ class CameraBrowser extends CameraPlatform {
                var currentDate = new Date();
                var currentTime = currentDate.getTime();
                if (entries.length) {
-                  this.loadPhotoByName(entries[0].name).then(resolve).catch(reject);
+                  this.resizeImage(500, entries[0].name, resolve, reject);
                } else {
                   alert("No images found");
                   reject("No images found");
                }
-               // entries.forEach((item, i) => {
-               //    if (item.isFile && item.name.indexOf("receipt-") > -1) {
-               //       item.getMetadata(
-               //          (file) => {
-               //             var timeDiff = Math.abs(
-               //                currentTime - file.modificationTime.getTime()
-               //             );
-               //             var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-               //             if (diff > 14) {
-               //                item.remove(
-               //                   function() {
-               //                      console.log("File removed");
-               //                      if (item.name.indexOf("receipt-") > -1) {
-               //                         storage.set(
-               //                            "Receipt Image-" +
-               //                               item.name
-               //                                  .replace("receipt-", "")
-               //                                  .replace(".jpg", ""),
-               //                            null
-               //                         );
-               //                      }
-               //                   },
-               //                   function() {
-               //                      console.log("Error while removing file");
-               //                   }
-               //                );
-               //             }
-               //          },
-               //          (error) => {
-               //             reject(error);
-               //          }
-               //       );
-               //    }
-               // });
             },
             (error) => {
                reject("Failed during operations: " + error.code);
             }
          );
-         // this.camera.getPicture(
-         //    (imageURI) => {
-         //       this.savePhoto(imageURI)
-         //          .then((result) => {
-         //             resolve(result);
-         //          })
-         //          .catch(reject);
-         //    },
-         //    (err) => {
-         //       Log("Error", err);
-         //       reject(err);
-         //    },
-         //    {
-         //       saveToPhotoAlbum: false,
-         //       allowEdit: canEditPhoto,
-         //       encodingType: window.Camera.EncodingType.JPEG,
-         //       mediaType: window.Camera.MediaType.PICTURE,
-         //       sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
-         //       targetWidth: width,
-         //       targetHeight: height
-         //    }
-         // );
       });
    }
 
+   resizeImage(longSideMax = 500, filename, resolve, reject) {
+      this.loadPhotoByName(filename)
+         .then((url) => {
+            var tempImg = new Image();
+            tempImg.src = url.url;
+            tempImg.onload = (data) => {
+               // Get image size and aspect ratio.
+               var targetWidth = tempImg.width;
+               var targetHeight = tempImg.height;
+               var aspect = tempImg.width / tempImg.height;
+
+               // Calculate shorter side length, keeping aspect ratio on image.
+               // If source image size is less than given longSideMax, then it need to be
+               // considered instead.
+               if (tempImg.width > tempImg.height) {
+                  longSideMax = Math.min(tempImg.width, longSideMax);
+                  targetWidth = longSideMax;
+                  targetHeight = longSideMax / aspect;
+               } else {
+                  longSideMax = Math.min(tempImg.height, longSideMax);
+                  targetHeight = longSideMax;
+                  targetWidth = longSideMax * aspect;
+               }
+
+               // Create canvas of required size.
+               var canvas = document.createElement("canvas");
+               canvas.width = targetWidth;
+               canvas.height = targetHeight;
+
+               var ctx = canvas.getContext("2d");
+               // Take image from top left corner to bottom right corner and draw the image
+               // on canvas to completely fill into.
+               ctx.drawImage(
+                  data.currentTarget,
+                  0,
+                  0,
+                  tempImg.width,
+                  tempImg.height,
+                  0,
+                  0,
+                  targetWidth,
+                  targetHeight
+               );
+
+               canvas.toBlob((dataImage) => {
+                  this.saveBinaryToName(dataImage, filename).then((results) => {
+                     this.loadPhotoByName(results.filename)
+                        .then(resolve)
+                        .catch(reject);
+                  });
+               });
+            };
+         })
+         .catch(reject);
+   }
 
    imageCleanUp() {
       return new Promise((resolve, reject) => {
@@ -241,7 +245,7 @@ class CameraBrowser extends CameraPlatform {
                            var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
                            if (diff > 14) {
                               item.remove(
-                                 function() {
+                                 function () {
                                     console.log("File removed");
                                     if (item.name.indexOf("receipt-") > -1) {
                                        storage.set(
@@ -253,7 +257,7 @@ class CameraBrowser extends CameraPlatform {
                                        );
                                     }
                                  },
-                                 function() {
+                                 function () {
                                     console.log("Error while removing file");
                                  }
                               );
@@ -362,11 +366,12 @@ class CameraBrowser extends CameraPlatform {
             filename,
             { create: false, exclusive: false },
             (_fileEntry) => {
+               // resize the photo then resolve
                resolve({
                   filename: filename,
                   fileEntry: _fileEntry,
                   url: _fileEntry.toURL(),
-                  cdvfile: _fileEntry.toURL() //_fileEntry.toInternalURL()
+                  cdvfile: _fileEntry.toURL(), //_fileEntry.toInternalURL()
                });
             },
             (err) => {
@@ -425,7 +430,7 @@ class CameraBrowser extends CameraPlatform {
                         next(err);
                      }
                   );
-               }
+               },
             ],
             (err) => {
                if (err) reject(err);
@@ -477,7 +482,7 @@ class CameraBrowser extends CameraPlatform {
 
                         fileWriter.write(data);
                      });
-                  }
+                  },
                ],
                (err) => {
                   if (err) reject(err);
@@ -486,7 +491,7 @@ class CameraBrowser extends CameraPlatform {
                         filename: filename,
                         fileEntry: fileEntry,
                         url: fileEntry.toURL(),
-                        cdvfile: fileEntry.toURL()
+                        cdvfile: fileEntry.toURL(),
                      });
                }
             );
