@@ -172,14 +172,20 @@ class CameraPlatform extends EventEmitter {
       return new Promise((resolve, reject) => {
          this.camera.getPicture(
             (imageURI) => {
-               this.resizeImage(width, imageURI).then((result) => {
-                  this.savePhoto(result.url)
-                     .then((result) => {
-                        this.camera.cleanup();
-                        resolve(result);
-                     })
-                     .catch(reject);
-               });
+               this.savePhoto(imageURI)
+                  .then((result) => {
+                     this.camera.cleanup();
+                     resolve(result);
+                  })
+                  .catch(reject);
+               // this.resizeImage(width, imageURI).then((result) => {
+               //    this.savePhoto(result.url)
+               //       .then((result) => {
+               //          this.camera.cleanup();
+               //          resolve(result);
+               //       })
+               //       .catch(reject);
+               // });
             },
             (err) => {
                Log("Error", err);
