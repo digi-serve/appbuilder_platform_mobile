@@ -807,17 +807,6 @@ class NetworkRelay extends NetworkRest {
       var data = this.encrypt(params);
       var jobToken = this.uuid();
 
-      var relayParams = {
-         url: config.appbuilder.routes.relayRequest,
-         data: {
-            appUUID: this.appUUID,
-            jobToken: jobToken,
-            packet: null,
-            totalPackets: null,
-            data: null
-         }
-      };
-
       // Maybe a UI spinner can listen for this
       this.emit("sending.start");
 
@@ -831,15 +820,24 @@ class NetworkRelay extends NetworkRest {
                data = data.slice(MAX_PACKET_SIZE, data.length);
             }
             packets.push(data);
-            relayParams.data.totalPackets = packets.length;
 
             // Post all the packets in series
             let p = Promise.resolve();
             for (let i=0; i<packets.length; i++) {
-               relayParams.data.packet = i;
-               relayParams.data.data = packets[i];
                p = p.then(() => {
-                  return super.post(relayParams);
+                  // Can't just pass in a prepared `relayParams` object here 
+                  // because its contents can change by the time the post is 
+                  // being sent.
+                  return super.post({
+                     url: config.appbuilder.routes.relayRequest,
+                     data: {
+                        appUUID: this.appUUID,
+                        jobToken: jobToken,
+                        packet: i,
+                        totalPackets: packets.length,
+                        data: packets[i]
+                     }
+                  });
                });
             }
             return p;
