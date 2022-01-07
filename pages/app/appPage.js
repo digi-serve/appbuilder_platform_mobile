@@ -80,11 +80,11 @@ export default class AppPage extends Page {
       this.app = new Framework7({
          toast: {
             closeTimeout: 5000,
-            position: "top"
+            position: "top",
          },
          statusbar: {
             iosOverlaysWebView: false,
-            overlay: false
+            overlay: false,
          },
          // All of these will be available to F7 Components
          // under `this.$root.{name}`
@@ -125,12 +125,12 @@ export default class AppPage extends Page {
                      return mApp;
                   }
                   return null;
-               }
+               },
             };
          },
 
          // Root DOM element for Framework7
-         root: this.$element.get(0)
+         root: this.$element.get(0),
       });
 
       // Log function can use F7 to create alert dialogs
@@ -148,11 +148,15 @@ export default class AppPage extends Page {
          var pageName = "unknown-page-name";
          // if this is a popup we need to look at the dom to get the title
          if (page.type && page.type == "popup") {
-            var popUp = page.el
-               .querySelector(".title")
-               .innerHTML.toLowerCase()
-               .replace(" ", "-");
-            pageName = "/popup/" + popUp;
+            var popUpElement = page.el.querySelector(".title");
+            if (popUpElement) {
+               var popUp = popUpElement.innerHTML
+                  .toLowerCase()
+                  .replace(" ", "-");
+               pageName = "/popup/" + popUp;
+            } else {
+               pageName = "/gallery/";
+            }
          } else if (page.route && page.route.path) {
             // if this is a normal page we just grab the route path
             pageName = page.route.path;
@@ -191,7 +195,7 @@ export default class AppPage extends Page {
          account.init({ app: this.app }),
          // User ID
          this.loadData("uuid", null),
-         this.components["settings"].dataReady
+         this.components["settings"].dataReady,
          // Load cached ren data
          // this.applications.find((i)=> {return i.id=='HRIS'}).initializeMyPersonData(),
       ])
@@ -384,13 +388,13 @@ export default class AppPage extends Page {
       // Menu view
       this.menuView = this.app.views.create("#left-view", {
          url: "/nav/",
-         routes: navMenu.routes
+         routes: navMenu.routes,
       });
 
       // Log view
       this.logView = this.app.views.create("#right-view", {
          url: "/log/",
-         routes: Logger.routes
+         routes: Logger.routes,
       });
 
       // Main view
@@ -401,15 +405,15 @@ export default class AppPage extends Page {
                // Root page
                path: "/",
                componentUrl:
-                  "./lib/applications/landingPage/templates/landing.html"
+                  "./lib/applications/landingPage/templates/landing.html",
             },
             {
                // Settings page
                path: "/settings/",
                componentUrl:
-                  "./lib/applications/settings/templates/settings.html"
-            }
-         ]
+                  "./lib/applications/settings/templates/settings.html",
+            },
+         ],
       };
       this.applications.forEach((app) => {
          mainViewData.routes = mainViewData.routes.concat(app.routes);
@@ -565,7 +569,7 @@ export default class AppPage extends Page {
       if (!this.relayLoaderDialog) {
          // Create F7 dialog
          this.relayLoaderDialog = this.app.dialog.create({
-            closeByBackdropClick: false
+            closeByBackdropClick: false,
          });
 
          // Put the Relay Loader inside the dialog
@@ -743,7 +747,7 @@ export default class AppPage extends Page {
       this.appView.router.navigate(this.appView.router.currentRoute.path, {
          reloadCurrent: true,
          force: true,
-         ignoreCache: true
+         ignoreCache: true,
       });
    }
 
