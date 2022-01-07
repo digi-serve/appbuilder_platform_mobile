@@ -205,7 +205,7 @@ class CameraPlatform extends EventEmitter {
    resizeImage(longSideMax = defaultWidth, imageURI) {
       return new Promise((resolve, reject) => {
          var tempImg = new Image();
-         var filename = "resized-" + uuid() + ".jpg";
+         var filename = "receipt-" + uuid() + ".jpg";
          tempImg.src = imageURI;
          tempImg.onload = (data) => {
             // Get image size and aspect ratio.
@@ -412,7 +412,7 @@ class CameraPlatform extends EventEmitter {
       return new Promise((resolve, reject) => {
          var sourceFileEntry, targetFileEntry;
          var tempFileUrl;
-         var filename = uuid() + ".jpg";
+         var filename = "receipt-" + uuid() + ".jpg";
 
          // Remove any querystring from the imageURI
          if (imageURI.match(/[?]/)) {

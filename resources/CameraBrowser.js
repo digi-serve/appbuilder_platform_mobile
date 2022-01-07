@@ -145,7 +145,7 @@ class CameraBrowser extends CameraPlatform {
                var currentDate = new Date();
                var currentTime = currentDate.getTime();
                if (entries.length) {
-                  this.resizeImage(500, entries[0].name, resolve, reject);
+                  this.resizeImage(2000, entries[0].name, resolve, reject);
                } else {
                   alert("No images found");
                   reject("No images found");
@@ -158,7 +158,7 @@ class CameraBrowser extends CameraPlatform {
       });
    }
 
-   resizeImage(longSideMax = 500, filename, resolve, reject) {
+   resizeImage(longSideMax = 2000, filename, resolve, reject) {
       this.loadPhotoByName(filename)
          .then((url) => {
             var tempImg = new Image();
