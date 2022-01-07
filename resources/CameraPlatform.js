@@ -172,13 +172,14 @@ class CameraPlatform extends EventEmitter {
       return new Promise((resolve, reject) => {
          this.camera.getPicture(
             (imageURI) => {
-               this.savePhoto(imageURI)
-                  .then((result) => {
-                     this.resizeImage(width, result, resolve, reject);
-                     // this.camera.cleanup();
-                     // resolve(result);
-                  })
-                  .catch(reject);
+               this.resizeImage(width, imageURI).then((result) => {
+                  this.savePhoto(result.url)
+                     .then((result) => {
+                        this.camera.cleanup();
+                        resolve(result);
+                     })
+                     .catch(reject);
+               });
             },
             (err) => {
                Log("Error", err);
@@ -201,10 +202,10 @@ class CameraPlatform extends EventEmitter {
    // Photo file management
    ////////
 
-   resizeImage(longSideMax = defaultWidth, photoMeta, resolve, reject) {
+   resizeImage(longSideMax = defaultWidth, imageURI) {
       var tempImg = new Image();
-      var filename = photoMeta.filename;
-      tempImg.src = photoMeta.url;
+      var filename = "resized-" + uuid() + ".jpg";
+      tempImg.src = imageURI;
       tempImg.onload = (data) => {
          // Get image size and aspect ratio.
          var targetWidth = tempImg.width;
@@ -245,15 +246,13 @@ class CameraPlatform extends EventEmitter {
          );
 
          canvas.toBlob((dataImage) => {
-            this.saveBinaryToName(dataImage, photoMeta.filename).then(
-               (results) => {
-                  this.loadPhotoByName(results.filename)
-                     .then((result) => {
-                        resolve(result);
-                     })
-                     .catch(reject);
-               }
-            );
+            this.saveBinaryToName(dataImage, filename)
+               .then((results) => {
+                  resolve(results);
+               })
+               .catch((err) => {
+                  reject(err);
+               });
          });
       };
    }
