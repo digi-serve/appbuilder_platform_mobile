@@ -240,7 +240,9 @@ class CameraPlatform extends EventEmitter {
 
          canvas.toBlob((dataImage) => {
             this.saveBinaryToName(dataImage, filename).then((results) => {
-               this.savePhoto(results.fileEntry).then(resolve).catch(reject);
+               this.loadPhotoByName(results.filename)
+                  .then(resolve)
+                  .catch(reject);
             });
          });
       };
