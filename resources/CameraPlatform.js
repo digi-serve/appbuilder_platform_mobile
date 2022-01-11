@@ -174,18 +174,9 @@ class CameraPlatform extends EventEmitter {
             (imageURI) => {
                this.savePhoto(imageURI)
                   .then((result) => {
-                     this.camera.cleanup();
                      resolve(result);
                   })
                   .catch(reject);
-               // this.resizeImage(width, imageURI).then((result) => {
-               //    this.savePhoto(result.url)
-               //       .then((result) => {
-               //          this.camera.cleanup();
-               //          resolve(result);
-               //       })
-               //       .catch(reject);
-               // });
             },
             (err) => {
                Log("Error", err);
@@ -207,63 +198,6 @@ class CameraPlatform extends EventEmitter {
    ////////
    // Photo file management
    ////////
-
-   resizeImage(longSideMax = defaultWidth, imageURI) {
-      return new Promise((resolve, reject) => {
-         var tempImg = new Image();
-         var filename = "receipt-" + uuid() + ".jpg";
-         tempImg.src = imageURI;
-         tempImg.onload = (data) => {
-            // Get image size and aspect ratio.
-            var targetWidth = tempImg.width;
-            var targetHeight = tempImg.height;
-            var aspect = tempImg.width / tempImg.height;
-
-            // Calculate shorter side length, keeping aspect ratio on image.
-            // If source image size is less than given longSideMax, then it need to be
-            // considered instead.
-            if (tempImg.width > tempImg.height) {
-               longSideMax = Math.min(tempImg.width, longSideMax);
-               targetWidth = longSideMax;
-               targetHeight = longSideMax / aspect;
-            } else {
-               longSideMax = Math.min(tempImg.height, longSideMax);
-               targetHeight = longSideMax;
-               targetWidth = longSideMax * aspect;
-            }
-
-            // Create canvas of required size.
-            var canvas = document.createElement("canvas");
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-
-            var ctx = canvas.getContext("2d");
-            // Take image from top left corner to bottom right corner and draw the image
-            // on canvas to completely fill into.
-            ctx.drawImage(
-               data.currentTarget,
-               0,
-               0,
-               tempImg.width,
-               tempImg.height,
-               0,
-               0,
-               targetWidth,
-               targetHeight
-            );
-
-            canvas.toBlob((dataImage) => {
-               this.saveBinaryToName(dataImage, filename)
-                  .then((results) => {
-                     resolve(results);
-                  })
-                  .catch((err) => {
-                     reject(err);
-                  });
-            });
-         };
-      });
-   }
 
    /**
     * Copies an existing image into the temp directory and delivers the
@@ -418,7 +352,7 @@ class CameraPlatform extends EventEmitter {
       return new Promise((resolve, reject) => {
          var sourceFileEntry, targetFileEntry;
          var tempFileUrl;
-         var filename = "receipt-" + uuid() + ".jpg";
+         var filename = uuid() + ".jpg";
 
          // Remove any querystring from the imageURI
          if (imageURI.match(/[?]/)) {

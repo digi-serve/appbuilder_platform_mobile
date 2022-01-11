@@ -154,8 +154,6 @@ export default class AppPage extends Page {
                   .toLowerCase()
                   .replace(" ", "-");
                pageName = "/popup/" + popUp;
-            } else {
-               pageName = "/gallery/";
             }
          } else if (page.route && page.route.path) {
             // if this is a normal page we just grab the route path
