@@ -15,6 +15,7 @@ import async from "async";
 
 var config = require("../../config/config.js");
 const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
+const MAX_JOB_AGE = config.appbuilder.maxJobAge || 1000*60*60*24*7; // 7 days
 
 
 class NetworkRelay extends NetworkRest {
@@ -60,6 +61,7 @@ class NetworkRelay extends NetworkRest {
       this.tokenLock = new Lock();
       this.jobTokens = null;
       this.jobPackets = null;
+      this.jobPacketsTimestamps = {};
 
       this.isPolling = false;
       this.pollFrequency = config.appbuilder.relayPollFrequencyNormal;
@@ -677,7 +679,7 @@ class NetworkRelay extends NetworkRest {
     */
    saveTokens() {
       // save this back to our storage:
-      return storage.set("abRelayJobToken", this.jobTokens);
+      return storage.set("abRelayJobToken", this.jobTokens)
    }
 
    /**
@@ -685,15 +687,31 @@ class NetworkRelay extends NetworkRest {
     */
    getJobPackets() {
       if (!this.jobPackets) {
-         return storage.get("abRelayJobPackets").then((value) => {
-            //// NOTE: it is possible that while we were waiting for storage.get()
-            //// several more calls to getJobPackets() were fired off.  any processing
-            //// or alterations to jobPackets inbetween these times would be overwritten
-            //// by these new values, so make sure jobPackets are included in this chain:
+         return storage.get("abRelayJobPacketsTimestamps")
+            .then((timestamps) => {
+               this.jobPacketsTimestamps = timestamps || {};
+               return storage.get("abRelayJobPackets");
+            })
+            .then((packets) => {
+               // Delete packets from jobs that are too old.
+               // These are jobs that were started long ago and never finished.
+               for (let token in this.jobPacketsTimestamps) {
+                  let thisTimestamp = this.jobPacketsTimestamps[token];
+                  if (Date.now() - thisTimestamp > MAX_JOB_AGE) {
+                     console.log('deleting old job packets: ' + token)
+                     delete packets[token];
+                     delete this.jobPacketsTimestamps[token];
+                  }
+               }
 
-            this.jobPackets = this.jobPackets || value || {};
-            return this.jobPackets;
-         });
+               //// NOTE: it is possible that while we were waiting for storage.get()
+               //// several more calls to getJobPackets() were fired off.  any processing
+               //// or alterations to jobPackets inbetween these times would be overwritten
+               //// by these new values, so make sure jobPackets are included in this chain:
+
+               this.jobPackets = this.jobPackets || packets || {};
+               return this.jobPackets;
+            });
       } else {
          return this.jobPackets;
       }
@@ -704,7 +722,16 @@ class NetworkRelay extends NetworkRest {
     */
    saveJobPackets() {
       // save this back to our storage:
-      return storage.set("abRelayJobPackets", this.jobPackets);
+      return storage.set("abRelayJobPackets", this.jobPackets)
+         .then(() => {
+            // update the timestamp info for any new jobs
+            for (let token in this.jobPackets) {
+               if (!this.jobPacketsTimestamps[token]) {
+                  this.jobPacketsTimestamps[token] = Date.now();
+               }
+            }
+            return storage.set("abRelayJobPacketsTimestamps", this.jobPacketsTimestamps);
+         })
    }
 
    ///
