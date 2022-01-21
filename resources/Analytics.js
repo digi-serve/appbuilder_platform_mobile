@@ -13,6 +13,7 @@ import EventEmitter from "eventemitter2";
 const VERSION = require("../../../../version.js");
 console.log("Sentry.io plugin begin require/init");
 var sentry = require("@sentry/browser");
+var Countly = require("countly-sdk-web");
 
 var config = require("../../config/config.js");
 
@@ -20,6 +21,7 @@ class Analytics extends EventEmitter {
    // class Analytics {
    constructor() {
       super();
+      this.username = null
       // this.sentry = sentry;
       this.ready = $.Deferred();
    }
@@ -45,22 +47,27 @@ class Analytics extends EventEmitter {
       }
 
       // Countly for everything else
-      if (window.Countly) {
+      if (Countly) {
+         Countly.q = Countly.q || [];
+         // Track sessions automatically (recommended)
+         Countly.q.push(["track_sessions"]);
+
+         //track web page views automatically (recommended)
+         Countly.q.push(["track_pageview"]);
+
          const features = ["sessions", "views", "crashes", "events"];
-         Countly.setLoggingEnabled();
-         Countly.enableCrashReporting();
-         Countly.setRequiresConsent(true);
-         Countly.giveConsentInit(features);
-         Countly.init(config.countly.url, config.countly.appKey)
-            .then((result) => {
-               Countly.giveConsent(features);
-               Countly.start();
-               console.log("analytics init()");
-               this.ready.resolve();
-            })
-            .catch((err) => {
-               console.error("Analytics init error", err);
+         try {
+            Countly.init({
+               url: config.countly.url,
+               app_key: config.countly.appKey,
+               debug: true,
             });
+            // Countly.start();
+            console.log("analytics init()");
+            this.ready.resolve();
+         } catch (err) {
+            console.error("Analytics init error", err);
+         }
       }
    }
 
@@ -82,8 +89,10 @@ class Analytics extends EventEmitter {
    info(data) {
       data = data || {};
       this.ready.then(() => {
-         if (window.Countly && window.cordova) {
-            Countly.setUserData(data);
+         if (Countly) {
+            // Countly.setUserData(data);
+            Countly.q.push(["userData.set", "data", data]); //set custom property
+            Countly.q.push(["userData.save"]); 
          }
 
          if (this.sentry) {
@@ -103,8 +112,8 @@ class Analytics extends EventEmitter {
     * @param {string} pageName
     */
    pageView(pageName) {
-      if (window.Countly && window.cordova) {
-         Countly.recordView(pageName);
+      if (Countly) {
+         Countly.q.push(["track_pageview", pageName]);
       }
 
       if (this.sentry) {
@@ -162,6 +171,7 @@ class Analytics extends EventEmitter {
     */
    event(name, data) {
       data = data || {};
+      if (Countly) {
          var packet = {
             eventName: name,
             eventCount: 1,
@@ -169,7 +179,13 @@ class Analytics extends EventEmitter {
          if (Object.keys(data).length > 0) {
             packet.segments = data;
          }
-         Countly.recordEvent(packet);
+         // Countly.q.recordEvent(packet);
+         Countly.q.push([
+            "add_event",
+            {
+               key: name,
+               event: data,
+          }]);
       }
 
       if (this.sentry && !data.stack) {
