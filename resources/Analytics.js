@@ -100,11 +100,27 @@ class Analytics extends EventEmitter {
                scope.setUser({
                   id: data.id || undefined,
                   email: data.email || undefined,
-                  username: data.username || data.name || undefined,
+                  // abname: this.username || undefined, // this may be too sensitive
+                  username: data.username || data.name || undefined, //|| undefined,
                });
             });
          }
       });
+   }
+
+   /**
+    * Set futher detailed information about the current user.
+    *
+    * Be careful about what you set here because it will be stored on
+    * analytics servers which are outside the VPN.
+    *
+    * @param {Object} data
+    *
+    *       username: {String}
+    *    }
+    */
+   setUserName(data) {
+      this.username = data;
    }
 
    /**
@@ -185,7 +201,8 @@ class Analytics extends EventEmitter {
             {
                key: name,
                event: data,
-          }]);
+            },
+         ]);
       }
 
       if (this.sentry && !data.stack) {

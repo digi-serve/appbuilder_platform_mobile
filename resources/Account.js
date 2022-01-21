@@ -51,6 +51,7 @@ class Account extends EventEmitter {
             .then((siteUserData) => {
                if (siteUserData) {
                   this.username = siteUserData.user.username;
+                  analytics.setUserName(this.username);
                }
                resolve();
             });
@@ -62,6 +63,7 @@ class Account extends EventEmitter {
          // @TODO: implement reject() case
          if (this.username != "??") {
             resolve();
+            analytics.setUserName(this.username);
          } else {
             // 1st time through, we create the deferred, and
             // make the network call to store the data.
@@ -78,6 +80,7 @@ class Account extends EventEmitter {
                      this.username = data.user.username;
                      this.relayReady.resolve();
                   });
+                  analytics.setUserName(this.username);
                });
 
                // Call the url
