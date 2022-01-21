@@ -79,7 +79,8 @@ class Analytics extends EventEmitter {
     *       custom: {JSON} // for Countly only
     *    }
     */
-   info(data = {}) {
+   info(data) {
+      data = data || {};
       this.ready.then(() => {
          if (window.Countly && window.cordova) {
             Countly.setUserData(data);
@@ -159,8 +160,8 @@ class Analytics extends EventEmitter {
     * @param {string} name
     * @param {object} data
     */
-   event(name, data = {}) {
-      if (window.Countly && window.cordova) {
+   event(name, data) {
+      data = data || {};
          var packet = {
             eventName: name,
             eventCount: 1,
