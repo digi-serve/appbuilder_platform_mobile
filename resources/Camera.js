@@ -6,39 +6,40 @@
  *
  * You can use getCameraPhoto() or getLibraryPhoto() to obtain an image file.
  *
- * Previously, it was possible to use the `url` or `cdvfile` value of that
- * image to display the image in the DOM (inside an <img> tag). This is no
- * longer possible in iOS.
- * 
- * To display a camera image in the DOM, you can use the base64 data. First
- * you need the `filename` of the image that was provided earlier from 
- * getGameraPhoto(). Then use base64ByName().
+ * You can use the `url` value of that image to display the image in the 
+ * DOM (inside an <img> tag). This URL is only valid for the current session.
  *
  *      camera
  *          .getCameraPhoto()
  *          .then((photo) => {
- *              return camera.base64ByName(photo.filename)
- *          })
- *          .then((base64Data) => {
- *              return '<img src="data:image/jpg;base64,' + base64Data + '" />'
+ *              storage.set('photo-filename', photo.filename);
+ *              return '<img src="' + photo.url + '" />'
  *          })
  *
+ * 
+ *      storage.get('photo-filename')
+ *          .then((filename) => {
+ *             return camera.loadPhotoByName(filename);
+ *          })
+ *          .then((photo) => {
+ *             return '<img src="' + photo.url + '" />'
+ *          })
+ * 
  * Exports a singleton instance.
  */
 "use strict";
 
-import CameraPlatform from "./CameraPlatform";
 import CameraBrowser from "./CameraBrowser";
+import CameraPWA from "./CameraPWA";
 
 var camera = null;
 
-// `navigator.camera` is not available even on the actual device, until
-// the 'deviceready' event has fired.
-//if (navigator.camera) {
-
-if (window.cordova) {
-   camera = new CameraPlatform();
-} else {
+// PWA api only works over https
+if (document.location.protocol == 'https') {
+   camera = new CameraPWA();
+} 
+// Otherwise use local browser camera workaround
+else {
    camera = new CameraBrowser();
 }
 export default camera;
