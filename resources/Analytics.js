@@ -109,15 +109,10 @@ class Analytics extends EventEmitter {
    }
 
    /**
-    * Set futher detailed information about the current user.
-    *
-    * Be careful about what you set here because it will be stored on
-    * analytics servers which are outside the VPN.
+    * Set the current user.
     *
     * @param {Object} data
-    *
     *       username: {String}
-    *    }
     */
    setUserName(data) {
       this.username = data;
@@ -188,14 +183,6 @@ class Analytics extends EventEmitter {
    event(name, data) {
       data = data || {};
       if (Countly) {
-         var packet = {
-            eventName: name,
-            eventCount: 1,
-         };
-         if (Object.keys(data).length > 0) {
-            packet.segments = data;
-         }
-         // Countly.q.recordEvent(packet);
          Countly.q.push([
             "add_event",
             {
