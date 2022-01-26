@@ -5,7 +5,7 @@
  *
  */
 
-var ABFieldJSONCore = require("../../core/dataFields/ABFieldJSONCore");
+var ABFieldJSONCore = require("../../core/dataFields/ABFieldJsonCore");
 
 module.exports = class ABFieldJSON extends ABFieldJSONCore {
    constructor(attributes, object) {
