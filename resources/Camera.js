@@ -35,7 +35,7 @@ import CameraPWA from "./CameraPWA";
 var camera = null;
 
 // PWA api only works over https
-if (document.location.protocol == 'https') {
+if (1 || document.location.protocol == 'https:') {
    camera = new CameraPWA();
 } 
 // Otherwise use local browser camera workaround

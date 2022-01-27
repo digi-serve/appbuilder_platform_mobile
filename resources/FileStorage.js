@@ -69,7 +69,7 @@ class FileStorage extends EventEmitter {
       return this.get('__totalSizeOfAllFiles')
          .then((totalSize) => {
             totalSize = totalSize || 0;
-            if (totalSize != 0) {
+            if (sizeChange != 0) {
                totalSize += sizeChange;
                return this.put('__totalSizeOfAllFiles', totalSize);
             }
@@ -146,7 +146,7 @@ class FileStorage extends EventEmitter {
             }
 
             var store = transaction.objectStore(storeName);
-            var req = store.get(key);
+            var req = store.get(name);
             req.onsuccess = (event) => {
                let file = req.result;
                resolve(file);

@@ -67,7 +67,7 @@ class CameraPWA extends EventEmitter {
          $('body').append(this._$backend);
 
          // Event handling
-         this._$input.once('change', () => {
+         this._$input.one('change', () => {
             if (isCameraActive) {
                isCameraActive = false;
                let file = this._$input.get(0).files[0];
@@ -81,7 +81,7 @@ class CameraPWA extends EventEmitter {
                }
             }
          });
-         $(window).once('focus', () => {
+         $(window).one('focus', () => {
             // This 'focus' event fires after the camera dialog closes and
             // the original page gets focus again.
             setTimeout(() => {
@@ -117,8 +117,8 @@ class CameraPWA extends EventEmitter {
             <input type="reset" />
          </form>
       `);
-      this._$input = this.$backend.find("input[type='file']");
-      this._$reset = this.$backend.find("input[type='reset']");
+      this._$input = this._$backend.find("input[type='file']");
+      this._$reset = this._$backend.find("input[type='reset']");
    }
 
    //////
@@ -228,13 +228,14 @@ class CameraPWA extends EventEmitter {
     *
     * This is no longer necessary under PWA.
     * 
-    * @param {string|FileEntry} imageFile
+    * @param {string|File} imageFile
     *      Either a string filename, or a FileEntry object for this image
     *      file.
     * @return {Promise}
     *      Resolves with the URL to the temp image.
     */
    tempUrl(imageFile) {
+      console.warn("camera.tempURL() is no longer needed.");
       return Promise.resolve()
          .then(() => {
             if (imageFile instanceof FileEntry || imageFile instanceof File) {
@@ -281,6 +282,9 @@ class CameraPWA extends EventEmitter {
     * TODO: find out what this is used for and refactor it for PWA
     */
    imageCleanUp() {
+      console.error('imageCleanUp() what does it even do?');
+      return Promise.reject(new Error('Deprecated?'));
+
       return new Promise((resolve, reject) => {
          // make sure _testDirectoryEntry is created before trying to use:
          if (!this.directoryEntry) {
@@ -367,7 +371,7 @@ class CameraPWA extends EventEmitter {
     * @return {Promise}
     *    {
     *       filename: <string>,
-    *       fileEntry: <FileEntry>,
+    *       fileEntry: <File>,
     *       url: <string> // only valid for current session
     *    }
     */
@@ -507,4 +511,4 @@ class CameraPWA extends EventEmitter {
 
 }
 
-export default CameraPlatform;
+export default CameraPWA;
