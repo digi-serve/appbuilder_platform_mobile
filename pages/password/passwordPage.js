@@ -7,6 +7,7 @@
 import analytics from "../../resources/Analytics.js";
 import Page from "../../resources/Page.js";
 import { storage } from "../../resources/Storage.js";
+import fileStorage from "../../resources/FileStorage.js";
 
 // For development only
 const disableEncryption = false;
@@ -97,9 +98,13 @@ export default class PasswordPage extends Page {
             "<t>Are you sure?</t>",
             () => {
                analytics.event("reset data");
-               storage.clearAll().then(() => {
-                  document.location.reload();
-               });
+               Promise.all([
+                  storage.clearAll(),
+                  fileStorage.deleteAll()
+               ])
+                  .then(() => {
+                     document.location.reload();
+                  });
             }
          );
       });
