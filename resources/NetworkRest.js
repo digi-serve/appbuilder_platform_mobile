@@ -245,6 +245,7 @@ class NetworkRest extends EventEmitter {
                   error.response = jqXHR.responseText;
                   error.text = text;
                   error.err = err;
+                  error.code = jqXHR.status;
                   analytics.logError(error);
                   Log.error(error);
                   // TODO: insert some default error handling for expected

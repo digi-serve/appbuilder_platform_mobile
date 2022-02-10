@@ -327,6 +327,13 @@ class NetworkRelay extends NetworkRest {
 
                analytics.logError(err);
                Log.error("::: 2) error trying to get rsa key:", err);
+
+               // Update error to make it more informative than a generic
+               // ajax failure.
+               if (err.code == 403) {
+                  err.code = "E_BADAUTHTOKEN";
+                  err.message = "Relay server rejected the auth token";
+               }
                reject(err);
             });
       });
