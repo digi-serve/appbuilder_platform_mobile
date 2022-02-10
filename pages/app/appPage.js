@@ -71,11 +71,6 @@ export default class AppPage extends Page {
          this.updateOnLogin = true;
       }
 
-      // AB.platform({
-      //     account: account,
-      //     storage: storage
-      // });
-
       // Framework7 is the UI library
       this.app = new Framework7({
          toast: {
@@ -294,26 +289,6 @@ export default class AppPage extends Page {
          });
       });
 
-      // Handle deep links
-      if (window.universalLinks) {
-         /* eslint-disable-next-line no-undef */
-         universalLinks.subscribe(null, (eventData) => {
-            console.log("Deep link");
-            console.log("Data:", eventData);
-            analytics.event("Deep link");
-
-            if (eventData.params && eventData.params.settings) {
-               this.app.dialog.confirm(
-                  "<t>This will replace your contact list</t>",
-                  "<t>Import settings?</t>",
-                  () => {
-                     analytics.event("Import deep link data");
-                     account.importSettings(eventData.params.settings);
-                  }
-               );
-            }
-         });
-      }
 
       // After QR code / deep link import, restart the AB Applications
       account.on("imported", (importState) => {
