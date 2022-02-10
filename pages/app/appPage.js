@@ -224,67 +224,8 @@ export default class AppPage extends Page {
                }
             });
 
-            return new Promise((resolve /* , reject */) => {
-               if (account.authToken) {
-                  resolve();
-               } else {
-                  // No data found.
-                  // Try to import settings & contacts from old app.
-                  var oldDB = new Storage("sdc_contacts");
-                  oldDB
-                     .get("authToken")
-                     .then((value) => {
-                        // Import authToken
-                        if (value) {
-                           console.log("::: importing old credentials");
-                           return account
-                              .setAuthToken(value)
-                              .then(() => {
-                                 // now that we have the old authToken
-                                 // try to init the Relay again:
-                                 console.log("::: performing Network.init() ");
-                                 return Network.init();
-                              })
-                              .then(() => {
-                                 return oldDB.get("uuid");
-                              });
-                        } else {
-                           throw new Error("authToken not found");
-                        }
-                     })
-                     .then((/* value */) => {
-                        // Import user ID
-
-                        // if (value) {
-                        // this.uuid = value;
-                        // return this.saveData('uuid')
-                        //     .then(()=>{
-                        //         return oldDB.get('contacts');
-                        //     })
-                        // }
-                        return oldDB.get("contacts");
-                     })
-                     .then((/* oldContacts */) => {
-                        // Ignore contacts
-                        // ...
-
-                        oldDB.clear("authToken");
-                        oldDB.clear("uuid");
-                        // oldDB.clear('contacts'); // ??
-
-                        resolve();
-                     })
-                     .catch((err) => {
-                        err.message =
-                           "Error while importing old contacts: " + err.message;
-                        console.log(err);
-                        resolve();
-                     });
-               }
-            }).then(() => {
-               clearTimeout(timeout);
-               this.dataReady.resolve();
-            });
+            clearTimeout(timeout);
+            this.dataReady.resolve();
          })
          .catch((err) => {
             clearTimeout(timeout);
