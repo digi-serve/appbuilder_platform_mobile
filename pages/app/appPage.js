@@ -369,50 +369,8 @@ export default class AppPage extends Page {
          },
          false
       );
-
-      //// OneSignal
-      // Notification received while using app
-      notifications.on("received", (msg) => {
-         // var data = msg.data || {};
-         //if (!data.type) {
-         // This is just a plain message for displaying.
-         this.app.dialog.alert(msg.body, msg.title);
-         return;
-         //}
-
-         /*
-            // Notification about an appointment
-            this.app.dialog.create({
-                title: msg.title,
-                text: msg.body,
-                buttons: [
-                    {
-                        text: '<t>Show me</t>',
-                        onClick: () => {
-                            this.components['coaching'].handleAppointmentNotification(data.type, data.contact, data.session);
-                        },
-                        close: true
-                    },
-                    {
-                        text: '<t>Ignore</t>',
-                        close: true
-                    }
-                ],
-            }).open();
-            */
-      });
-      // Notification received while outside of app.
-      notifications.on("opened", (/* msg */) => {
-         // var data = msg.data || {};
-         // User had to read the notification in order to open the app,
-         // so no point displaying it again.
-         /*
-            if (data.type) {
-                this.components['coaching'].handleAppointmentNotification(data.type, data.contact, data.session);
-            }
-            */
-      });
    }
+
 
    /**
     * @method defaultRoute
