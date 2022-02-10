@@ -163,6 +163,38 @@ export default class AppPage extends Page {
    }
 
    /**
+    * Check to see if the user account is present.
+    * First check device storage, then scan the URL for magic link.
+    * https://example.com/?JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
+    * 
+    * @return {Promise}
+    */
+   checkAccount() {
+      return account.getAuthToken()
+         .then((authToken) => {
+            // User account found on device
+            if (authToken) return true;
+            // Check the URL for magic link
+            else {
+               // J.R.R. Token
+               let querystring = String(document.location.search);
+               let match = querystring.match(/JRR=(\w+)/);
+               // No token in URL
+               if (!match) {
+                  let err = new Error("No auth token found");
+                  err.code = "E_NOAUTHTOKEN";
+                  return Promise.reject(err);
+               }
+               // Import token from the URL
+               else {
+                  let authToken = match[1];
+                  return account.importSettings(authToken);
+               }
+            }
+         })
+   }
+
+   /**
     * Load the locally stored data.
     */
    prepareData() {
@@ -174,30 +206,25 @@ export default class AppPage extends Page {
          );
       }, 10000);
 
-      Network.once("error.badAuth", (/* err */) => {
-         this.app.dialog.close();
-         this.app.dialog.alert(
-            "<t>Make sure you have scanned the correct QR code for your account. If the problem persists, please contact an admin for help.</t>",
-            "<t>Problem authenticating with server</t>"
-         );
-      });
-
-      // Load data from persistent storage into `this` object
-      Promise.all([
-         // Load account authToken
-         account.init({ app: this.app }),
-         // User ID
-         this.loadData("uuid", null),
-         this.components["settings"].dataReady,
-         // Load cached ren data
-         // this.applications.find((i)=> {return i.id=='HRIS'}).initializeMyPersonData(),
-      ])
+      account.init({ app: this.app })
+         .then(() => {
+            // Load account authToken
+            return this.checkAccount();
+         })
+         .then(() => {
+            // Load data from persistent storage into `this` object
+            return Promise.all([
+               // User ID
+               this.loadData("uuid", null),
+               this.components["settings"].dataReady,
+            ]);
+         })
          .then(() => {
             analytics.info({ username: this.uuid });
 
             // Initialize the secure relay.
             // This relies on the account object from the previous step.
-            return Network.init(account);
+            return Network.init();
          })
          .then(() => {
             // Are the AB Applications in the middle of being reset?
@@ -228,11 +255,31 @@ export default class AppPage extends Page {
             analytics.log("Error during AppPage.prepareData():");
             analytics.logError(err);
 
-            // Question: do we always .resolve() so .begin() can get called?
-            // Depends what kind of error it was. If the authToken or the relay
-            // failed, then there are probably going to be more problems
-            // ahead.
-            this.dataReady.resolve();
+            this.app.dialog.close();
+            switch (err.code) {
+               case "E_BADAUTHTOKEN":
+                  this.app.dialog.alert(
+                     "<t>Make sure you have scanned the correct QR code for your account. If the problem persists, please contact an admin for help.</t>",
+                     "<t>Problem authenticating with server</t>"
+                  );
+                  break;
+
+               case "E_NOAUTHTOKEN":
+                  this.app.dialog.alert(
+                     "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
+                     "<t>Welcome to conneXted!</t>"
+                  );
+                  break;
+
+               default:
+                  // Some other problem with the server
+                  this.app.dialog.alert(
+                     "<t>There is an unexpected problem with the server at this time.</t>",
+                     "<t>Error</t>"
+                  );
+                  break;
+            }
+            this.dataReady.reject();
          });
    }
 

@@ -227,7 +227,6 @@ class Storage extends EventEmitter {
                .then((value) => {
                   // Compare against previously set password
                   var hash = CryptoJS.SHA256(this.secret).toString();
-
                   if (value === null) {
                      // No previous password. Save hash now.
                      this.set("__sdc_password", hash, {

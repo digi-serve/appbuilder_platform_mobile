@@ -22,10 +22,9 @@ class Account extends EventEmitter {
 
       this.f7app = null;
       this.authToken = null;
+      this.username = "??";
 
       this.importInProgress = false;
-
-      this.username = "??";
 
       this.relayReady = null;
       // {Deferred} : used to track a pending call to load the
@@ -33,6 +32,9 @@ class Account extends EventEmitter {
    }
 
    /**
+    * Early initialization. This can happen even before the auth token is
+    * setup.
+    * 
     * @param {object} options
     * @param {Framework7} options.app
     *
@@ -44,8 +46,8 @@ class Account extends EventEmitter {
          storage
             .get("authToken")
             .then((value) => {
+               // `value` might still be NULL
                this.authToken = value;
-               console.log("account credentials ready");
                return storage.get("siteUserData");
             })
             .then((siteUserData) => {
@@ -97,9 +99,31 @@ class Account extends EventEmitter {
    }
 
    /**
+    * Delivers the auth token. Checks the device storage if needed.
+    * 
+    * @return {Promise}
+    */
+   getAuthToken() {
+      return Promise.resolve()
+         .then(() => {
+            // Already loaded in memory
+            if (this.authToken) {
+               return this.authToken;
+            }
+            // Fetch from storage
+            else {
+               return storage.get("authToken");
+            }
+         })
+         .then((authToken) => {
+            this.authToken = authToken;
+            return authToken;
+         })
+   }
+
+   /**
     * Reset credentials and set a new auth token.
-    * Used by importSettings(), and also by appPage when migrating from the
-    * fake app during first use.
+    * Used by importSettings()
     *
     * @param {string} authToken
     * @return {Promise}
@@ -115,230 +139,141 @@ class Account extends EventEmitter {
    }
 
    /**
-    * Import credentials and/or CodePush deployment keys.
+    * Import credentials.
     *
-    * @param {object/string} data
-    *      The QR code JSON data. The format is somewhat constrained by
-    *      backwards compatibility with the fake contacts app.
-    *      {
-    *          "userInfo": {
-    *              "auth_token": <string>
-    *              "updateKeys": {
-    *                  "ios": <string>,
-    *                  "android": <string>
-    *              }
-    *          }
-    *      }
-    *
+    * @param {string} authToken
+    * @return {Promise}
     */
-   importSettings(data) {
+   importSettings(authToken) {
       if (this.importInProgress) {
          Log("::: importSettings(): already in progress");
-         return;
+         return Promise.reject("Import already in progress");
       }
       this.importInProgress = true;
 
-      if (typeof data != "object") {
-         try {
-            data = JSON.parse(data);
-         } catch (err) {
-            data = {};
-         }
-      }
+      // This is the loading progress modal dialog box
 
-      if (data && data.userInfo) {
-         // This is the loading progress modal dialog box
+      //// TODO:
+      //// figure out proper process for reseting the Account during an import
+      //// --> This works, but is this the right place?
+      this.relayReady = null;
 
-         //// TODO:
-         //// figure out proper process for reseting the Account during an import
-         //// --> This works, but is this the right place?
-         this.relayReady = null;
+      var loader = this.f7app.dialog.progress(
+         "<t>Connecting your account</t>"
+      );
 
-         var loader = this.f7app.dialog.progress(
-            "<t>Connecting your account</t>"
-         );
+      Log("::: New Account Init Begin :::");
+      var currentAuthToken = this.authToken;
 
-         Log("::: QRInitBegin :::");
+      return Promise.resolve()
+         // Determine current status first
+         .then(() => {
+            // No existing authToken. Import immediately.
+            if (!currentAuthToken) {
+               return null;
+            }
 
-         // Should be possible to have a QR code with only auth_token,
-         // only updateKeys, or both.
-         var authTokenReady = $.Deferred();
-         var codePushReady = $.Deferred();
+            // authToken remains unchanged. Nothing to import.
+            else if (currentAuthToken == authToken) {
+               Log("::: importSettings(): credentials unchanged");
+               return Promise.reject("Nothing new to import");
+            }
 
-         var shouldRestart = false;
-         var shouldImportAuthToken = true;
-
-         // What has been imported?
-         var importState = {
-            authToken: false,
-            deploymentKeys: false
-         };
-
-         // Part A: Import authToken
-         if (data.userInfo.auth_token) {
-            var authToken = data.userInfo.auth_token;
-            var currentAuthToken = this.authToken;
-
-            Promise.resolve()
-               .then(() => {
-                  if (!currentAuthToken) {
-                     // No existing authToken. Import immediately.
-                     shouldImportAuthToken = true;
-                     return null;
-                  } else if (currentAuthToken == authToken) {
-                     // authToken remains unchanged.
-                     Log("::: importSettings(): credentials unchanged");
-                     shouldImportAuthToken = false;
-                     return null;
-                  } else {
-                     // Confirm switching to new authToken.
-                     return new Promise((ok) => {
-                        // Close the progress dialog box temporarily
-
-                        if (loader && loader.$el) {
-                           loader.$el.remove();
-                           loader.close();
-                           loader.destroy();
-                        }
-                        this.f7app.dialog.confirm(
-                           "<t>This will reset the data on this device</t>",
-                           "<t>Do you want to continue?</t>",
-                           () => {
-                              // [ok]
-                              shouldImportAuthToken = true;
-                              ok();
-                           },
-                           () => {
-                              // [cancel]
-                              shouldImportAuthToken = false;
-                              ok();
-                           }
-                        );
-                     });
-                  }
-               })
-               .then(() => {
-                  // Re-open the progress dialog box
-                  // loader.open();
-
-                  // #Hack! : for some reason framework7 .close() .destroy()
-                  // on a progress modal doesn't remove the modal (just makes
-                  // it invisible, but it will intefere with clicking on the
-                  // screen). So we manually remove it here:
+            // Ask for confirmation to overwrite current account.
+            else {
+               // Confirm switching to new authToken.
+               return new Promise((ok, cancel) => {
+                  // Close the progress dialog box temporarily
                   if (loader && loader.$el) {
                      loader.$el.remove();
                      loader.close();
+                     loader.destroy();
                   }
-                  loader = this.f7app.dialog.progress(
-                     "<t>Connecting your account</t>"
+                  this.f7app.dialog.confirm(
+                     "<t>This will reset the data on this device</t>",
+                     "<t>Do you want to continue?</t>",
+                     () => {
+                        // [ok]
+                        ok();
+                     },
+                     () => {
+                        // [cancel]
+                        cancel("Canceled by user");
+                     }
                   );
-                  if (shouldImportAuthToken) {
-                     return this.setAuthToken(authToken).then(() => {
-                        importState.authToken = true;
-                     });
-                  }
-               })
-               .then(() => {
-                  authTokenReady.resolve();
-               })
-               .catch((err) => {
-                  this.emit("QRInitError", {
-                     message: "Error importing data",
-                     error: err
-                  });
-                  Log.error("Error while importing credentials from QR code");
-                  Log(err);
-                  authTokenReady.reject(err);
                });
-         } else {
-            authTokenReady.resolve();
-         }
-
-         // Part B: Import CodePush deployment keys
-         if (data.userInfo.updateKeys) {
-            var keys = data.userInfo.updateKeys;
-            if (typeof keys == "object") {
-               var clearListeners = () => {
-                  for (var eventKey in listeners) {
-                     updater.removeListener(eventKey, listeners[eventKey]);
-                  }
-               };
-
-               var listeners = {
-                  upToDate: () => {
-                     Log("::: importSettings(): code up to date");
-                     importState.deploymentKeys = true;
-                     clearListeners();
-                     codePushReady.resolve();
-                  },
-                  installed: () => {
-                     Log("::: importSettings(): new code installed");
-                     shouldRestart = true;
-                     importState.deploymentKeys = true;
-                     clearListeners();
-                     codePushReady.resolve();
-                  },
-                  error: () => {
-                     Log("::: importSettings(): error syncing code");
-                     clearListeners();
-                     this.emit("QRInitError", {
-                        message: "Error Updating code"
-                     });
-                     codePushReady.reject(new Error("CodePush sync error"));
-                  }
-               };
-
-               for (var eventKey in listeners) {
-                  updater.once(eventKey, listeners[eventKey]);
-               }
-
-               // Sync with CodePush, but don't restart yet
-               updater.sync(keys, { preventRestart: true });
             }
-         } else {
-            codePushReady.resolve();
-         }
+         })
 
-         Promise.all([authTokenReady, codePushReady])
-            .then(() => {
-               this.importInProgress = false;
-               Log("::: importSettings(): all done!");
+         // Import auth token
+         .then(() => {
+            // Re-open the progress dialog box
+            // loader.open();
 
-               if (loader && loader.$el) {
-                  loader.$el.remove();
-                  loader.close();
-                  loader.destroy();
-               }
+            // #Hack! : for some reason framework7 .close() .destroy()
+            // on a progress modal doesn't remove the modal (just makes
+            // it invisible, but it will intefere with clicking on the
+            // screen). So we manually remove it here:
+            if (loader && loader.$el) {
+               loader.$el.remove();
+               loader.close();
+            }
+            loader = this.f7app.dialog.progress(
+               "<t>Connecting your account</t>"
+            );
 
-               if (shouldRestart) {
-                  updater.restart();
-               } else {
-                  this.emit("imported", importState);
-               }
-            })
-            .catch((err) => {
-               this.importInProgress = false;
-               Log("::: importSettings(): error");
-               Log(err.message || err);
-               analytics.logError(err);
+            return this.setAuthToken(authToken);
+         })
+         .then(() => {
+            if (loader && loader.$el) {
+               loader.$el.remove();
+               loader.close();
+               loader.destroy();
+            }
+            this.importInProgress = false;
+            Log("::: importSettings(): all done!");
+            this.emit("imported"); // appPage.js will restart app?
+         })
+
+         .catch((err) => {
+            if (loader && loader.$el) {
+               loader.$el.remove();
+               loader.close();
+               loader.destroy();
+            }
+
+            // Tried to import the same existing auth token
+            if (err == "Nothing to import") {
+               this.f7app.alert("<t>Your account is already set up.</t>");
+            }
+
+            // Canceled overwriting existing auth token with new one
+            else if (err == "Canceled by user") {
+               // (nothing to do?)
+            }
+
+            // Error
+            else {
+               this.emit("QRInitError", {
+                  message: "Error importing data",
+                  error: err
+               });
                this.emit("importError", err);
 
-               if (loader && loader.$el) {
-                  loader.$el.remove();
-                  loader.close();
-                  loader.destroy();
-               }
+               Log("::: importSettings(): error");
+               Log.error("Error while importing credentials");
+               Log(err.message || err);
+               analytics.logError(err);
 
                this.f7app.dialog.alert(
                   err.message || err,
                   "<t>Error connecting account</t>"
                );
-            });
-      } else {
-         // No userInfo object
-         analytics.log("::: importSettings(): unknown data format");
-         this.importInProgress = false;
-      }
+
+               this.importInProgress = false;
+               return Promise.reject();
+            }
+         });
    }
 }
 
