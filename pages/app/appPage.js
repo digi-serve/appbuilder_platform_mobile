@@ -165,7 +165,10 @@ export default class AppPage extends Page {
    /**
     * Check to see if the user account is present.
     * First check device storage, then scan the URL for magic link.
-    * https://example.com/?JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
+    * e.g. https://example.com/#JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
+    * 
+    * The token is embedded in the hash fragment of the URL, which is never
+    * transmitted to the webserver.
     * 
     * @return {Promise}
     */
@@ -177,8 +180,11 @@ export default class AppPage extends Page {
             // Check the URL for magic link
             else {
                // J.R.R. Token
-               let querystring = String(document.location.search);
-               let match = querystring.match(/JRR=(\w+)/);
+               let hash = String(document.location.hash);
+               let match = hash.match(/JRR=(\w+)/);
+               // Remove token from current URL, for bookmarkability
+               window.history.replaceState(null, null, "#");
+
                // No token in URL
                if (!match) {
                   let err = new Error("No auth token found");
@@ -252,8 +258,6 @@ export default class AppPage extends Page {
          .catch((err) => {
             clearTimeout(timeout);
             console.log(err);
-            analytics.log("Error during AppPage.prepareData():");
-            analytics.logError(err);
 
             this.app.dialog.close();
             switch (err.code) {
@@ -262,6 +266,7 @@ export default class AppPage extends Page {
                      "<t>Make sure you have scanned the correct QR code for your account. If the problem persists, please contact an admin for help.</t>",
                      "<t>Problem authenticating with server</t>"
                   );
+                  analytics.log("Magic link auth token rejected by server");
                   break;
 
                case "E_NOAUTHTOKEN":
@@ -269,6 +274,7 @@ export default class AppPage extends Page {
                      "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
                      "<t>Welcome to conneXted!</t>"
                   );
+                  analytics.log("App launched with no auth token");
                   break;
 
                default:
@@ -277,6 +283,9 @@ export default class AppPage extends Page {
                      "<t>There is an unexpected problem with the server at this time.</t>",
                      "<t>Error</t>"
                   );
+                  analytics.log("Error during AppPage.prepareData():");
+                  analytics.log(err.message);
+                  analytics.logError(err);
                   break;
             }
             this.dataReady.reject();
