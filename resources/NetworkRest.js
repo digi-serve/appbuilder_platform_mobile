@@ -176,7 +176,7 @@ class NetworkRest extends EventEmitter {
          }
 
          params.headers = params.headers || {};
-         params.headers.Authorization = account.authToken;
+         params.headers.Authorization = params.headers.Authorization || account.authToken;
          // params.timeout = params.timeout || 6000;
 
          if (this.isNetworkConnected()) {

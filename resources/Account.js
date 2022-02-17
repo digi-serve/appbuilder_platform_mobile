@@ -17,6 +17,7 @@ import updater from "./Updater.js";
 var config = require("../../config/config.js");
 
 class Account extends EventEmitter {
+
    constructor() {
       super();
 
@@ -123,7 +124,7 @@ class Account extends EventEmitter {
 
    /**
     * Reset credentials and set a new auth token.
-    * Used by importSettings()
+    * Used by importCredentials()
     *
     * @param {string} authToken
     * @return {Promise}
@@ -139,12 +140,12 @@ class Account extends EventEmitter {
    }
 
    /**
-    * Import credentials.
+    * Obtain the pre-token from the URL. And then generate a new authToken.
     *
-    * @param {string} authToken
+    * @param {string} preToken
     * @return {Promise}
     */
-   importSettings(authToken) {
+   importCredentials(preToken) {
       if (this.importInProgress) {
          Log("::: importSettings(): already in progress");
          return Promise.reject("Import already in progress");
@@ -164,6 +165,7 @@ class Account extends EventEmitter {
 
       Log("::: New Account Init Begin :::");
       var currentAuthToken = this.authToken;
+      var newAuthToken = null;
 
       return Promise.resolve()
          // Determine current status first
@@ -173,13 +175,9 @@ class Account extends EventEmitter {
                return null;
             }
 
-            // authToken remains unchanged. Nothing to import.
-            else if (currentAuthToken == authToken) {
-               Log("::: importSettings(): credentials unchanged");
-               return Promise.reject("Nothing new to import");
-            }
-
             // Ask for confirmation to overwrite current account.
+            // (this might never happen because this function is only called
+            //  when authToken does not exist)
             else {
                // Confirm switching to new authToken.
                return new Promise((ok, cancel) => {
@@ -205,7 +203,7 @@ class Account extends EventEmitter {
             }
          })
 
-         // Import auth token
+         // Register auth token
          .then(() => {
             // Re-open the progress dialog box
             // loader.open();
@@ -221,9 +219,12 @@ class Account extends EventEmitter {
             loader = this.f7app.dialog.progress(
                "<t>Connecting your account</t>"
             );
-
+            return network.registerAuthToken(preToken);
+         })
+         .then((authToken) => {
             return this.setAuthToken(authToken);
          })
+
          .then(() => {
             if (loader && loader.$el) {
                loader.$el.remove();
@@ -242,13 +243,8 @@ class Account extends EventEmitter {
                loader.destroy();
             }
 
-            // Tried to import the same existing auth token
-            if (err == "Nothing to import") {
-               this.f7app.alert("<t>Your account is already set up.</t>");
-            }
-
             // Canceled overwriting existing auth token with new one
-            else if (err == "Canceled by user") {
+            if (err == "Canceled by user") {
                // (nothing to do?)
             }
 

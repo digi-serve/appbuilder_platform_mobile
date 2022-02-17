@@ -164,11 +164,17 @@ export default class AppPage extends Page {
 
    /**
     * Check to see if the user account is present.
-    * First check device storage, then scan the URL for magic link.
+    * 
+    * First check device storage for the authToken, if not then scan the URL 
+    * for magic link containing a pre-token.
     * e.g. https://example.com/#JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
     * 
-    * The token is embedded in the hash fragment of the URL, which is never
-    * transmitted to the webserver.
+    * The pre-token is embedded in the hash fragment of the URL, which is never
+    * transmitted to the webserver. (It is sent to the MCC server at a later
+    * step.)
+    * 
+    * We will use the pre-token to register a new authToken for the user 
+    * account.
     * 
     * @return {Promise}
     */
@@ -177,7 +183,7 @@ export default class AppPage extends Page {
          .then((authToken) => {
             // User account found on device
             if (authToken) return true;
-            // Check the URL for magic link
+            // Check the URL for magic link pre-token
             else {
                // J.R.R. Token
                let hash = String(document.location.hash);
@@ -187,14 +193,14 @@ export default class AppPage extends Page {
 
                // No token in URL
                if (!match) {
-                  let err = new Error("No auth token found");
-                  err.code = "E_NOAUTHTOKEN";
+                  let err = new Error("No pre-token found");
+                  err.code = "E_NOJRRTOKEN";
                   return Promise.reject(err);
                }
-               // Import token from the URL
+               // Import pre-token from the URL. Generate new authToken.
                else {
-                  let authToken = match[1];
-                  return account.importSettings(authToken);
+                  let preToken = match[1];
+                  return account.importCredentials(preToken);
                }
             }
          })
@@ -262,19 +268,20 @@ export default class AppPage extends Page {
             this.app.dialog.close();
             switch (err.code) {
                case "E_BADAUTHTOKEN":
+               case "E_BADJRRTOKEN":
                   this.app.dialog.alert(
                      "<t>Make sure you have scanned the correct QR code for your account. If the problem persists, please contact an admin for help.</t>",
                      "<t>Problem authenticating with server</t>"
                   );
-                  analytics.log("Magic link auth token rejected by server");
+                  analytics.log("Token rejected by server: " + err.code);
                   break;
 
-               case "E_NOAUTHTOKEN":
+               case "E_NOJRRTOKEN":
                   this.app.dialog.alert(
                      "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
                      "<t>Welcome to conneXted!</t>"
                   );
-                  analytics.log("App launched with no auth token");
+                  analytics.log("App launched with no token");
                   break;
 
                default:

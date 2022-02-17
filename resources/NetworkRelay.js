@@ -114,7 +114,7 @@ class NetworkRelay extends NetworkRest {
       }
    }
 
-   init() {
+   prepare() {
       this.startListening();
       Log("NetworkRelay: init()");
 
@@ -123,6 +123,42 @@ class NetworkRelay extends NetworkRest {
       var init = super.init({
          baseURL: config.appbuilder.urlRelayServer
       });
+   }
+
+   /**
+    * Register a new authToken with the server.
+    * 
+    * Can be called even before init().
+    * Used by account.importCredentials().
+    * 
+    * @param {string} preToken
+    *    The pre-token used to authenticate.
+    * @return {Promise}
+    *    Resolves with {string} of the new authToken.
+    */
+   registerAuthToken(preToken) {
+      this.prepare();
+      let authToken = NetworkRelay.randomBytes(64);
+      return super.post({
+         url: "/mobile/register",
+         data: {
+            pre: preToken,
+            new: authToken
+         }
+      })
+         .then(() => {
+            return authToken;
+         })
+         .catch((err) => {
+            if (err.code >= 400 && err.code < 500) {
+               err.code = "E_BADJRRTOKEN";
+            }
+            throw err;
+         });
+   }
+
+   init() {
+      this.prepare();
 
       return new Promise((resolve, reject) => {
          //// Pull out our stored values:
