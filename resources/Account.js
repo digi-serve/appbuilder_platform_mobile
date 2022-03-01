@@ -53,7 +53,14 @@ class Account extends EventEmitter {
             })
             .then((siteUserData) => {
                if (siteUserData) {
-                  this.username = siteUserData.user.username;
+                  try {
+                     this.username = siteUserData.user.username;
+                  }
+                  catch (err) {
+                     console.error("Couldn't read username from stored data");
+                     console.error("Do we need it?");
+                     console.error(err);
+                  }
                }
                resolve();
             });
@@ -77,10 +84,17 @@ class Account extends EventEmitter {
                   context: {}
                };
                Network.on(responseContext.key, (context, data) => {
-                  storage.set("siteUserData", data).then(() => {
-                     this.username = data.user.username;
-                     this.relayReady.resolve();
-                  });
+                  storage.set("siteUserData", data)
+                     .then(() => {
+                        try {
+                           this.username = data.user.username;
+                        }
+                        catch (err) {
+                           console.error("What is the username for anyway?");
+                           console.error(err);
+                        }
+                        this.relayReady.resolve();
+                     });
                });
 
                // Call the url
