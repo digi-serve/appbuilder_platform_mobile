@@ -233,7 +233,7 @@ class Account extends EventEmitter {
             loader = this.f7app.dialog.progress(
                "<t>Connecting your account</t>"
             );
-            return network.registerAuthToken(preToken);
+            return Network.registerAuthToken(preToken);
          })
          .then((authToken) => {
             return this.setAuthToken(authToken);
@@ -259,7 +259,7 @@ class Account extends EventEmitter {
 
             // Canceled overwriting existing auth token with new one
             if (err == "Canceled by user") {
-               // (nothing to do?)
+               // (nothing to do? let the promise resolve.)
             }
 
             // Error
@@ -275,13 +275,15 @@ class Account extends EventEmitter {
                Log(err.message || err);
                analytics.logError(err);
 
+               /*
                this.f7app.dialog.alert(
                   err.message || err,
                   "<t>Error connecting account</t>"
                );
+               */
 
                this.importInProgress = false;
-               return Promise.reject();
+               return Promise.reject(err);
             }
          });
    }

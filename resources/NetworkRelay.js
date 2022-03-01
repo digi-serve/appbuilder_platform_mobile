@@ -183,7 +183,7 @@ class NetworkRelay extends NetworkRest {
          // we need both a authToken and an AES key to communicate to the Relay
          // server.
 
-         Promise.all([init, readAESKey, readSyncStatus, readAppUUID])
+         Promise.all([readAESKey, readSyncStatus, readAppUUID])
 
             // setup our unique appUUID:
             .then(() => {
