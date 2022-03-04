@@ -55,6 +55,9 @@ class Account extends EventEmitter {
                if (siteUserData) {
                   try {
                      this.username = siteUserData.user.username;
+                     if (this.username != "??") {
+                        analytics.setUserName(this.username);
+                     }
                   }
                   catch (err) {
                      console.error("Couldn't read username from stored data");
@@ -88,6 +91,9 @@ class Account extends EventEmitter {
                      .then(() => {
                         try {
                            this.username = data.user.username;
+                           if (this.username != "??") {
+                              analytics.setUserName(this.username);
+                           }
                         }
                         catch (err) {
                            console.error("What is the username for anyway?");
