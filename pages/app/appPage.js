@@ -18,7 +18,6 @@ import camera from "../../resources/Camera.js";
 import log from "../../resources/Log.js";
 import Network from "../../resources/Network.js";
 import notifications from "../../resources/Notifications.js";
-import qrPage from "../qrScanner/qrScanner.js";
 import Shake from "shake.js";
 import { storage, Storage } from "../../resources/Storage.js";
 import updater from "../../resources/Updater.js";
@@ -303,16 +302,6 @@ export default class AppPage extends Page {
     * Initialize things that depend on the DOM
     */
    init() {
-      // This was needed in the past because the QR code scanner could
-      // remain active even after the app reloaded.
-      qrPage.hide();
-
-      // When the QR code scanner page is closed after completing a scan,
-      // show this app page again.
-      qrPage.on("hide", () => {
-         this.show();
-      });
-
       this.dataReady.done(() => {
          this.begin();
       });

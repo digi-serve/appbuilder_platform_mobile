@@ -13,7 +13,6 @@ import { t } from "../resources/Translate.js";
 //// Previously we manually imported these libraries and made sure they were
 //// global, however we have moved these into index.html and they are global
 //// in scope.
-// import _Promise from 'es6-promise';
 // import moment from 'moment';
 // import lodash from 'lodash';
 
