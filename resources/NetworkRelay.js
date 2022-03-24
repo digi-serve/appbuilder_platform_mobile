@@ -565,7 +565,23 @@ class NetworkRelay extends NetworkRest {
                packets.push(response);
 
                // now if we have a complete set, combine and resolve:
-               if (packets.length == response.totalPackets) {
+               if (packets.length >= response.totalPackets) {
+                  // Sometimes there may be missing packets even in a "complete"
+                  // set. Perhaps from some of them being duplicates? Skip the 
+                  // process if that's the case here.
+                  for (var i = 0; i < response.totalPackets; i++) {
+                     if (!hash[i]) {
+                        console.warn(
+                           `Weird. Missing packet[${i}/${totalPackets - 1}]`, 
+                           packets
+                        );
+                        // Don't process. Don't remove the packets.
+                        // Maybe more packets will come in later.
+                        return;
+                     }
+                  }
+
+
                   // not sure what order packets are in so hash them:
                   var hash = {};
                   packets.forEach((p) => {
