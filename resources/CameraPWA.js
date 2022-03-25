@@ -8,11 +8,12 @@
  *
  * Previously, it was possible to use the permanent `cdvfile` value of that
  * image to display it in the DOM (inside an <img> tag). This is no longer
- * possible in iOS. Now only the temporary `url` value can be displayed.
+ * possible. Now only the temporary `url` value can be displayed.
  *
  * Because it is temporary, the `url` cannot be reliably stored for future use.
  * Instead, store the image filename. Then later when you need to display the
- * image, use tempUrl(filename) to obtain a fresh URL.
+ * image, use loadPhotoByName(filename) to obtain a fresh `.url` from the
+ * result.
  *
  * Exports a singleton instance.
  */
