@@ -135,7 +135,7 @@ class CameraPWA extends EventEmitter {
     *    Resolves with metadata of the saved photo.
     *    {
     *       filename: <string>,
-    *       fileEntry: <File|Blob>,
+    *       File: <File|Blob>,
     *       url: <string> // only valid for current session
     *    }
     */
@@ -182,7 +182,7 @@ class CameraPWA extends EventEmitter {
     *    Resolves with metadata of the copied photo.
     *    {
     *       filename: <string>,
-    *       fileEntry: <File|Blob>,
+    *       File: <File|Blob>,
     *       url: <string> // only valid for current session
     *    }
     */
@@ -230,7 +230,7 @@ class CameraPWA extends EventEmitter {
     * This is no longer necessary under PWA.
     * 
     * @param {string|File} imageFile
-    *      Either a string filename, or a FileEntry object for this image
+    *      Either a string filename, or a File object for this image
     *      file.
     * @return {Promise}
     *      Resolves with the URL to the temp image.
@@ -239,7 +239,7 @@ class CameraPWA extends EventEmitter {
       console.warn("camera.tempURL() is no longer needed.");
       return Promise.resolve()
          .then(() => {
-            if (imageFile instanceof FileEntry || imageFile instanceof File) {
+            if (imageFile instanceof File) {
                return imageFile;
             }
             else if (typeof imageFile == 'string') {
@@ -372,7 +372,7 @@ class CameraPWA extends EventEmitter {
     * @return {Promise}
     *    {
     *       filename: <string>,
-    *       fileEntry: <File>,
+    *       File: <File>,
     *       url: <string> // only valid for current session
     *    }
     */
