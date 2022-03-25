@@ -54,10 +54,16 @@ module.exports = class ABObject extends ABObjectCore {
                   // }
                   // if this is a response to one of our .updates()
                   if (context.jobID) {
-                     // if this is the last update we sent for this object
-                     if (context.jobID !== this.latestUpdates[data.uuid]) {
+                     // Where is `latestUpdates` set? 
+                     // @see ABModelRelay.js maybe?
+                     if (!this.latestUpdates) {
                         return;
-                     } else {
+                     }
+                     // if this is the last update we sent for this object
+                     else if (context.jobID !== this.latestUpdates[data.uuid]) {
+                        return;
+                     } 
+                     else {
                         delete this.latestUpdates[data.uuid];
                      }
                   }
