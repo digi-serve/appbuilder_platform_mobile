@@ -185,6 +185,12 @@ class FileStorage extends EventEmitter {
          // Retrieve the stored file first
          this.get(name)
             .then((file) => {
+               if (!file) {
+                  console.warn("Attempt to delete non-existent file: ", name);
+                  resolve();
+                  return;
+               }
+
                var fileSize = file.size;
                var transaction = this.db.transaction(storeName, "readwrite");
                transaction.onerror = (event) => {
