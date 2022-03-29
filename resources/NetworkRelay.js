@@ -566,6 +566,12 @@ class NetworkRelay extends NetworkRest {
 
                // now if we have a complete set, combine and resolve:
                if (packets.length >= response.totalPackets) {
+                  // not sure what order packets are in so hash them:
+                  var hash = {};
+                  packets.forEach((p) => {
+                     hash[p.packet] = p;
+                  });
+
                   // Sometimes there may be missing packets even in a "complete"
                   // set. Perhaps from some of them being duplicates? Skip the 
                   // process if that's the case here.
@@ -580,14 +586,7 @@ class NetworkRelay extends NetworkRest {
                         return;
                      }
                   }
-
-
-                  // not sure what order packets are in so hash them:
-                  var hash = {};
-                  packets.forEach((p) => {
-                     hash[p.packet] = p;
-                  });
-
+                  
                   // then pull off 0 -> packets.length
                   var encryptedData = "";
                   for (var i = 0; i < response.totalPackets; i++) {
