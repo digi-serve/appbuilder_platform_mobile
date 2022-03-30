@@ -465,7 +465,6 @@ class Storage extends EventEmitter {
          }
          var store = transaction.objectStore(storeName);
          if (keyRange) {
-            debugger;
             var req = store.delete(keyRange);
          } else {
             var req = store.clear();
