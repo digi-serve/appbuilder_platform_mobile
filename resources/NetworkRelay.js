@@ -578,7 +578,7 @@ class NetworkRelay extends NetworkRest {
                   for (var i = 0; i < response.totalPackets; i++) {
                      if (!hash[i]) {
                         console.warn(
-                           `Weird. Missing packet[${i}/${totalPackets - 1}]`, 
+                           `Weird. Missing packet[${i}/${response.totalPackets - 1}]`, 
                            packets
                         );
                         // Don't process. Don't remove the packets.
@@ -586,7 +586,7 @@ class NetworkRelay extends NetworkRest {
                         return;
                      }
                   }
-                  
+
                   // then pull off 0 -> packets.length
                   var encryptedData = "";
                   for (var i = 0; i < response.totalPackets; i++) {
