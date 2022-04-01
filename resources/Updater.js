@@ -137,6 +137,24 @@ class Updater extends EventEmitter {
 
          async.series(
             [
+               // Fetch PWA cache version
+               (next) => {
+                  fetch("/cache-version")
+                     .then((res) => {
+                        return res.text();
+                     })
+                     .then((cacheVersion) => {
+                        defaultInfo.label = cacheVersion;
+                        next();
+                     })
+                     .catch((err) => {
+                        console.error("Couldn't fetch cache version");
+                        console.error(err);
+                        next();
+                     });
+               },
+
+               // CodePush package info (deprecated)
                (next) => {
                   if (!window.codePush) {
                      return next();
