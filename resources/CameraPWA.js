@@ -95,7 +95,7 @@ class CameraPWA extends EventEmitter {
                   isCameraActive = false;
                   reject(new Error('Canceled'));
                }
-            }, 300);
+            }, 600);
          });
 
          // Activate the device camera
