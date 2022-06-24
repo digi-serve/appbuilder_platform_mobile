@@ -57,6 +57,7 @@ class NetworkRelay extends NetworkRest {
       this.relayState = null;
 
       this.appUUID = null;
+      this.tenantUUID = null
 
       this.tokenLock = new Lock();
       this.jobTokens = null;
@@ -179,11 +180,16 @@ class NetworkRelay extends NetworkRest {
             this.appUUID = value || null;
          });
 
+         var readTenantUUID = storage.get("tenantUUID").then((value) => {
+            // "tenantUUID" was set in Account.js :: importCredentials()
+            this.tenantUUID = value || null;
+         })
+
          // FYI:
          // we need both a authToken and an AES key to communicate to the Relay
          // server.
 
-         Promise.all([readAESKey, readSyncStatus, readAppUUID])
+         Promise.all([readAESKey, readSyncStatus, readAppUUID, readTenantUUID])
 
             // setup our unique appUUID:
             .then(() => {
@@ -266,7 +272,8 @@ class NetworkRelay extends NetworkRest {
                         rsa_aes: encrypted,
                         userUUID: uuid,
                         appID: config.appbuilder.maID,
-                        appUUID: this.appUUID
+                        appUUID: this.appUUID,
+                        tenantUUID: this.tenantUUID
                      };
 
                      // NOTE: use super.post() here so we don't do our .post()
@@ -709,7 +716,8 @@ class NetworkRelay extends NetworkRest {
             aesKeySent: false,
             lastSyncDate: null
          }),
-         storage.set("appUUID", null)
+         storage.set("appUUID", null),
+         storage.set("tenantUUID", null)
       ]);
    }
 
@@ -916,6 +924,7 @@ class NetworkRelay extends NetworkRest {
                   return super.post({
                      url: config.appbuilder.routes.relayRequest,
                      data: {
+                        tenantUUID: this.tenantUUID,
                         appUUID: this.appUUID,
                         jobToken: jobToken,
                         packet: i,

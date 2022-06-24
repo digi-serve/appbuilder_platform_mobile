@@ -163,9 +163,10 @@ class Account extends EventEmitter {
     * Obtain the pre-token from the URL. And then generate a new authToken.
     *
     * @param {string} preToken
+    * @param {string} tenantUUID
     * @return {Promise}
     */
-   importCredentials(preToken) {
+   importCredentials(preToken, tenantUUID) {
       if (this.importInProgress) {
          Log("::: importSettings(): already in progress");
          return Promise.reject("Import already in progress");
@@ -243,6 +244,9 @@ class Account extends EventEmitter {
          })
          .then((authToken) => {
             return this.setAuthToken(authToken);
+         })
+         .then(() => {
+            return storage.set("tenantUUID", tenantUUID);
          })
 
          .then(() => {

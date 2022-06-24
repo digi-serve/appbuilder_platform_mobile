@@ -184,22 +184,25 @@ export default class AppPage extends Page {
             if (authToken) return true;
             // Check the URL for magic link pre-token
             else {
-               // J.R.R. Token
                let hash = String(document.location.hash);
-               let match = hash.match(/JRR=(\w+)/);
-               // Remove token from current URL, for bookmarkability
+               // J.R.R. Token
+               let jrrMatch = hash.match(/JRR=(\w+)/);
+               // Tenant UUID
+               let tenantMatch = hash.match(/tenant=(\w+)/) || {};
+               // Remove tokens from current URL, for bookmarkability
                window.history.replaceState(null, null, "#");
 
                // No token in URL
-               if (!match) {
+               if (!jrrMatch) {
                   let err = new Error("No pre-token found");
                   err.code = "E_NOJRRTOKEN";
                   return Promise.reject(err);
                }
                // Import pre-token from the URL. Generate new authToken.
                else {
-                  let preToken = match[1];
-                  return account.importCredentials(preToken);
+                  let preToken = jrrMatch[1];
+                  let tenantUUID = tenantMatch[1];
+                  return account.importCredentials(preToken, tenantUUID);
                }
             }
          })
