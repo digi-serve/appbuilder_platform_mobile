@@ -586,10 +586,50 @@ class NetworkRelay extends NetworkRest {
                      if (!hash[i]) {
                         console.warn(
                            `Weird. Missing packet[${i}/${response.totalPackets - 1}]`, 
-                           packets
+                           packets.map(p => p.packet)
                         );
-                        // Don't process. Don't remove the packets.
-                        // Maybe more packets will come in later.
+
+                        // Compare the duplicate packets.
+                        let packetNums = new Set();
+                        for (var j = 0; j < packets.length; j++) {
+                           let p = packets[j];
+                           if (!packetNums.has(p.packet)) {
+                              packetNums.add(p.packet);
+                           }
+                           // Found a duplicate packet
+                           else {
+                              let packetA = p;
+                              let packetB;
+                              for (var k = 0; k < j; k++) {
+                                 if (packets[k].packet == packetA.packet) {
+                                    packetB = packets[k];
+                                    break;
+                                 }
+                              }
+                              if (packetA.data == packetB.data) {
+                                 console.warn(`Duplicate packets for ${packetA.packet} are identical`);
+                                 console.warn("Dropping one of them");
+                                 packets.splice(j, 1);
+                              }
+                              else {
+                                 console.warn(`Duplicate packets for ${packetA.packet} are different!`);
+                                 console.warn(`One of them is corrupted. But which one?`);
+                                 console.warn("packetA", packetA.substring(0, 20) + "...");
+                                 console.warn("packetB", packetB.substring(0, 20) + "...");
+                                 console.warn("Dropping the smaller packet");
+                                 if (packetA.length < packetB.length) {
+                                    packets.splice(j, 1);
+                                 } else {
+                                    packets.splice(k, 1);
+                                 }
+                              }
+                              break;
+                           }
+                        }
+
+                        // Don't resolve job. Don't remove the packets.
+                        // Maybe more packets will come in later to complete the
+                        // set.
                         return;
                      }
                   }
