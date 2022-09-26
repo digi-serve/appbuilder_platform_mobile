@@ -614,8 +614,8 @@ class NetworkRelay extends NetworkRest {
                               else {
                                  console.warn(`Duplicate packets for ${packetA.packet} are different!`);
                                  console.warn(`One of them is corrupted. But which one?`);
-                                 console.warn("packetA", packetA.substring(0, 20) + "...");
-                                 console.warn("packetB", packetB.substring(0, 20) + "...");
+                                 console.warn("packetA", packetA.data.substring(0, 20) + "...");
+                                 console.warn("packetB", packetB.data.substring(0, 20) + "...");
                                  console.warn("Dropping the smaller packet");
                                  if (packetA.length < packetB.length) {
                                     packets.splice(j, 1);
