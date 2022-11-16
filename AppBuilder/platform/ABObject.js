@@ -23,6 +23,9 @@ module.exports = class ABObject extends ABObjectCore {
             if (this.name) {
                console.log(":: name:", this.name);
             }
+            if (data.error || data.name === "StatusCodeError") {
+               console.error({ "Error getting data: ": data.name });
+            }
             console.log(":: data:", data);
 
             context.verb = context.verb || "unknown";
@@ -62,8 +65,7 @@ module.exports = class ABObject extends ABObjectCore {
                      // if this is the last update we sent for this object
                      else if (context.jobID !== this.latestUpdates[data.uuid]) {
                         return;
-                     } 
-                     else {
+                     } else {
                         delete this.latestUpdates[data.uuid];
                      }
                   }

@@ -46,6 +46,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             // console.log(
             //    ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
             // );
+            if (data.error) {
+               // data was returned, with error message
+               data["objectName"] = this.name;
+               console.error(data);
+            }
             if (this.name) {
                console.log(":: name:", this.name, {
                   ":: context:": context,
