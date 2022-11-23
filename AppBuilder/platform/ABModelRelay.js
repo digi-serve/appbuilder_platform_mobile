@@ -6,6 +6,7 @@
  *
  */
 
+const { values } = require("lodash");
 var ABModelCore = require("../core/ABModelCore");
 
 var Network = require("../../resources/Network").default;
@@ -79,6 +80,9 @@ module.exports = class ABModelRelay extends ABModelCore {
     */
    findAll(cond) {
       cond = cond || {};
+      if (!cond.tenantUUID || !cond.username) {
+         console.error("Params has no data", cond);
+      }
 
       // this is where the logic will get tricky:
       // As the platform implementation of .findAll()

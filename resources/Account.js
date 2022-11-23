@@ -30,12 +30,27 @@ class Account extends EventEmitter {
       this.relayReady = null;
       // {Deferred} : used to track a pending call to load the
       // site user data ( .initUserData() )
+
+      this.tenantUUID = "???"; // this does nothing
+      this.tenantID = "???";
+
+      this._listRoles = null;
+      // {array}
+      // a list of all the Defined Roles in the Tenant's system.
+
+      this._listScopes = null;
+      // {array | null}
+      // a list of all the Defined Scopes in the Tenant's sytem.
+
+      this._listUsers = null;
+      // {array | null}
+      // a list of all the Defined Users in the Tenant's system.
    }
 
    /**
     * Early initialization. This can happen even before the auth token is
     * setup.
-    * 
+    *
     * @param {object} options
     * @param {Framework7} options.app
     *
@@ -138,9 +153,12 @@ class Account extends EventEmitter {
             }
          })
          .then((authToken) => {
+            if (!this.username) {
+               console.error("No username", authToken);
+            }
             this.authToken = authToken;
             return authToken;
-         })
+         });
    }
 
    /**
