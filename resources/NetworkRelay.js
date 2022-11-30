@@ -936,6 +936,9 @@ class NetworkRelay extends NetworkRest {
          return Promise.resolve();
       }
 
+      params.headers = params.header || {};
+      params.headers["tenant-token"] = config.appbuilder.tenantID;
+
       // ok, the given params, are the DATA we want to send to the RelayServer
       var data = this.encrypt(params);
       var jobToken = this.uuid();
@@ -969,8 +972,9 @@ class NetworkRelay extends NetworkRest {
                         jobToken: jobToken,
                         packet: i,
                         totalPackets: packets.length,
-                        data: packets[i]
-                     }
+                        data: packets[i],
+                        tenant: config.appbuilder.tenantID,
+                     },
                   });
                });
             }
