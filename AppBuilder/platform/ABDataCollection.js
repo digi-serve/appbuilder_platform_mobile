@@ -61,9 +61,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   ":: data": data
                });
             }
-            if (!Array.isArray(data)) {
-               data = data.data || [data];
-            }
             var firstStep;
             // will be a Promise based on which of the next steps
             // should be executed.
