@@ -204,6 +204,65 @@ module.exports = class ABObject extends ABObjectCore {
       return field;
    }
 
+   ///
+   /// URL Methods
+   /// are we overwriting???
+   ///
+
+   /**
+    * @method urlRest
+    * return the url to access the data for this object.
+    * @return {string}
+    */
+   urlRest() {
+      return `/app_builder/model/${this.id}`;
+   }
+
+   /**
+    * @method urlRestBatch
+    * return the url to use for batch creates for this object
+    * @return {string}
+    */
+   urlRestBatch() {
+      return `/app_builder/batch/model/${this.id}`;
+   }
+
+   /**
+    * @method urlRestItem
+    * return the url to access the data for an instance of this object.
+    * @return {string}
+    */
+   urlRestItem(id) {
+      return `/app_builder/model/${this.id}/${id}`;
+   }
+
+   /**
+    * @method urlRestLog
+    * return the url to access the logs for this ABObject.
+    * @return {string}
+    */
+   urlRestLog() {
+      return `/app_builder/object/${this.id}/track`;
+   }
+
+   /**
+    * @method urlRestRefresh
+    * return the url to signal a refresh for this object.
+    * @return {string}
+    */
+   urlRestRefresh() {
+      return `/app_builder/model/refreshobject/${this.id}`;
+   }
+
+   /**
+    * @method urlCount
+    * return the url to count of data for this object.
+    * @return {string}
+    */
+   urlRestCount() {
+      return `/app_builder/model/count/${this.id}`;
+   }
+
    remoteData(context, data) {
       if (context.error) {
          // Question: so how do we handle error responses?
