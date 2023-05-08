@@ -51,6 +51,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                data["objectName"] = this.name;
                console.error(data);
             }
+            if (data === "[Object, object]" || data === "[object Object]") {
+               data["error"] = this.name;
+               console.error(data);
+            }
             if (this.name) {
                console.log(":: name:", this.name, {
                   ":: context:": context,
