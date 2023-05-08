@@ -461,6 +461,9 @@ module.exports = class ABModelLocal extends ABModelCore {
     *		returns a normalized set of data for this object
     */
    syncRemoteMaster(data) {
+      if (data.data?.length) {
+         data = data.data;
+      }
       return new Promise((resolve, reject) => {
          // this means that we should use whatever the remote gave us:
          // save new items, then replace existing ones
@@ -485,6 +488,9 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    saveNew(allData) {
+      if (allData.data?.length) {
+         allData = allData.data;
+      }
       if (!Array.isArray(allData)) allData = [allData];
 
       var lock = this.lock();
@@ -530,6 +536,9 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    updateExisting(allData) {
+      if (allData.data?.length) {
+         allData = allData.data;
+      }
       if (!Array.isArray(allData)) allData = [allData];
 
       var lock = this.lock();
@@ -576,6 +585,9 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    updateNewer(allData) {
+      if (allData.data?.length) {
+         allData = allData.data;
+      }
       if (!Array.isArray(allData)) allData = [allData];
 
       var lock = this.lock();

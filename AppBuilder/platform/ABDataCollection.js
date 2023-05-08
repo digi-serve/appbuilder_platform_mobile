@@ -41,7 +41,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       // Setup a listener for this DC to catch updates from the relay
       Network.on(ABDataCollectionCore.contextKey(), (context, data) => {
          // is this update for me?
-         if (context.id == this.id) {
+         if (context.id == this.id && Array.isArray(data.data)) {
             //console.log("-----------");
             // console.log(
             //    ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
@@ -276,6 +276,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   // but just in case:
                   data = data || {};
 
+                  if (data.reducedConditions?.values[0] != undefined) {
+                     data.allValues = values;
+                     this.allValues = values;
+                  }
+
                   data.reducedConditions = this._reducedConditions;
 
                   return storage.set(this.refStorage(), data);
@@ -353,6 +358,13 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         if (data) {
                            this.bootState = data.bootState;
                            this._reducedConditions = data.reducedConditions;
+
+                           // save our info:
+                           if (data.reducedConditions?.values[0] != undefined) {
+                              // debugger;
+                              this.data = data.allValues;
+                              this.allValues = data.allValues;
+                           }
 
                            if (this._reducedConditions) {
                               if (this.__filterDatasource) {
@@ -435,7 +447,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     *          data:[ {ABObjectData}, {ABObjectData}, ...]
     *        }
     */
-   processIncomingData(data) {
+   processIncomingData(dataNew) {
       //// Web Platform:
       // // standardize the heights
       // data.data.forEach((d) => {
@@ -448,8 +460,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       //     }
 
       // });
-
-      return super.processIncomingData(data).then(() => {
+      return super.processIncomingData(dataNew).then(() => {
          //// Web Platform:
          // // when that is done:
          // this.hideProgressOfComponents();
@@ -457,23 +468,26 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          // make sure we update our bootState!
          if (this.bootState == "uninitialized") {
             this.bootState = "initialized";
-
-            // once that is done, make sure we can track our DC info
-            var lock = storage.Lock(this.refStorage());
-            return lock
-               .acquire()
-               .then(() => {
-                  return storage.get(this.refStorage()).then((data) => {
-                     data = data || {};
-                     data.bootState = this.bootState;
-
-                     return storage.set(this.refStorage(), data);
-                  });
-               })
-               .then(() => {
-                  lock.release();
-               });
          }
+         // once that is done, make sure we can track our DC info
+         var lock = storage.Lock(this.refStorage());
+         return lock
+            .acquire()
+            .then(() => {
+               return storage.get(this.refStorage()).then((data) => {
+                  data = data || {};
+                  data["reducedConditions"]["values"] = dataNew;
+                  data.bootState = this.bootState;
+                  if (data.reducedConditions?.values[0] != undefined) {
+                     data.allValues = dataNew;
+                     this.allValues = dataNew;
+                  }
+                  return storage.set(this.refStorage(), data);
+               });
+            })
+            .then(() => {
+               lock.release();
+            });
       });
    }
 
@@ -701,21 +715,56 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
    // }
 
-   // getFirstRecord() {
+   getFirstRecord() {
+      debugger;
 
-   // 	var dc = this.__dataCollection;
-   // 	if (dc) {
+      var dc = this.__dataCollection;
+      console.log(dc.find({}));
+      if (this.data && this.data[0]) {
+         // var currId = dc.getFirstId();
+         // var currItem = dc.getItem(currId);
 
-   // 		var currId = dc.getFirstId();
-   // 		var currItem = dc.getItem(currId);
+         return this.data[0];
+      } else {
+         storage.get(this.refStorage()).then((data) => {
+            // data = data || {};
+            // data["reducedConditions"]["values"] = dataNew;
+            // data.bootState = this.bootState;
+            // if (data.reducedConditions?.values[0] != undefined) {
+            //    data.allValues = dataNew;
+            // }
+            this.data = data; //.allValues[0];
 
-   // 		return currItem;
-   // 	}
-   // 	else {
-   // 		return null;
-   // 	}
+            this.allValues = data;
+         });
+         return null;
+      }
+   }
+   getAllRecords() {
+      // debugger;
 
-   // }
+      // return storage.get(this.refStorage()).then((data) => {
+      // data = data || {};
+      // data["reducedConditions"]["values"] = dataNew;
+      // data.bootState = this.bootState;
+      // if (data.reducedConditions?.values[0] != undefined) {
+      //    data.allValues = dataNew;
+      // }
+      var dc = this.__dataCollection;
+      console.log(dc.data.driver.getRecords());
+      debugger;
+      return this.data;
+      // });
+
+      if (dc) {
+         var currId = dc.getFirstId();
+         var currItem = dc.getItem(currId);
+
+         return currItem;
+      } else {
+         return null;
+      }
+   }
 
    // getNextRecord(record) {
 
