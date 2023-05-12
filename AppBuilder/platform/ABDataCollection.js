@@ -282,7 +282,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
                   if (data.reducedConditions?.values[0] != undefined) {
                      data.allValues = values;
-                     this.allValues = values;
+                     // this.allValues = values;
+                     this.data = values;
                   }
 
                   data.reducedConditions = this._reducedConditions;
@@ -351,7 +352,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          ds.model()
             .local()
             .platformInit()
-            .then(() => {
+            .then((objectData) => {
                // once that is done, make sure we can track our DC info
                var lock = storage.Lock(this.refStorage());
                return lock
@@ -363,13 +364,25 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            this.bootState = data.bootState;
                            this._reducedConditions = data.reducedConditions;
 
-                           // save our info:
-                           if (data.reducedConditions?.values[0] != undefined) {
-                              // debugger;
-                              this.data = data.allValues;
-                              this.allValues = data.allValues;
+                           // when 'dataCollection.QL().value()' is called,
+                           // this.data is what is returned, so lets make sure it's set:
+                           if (
+                              data.reducedConditions?.values[0] != undefined &&
+                              objectData
+                           ) {
+                              // objectData is from the ABObject.model().local(), it may have records beyond the datacollection's
+                              // objectData's key should have a match in reducedConditions.values
+                              this.data = this.data || [];
+                              data.reducedConditions.values.forEach(
+                                 (pkInDC) => {
+                                    if (objectData[pkInDC]) {
+                                       this.data.push(objectData[pkInDC]);
+                                    }
+                                 }
+                              );
                            }
 
+                           // save our info:
                            if (this._reducedConditions) {
                               if (this.__filterDatasource) {
                                  this.__filterDatasource.setReducedConditions(
@@ -480,12 +493,13 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             .then(() => {
                return storage.get(this.refStorage()).then((data) => {
                   data = data || {};
-                  data["reducedConditions"]["values"] = dataNew;
+
                   data.bootState = this.bootState;
-                  if (data.reducedConditions?.values[0] != undefined) {
-                     data.allValues = dataNew;
-                     this.allValues = dataNew;
-                  }
+
+                  // when 'dataCollection.QL().value()' is called,
+                  // this is what is returned
+                  this.data = dataNew;
+
                   return storage.set(this.refStorage(), data);
                });
             })
@@ -579,7 +593,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
    //    // get data to data collection
    //    console.error("Where is .loadDataLocal() being called from?");
-   //    debugger;
 
    //    return model
    //       .findAll(cond)
@@ -720,54 +733,29 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    // }
 
    getFirstRecord() {
-      debugger;
-
       var dc = this.__dataCollection;
-      console.log(dc.find({}));
+      console.log("getFirstRecord() : dc:", dc.find({}));
       if (this.data && this.data[0]) {
-         // var currId = dc.getFirstId();
-         // var currItem = dc.getItem(currId);
-
          return this.data[0];
       } else {
-         storage.get(this.refStorage()).then((data) => {
-            // data = data || {};
-            // data["reducedConditions"]["values"] = dataNew;
-            // data.bootState = this.bootState;
-            // if (data.reducedConditions?.values[0] != undefined) {
-            //    data.allValues = dataNew;
-            // }
-            this.data = data; //.allValues[0];
-
-            this.allValues = data;
+         return new Promise((resolve, reject) => {
+            this.platformFind().then((data) => {
+               return resolve(data[0])
+            });
          });
-         return null;
       }
    }
    getAllRecords() {
-      // debugger;
-
-      // return storage.get(this.refStorage()).then((data) => {
-      // data = data || {};
-      // data["reducedConditions"]["values"] = dataNew;
-      // data.bootState = this.bootState;
-      // if (data.reducedConditions?.values[0] != undefined) {
-      //    data.allValues = dataNew;
-      // }
-      var dc = this.__dataCollection;
-      console.log(dc.data.driver.getRecords());
-      debugger;
-      return this.data;
-      // });
-
-      if (dc) {
-         var currId = dc.getFirstId();
-         var currItem = dc.getItem(currId);
-
-         return currItem;
-      } else {
-         return null;
-      }
+      // if initialized...
+      if (this.data) {
+         return this.data;
+      } 
+      // else wait for data
+      return new Promise((resolve, reject) => {
+         this.platformFind().then((data) => {
+            return resolve(data)
+         });
+      });
    }
 
    // getNextRecord(record) {
@@ -1060,7 +1048,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    ///// modelLocal, modelRemote operations.
 
    platformFind(model, cond) {
-      // if (bootstate==initialzied) {
+      model = model || this.datasource.model();
       if (this.bootState == "initialized") {
          // We have already initialized our data, so that means
          // we have local data that we can work with right now.
@@ -1081,13 +1069,20 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                });
 
                // load our valid entries:
-               this.processIncomingData(validEntries);
+               // ! This call prevents this from returning found data @achoobert
+               // ? Why would this ever be nessicary?
+               // this.processIncomingData(validEntries);
+
+               // update our local data:
+               this.data = validEntries;
+               // return validEntries;
 
                // we can start working on this data now
                // NOTE: resolve() should be done in .processIncomingData() now
-               // resolve();
+               // resolve(validEntries);
             })
-            .then(() => {
+            .then((validEntries) => {
+               // ? is it really nessicary to call the remote here? @achoobert
                // However, this local data might be out of date
                // with the server.  So let's spawn a remote
                // lookup in the background:
@@ -1108,6 +1103,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
                // initiate the request:
                modelRemote.findAll(cond);
+
+               // return valid entries:
+               return validEntries;
             });
       } else {
          //  We have not been initialized yet, so we need to

@@ -50,9 +50,7 @@ module.exports = class ABQL {
       if (values.data) {
          this.data = values.data;
       } else {
-         // debugger;
-         this.data = this.datacollection.data;
-         this.values = this.data;
+         this.data = this.datacollection.getAllRecords();
       }
    }
 
@@ -151,11 +149,11 @@ module.exports = class ABQL {
     * then return the contents of our datacollection.
     * @return {multi} depending on the type of data we are representing.
     */
-   async value() {
-      if (this.data) {
+   value() {
+      if (this.data && this.data.length) {
          return this.data;
       }
-      this.data = await this.datacollection.getAllRecords();
+      this.data = this.datacollection.getAllRecords();
       return this.data;
    }
 };
