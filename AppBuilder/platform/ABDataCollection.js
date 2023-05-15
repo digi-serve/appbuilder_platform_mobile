@@ -51,9 +51,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                data["objectName"] = this.name;
                console.error(data);
             }
-            if (data === "[Object, object]" || data === "[object Object]") {
+            if (data.toLowerCase?.() === "[object, object]")
                data["error"] = this.name;
-               console.error(data);
+               console.error("bad data from server, try tweaking the ABdefinitions!", data);
             }
             if (this.name) {
                console.log(":: name:", this.name, {
@@ -281,8 +281,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   data = data || {};
 
                   if (data.reducedConditions?.values[0] != undefined) {
-                     data.allValues = values;
-                     // this.allValues = values;
+                     // when 'dataCollection.QL().value()' is called,
+                     // this.data is what is returned, update it
                      this.data = values;
                   }
 

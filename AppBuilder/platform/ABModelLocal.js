@@ -53,6 +53,9 @@ module.exports = class ABModelLocal extends ABModelCore {
     * make sure we are ready for operation on this platform.
     * this implies we need to make sure each ABObject we use can
     * store information in the DB.
+    *
+    * if data is already present, return allObjects
+    *
     * @return {Promise}
     */
    platformInit() {

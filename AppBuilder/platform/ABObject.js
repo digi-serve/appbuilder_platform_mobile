@@ -251,6 +251,7 @@ module.exports = class ABObject extends ABObjectCore {
     * @return {string}
     */
    urlRestRefresh() {
+      console.dir("urlRestRefresh() is deprecated, who is calling this?");
       return `/app_builder/model/refreshobject/${this.id}`;
    }
 
@@ -260,7 +261,7 @@ module.exports = class ABObject extends ABObjectCore {
     * @return {string}
     */
    urlRestCount() {
-      return `/app_builder/model/count/${this.id}`;
+      return `/app_builder/model/${this.id}/count`;
    }
 
    remoteData(context, data) {
