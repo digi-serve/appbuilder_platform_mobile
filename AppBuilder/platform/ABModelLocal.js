@@ -71,16 +71,16 @@ module.exports = class ABModelLocal extends ABModelCore {
             .then((allObjects) => {
                // if data was returned, then we have already been initialized.
                if (allObjects) {
-                  resolve();
+                  lock.release();
+                  resolve(allObjects);
                   return;
                }
 
                // if nothing returned, initialize to an empty data set
-               return storage.set(this.refStorage(), {});
-            })
-            .then(() => {
-               lock.release();
-               resolve();
+               return storage.set(this.refStorage(), {}).then(() => {
+                  lock.release();
+                  resolve({});
+               });
             })
             .catch((err) => {
                lock.release();

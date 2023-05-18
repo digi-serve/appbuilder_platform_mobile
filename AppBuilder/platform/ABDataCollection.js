@@ -51,10 +51,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                data["objectName"] = this.name;
                console.error(data);
             }
-            if (data.toLowerCase?.() === "[object, object]")
+            if (data.toLowerCase?.() === "[object, object]") {
                data["error"] = this.name;
-            console.error(
-               "bad data from server, try tweaking the ABdefinitions!",
+               console.error(
+                  "bad data from server, try tweaking the ABdefinitions!",
                data
             );
          }
@@ -106,9 +106,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                // signal our remote data has arrived.
                this.emit("init.remote", {});
 
-               // TODO: Legacy: remove this once Events and HRIS are upgraded
-               this.emit("data", normalizedData);
-            });
+                  // TODO: Legacy: remove this once Events and HRIS are upgraded
+                  this.emit("data", normalizedData);
+               });
+         }
       }); // end Network.on()
 
       //// TODO: test out these OBJ.on() propagations:
@@ -1064,10 +1065,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                // load our valid entries:
                // ! This call prevents this from returning found data @achoobert
                // ? Why would this ever be nessicary?
-               // this.processIncomingData(validEntries);
+               this.processIncomingData(validEntries);
 
                // update our local data:
-               this.processIncomingData(validEntries);
+               this.data = validEntries;
 
                // we can start working on this data now
                // NOTE: resolve() should be done in .processIncomingData() now
@@ -1097,7 +1098,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                modelRemote.findAll(cond);
 
                // return valid entries:
-               // return validEntries;
+               return validEntries;
             });
       } else {
          //  We have not been initialized yet, so we need to
