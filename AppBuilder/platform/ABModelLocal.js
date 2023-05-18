@@ -186,7 +186,7 @@ module.exports = class ABModelLocal extends ABModelCore {
          .then((returnValue) => {
             // console.log('--- '+this.refStorage()+'.localStorageCreate end', data);
             lock.release();
-            return returnValue;
+            return returnValue || data;
          })
          .catch((err) => {
             lock.release();
@@ -285,7 +285,7 @@ module.exports = class ABModelLocal extends ABModelCore {
          .then((returnValue) => {
             // console.log('--- '+this.refStorage()+'.localStorageUpdate end', data);
             lock.release();
-            return returnValue;
+            return returnValue || data;
          })
          .catch((err) => {
             console.error("!!! error trying to update object:", err);
@@ -374,10 +374,8 @@ module.exports = class ABModelLocal extends ABModelCore {
       }
 
       return this.localStorageUpdate(values).then((data) => {
-         this.normalizeData(data);
-
-         return data;
-      });
+          this.normalizeData(values);
+      })
    }
 
    /**
