@@ -691,10 +691,23 @@ class NetworkRelay extends NetworkRest {
                   error = data;
                }
 
-               // but we only want to return the .data portion:
-               if (data.data) {
-                  data = data.data;
+               /**
+                * Recursively searches for an array or null value in the given data.
+                * Server is returning up to data.data.data
+                * @param {any} data - The data to search.
+                * @returns {Array|null} - The found array or null if not found.
+                */
+               function findArrayOrNull(data) {
+                  if (Array.isArray(data)) {
+                     return data;
+                  } else if (data.data) {
+                     return findArrayOrNull(data.data);
+                  } else {
+                     return null;
+                  }
                }
+               // but we only want to return the .data portion:
+               data = findArrayOrNull(data) 
             })
 
             .then(() => {

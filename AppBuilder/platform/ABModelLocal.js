@@ -463,6 +463,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    syncRemoteMaster(data) {
       if (data.data?.length) {
+         console.error("data.data should not be issue here.")
          data = data.data;
       }
       return new Promise((resolve, reject) => {
@@ -490,6 +491,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    saveNew(allData) {
       if (allData.data?.length) {
+         console.error("data.data should not be issue here.")
          allData = allData.data;
       }
       if (!Array.isArray(allData)) allData = [allData];
@@ -538,6 +540,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    updateExisting(allData) {
       if (allData.data?.length) {
+         console.error("data.data should not be issue here.")
          allData = allData.data;
       }
       if (!Array.isArray(allData)) allData = [allData];
@@ -587,6 +590,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    updateNewer(allData) {
       if (allData.data?.length) {
+         console.error("data.data should not be issue here.")
          allData = allData.data;
       }
       if (!Array.isArray(allData)) allData = [allData];

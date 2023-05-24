@@ -377,6 +377,12 @@ export default class AppPage extends Page {
                   "./lib/applications/landingPage/templates/landing.html",
             },
             {
+               // Welcome page
+               path: "/welcomePage/",
+               componentUrl:
+                  "./lib/applications/welcomePage/templates/welcomeDisplay.html",
+            },
+            {
                // Settings page
                path: "/settings/",
                componentUrl:
