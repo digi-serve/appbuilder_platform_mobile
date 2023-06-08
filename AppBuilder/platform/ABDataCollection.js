@@ -41,7 +41,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       // Setup a listener for this DC to catch updates from the relay
       Network.on(ABDataCollectionCore.contextKey(), (context, data) => {
          // is this update for me?
-         if (context.id == this.id && Array.isArray(data.data)) {
+         if (context.id == this.id) {
             //console.log("-----------");
             // console.log(
             //    ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
