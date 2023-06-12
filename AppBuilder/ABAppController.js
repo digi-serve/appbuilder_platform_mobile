@@ -98,6 +98,12 @@ export default class ABAppController extends EventEmitter {
                var allLoads = [];
                this.datacollections.forEach((dc) => {
                   if (dc) {
+                     if (
+                        dc.settings?.populate === "0" ||
+                        dc.settings?.populate === false
+                     ) {
+                        dc.settings.preventPopulate = "1";
+                     }
                      allLoads.push(dc.loadData());
                   }
                });

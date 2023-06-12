@@ -42,7 +42,7 @@ Template7.registerHelper("date", (parent, object, template) => {
 // Helper to get the first letter of a name/word
 // ex: {{initial parent 'object'}}
 Template7.registerHelper("initial", (parent, object, alternateObject) => {
-   if (!parent[object] && !parent[alternateObject]) return "";
+   if (!parent || (!parent[object] && !parent[alternateObject])) return "";
    var result = parent[object]
       ? parent[object].substring(0, 1)
       : parent[alternateObject].substring(0, 1);
@@ -166,9 +166,7 @@ Template7.registerHelper("cities", (cities, selected) => {
    var html = "";
    cities.forEach((city) => {
       var selectedHTML = city.uuid == selected ? "selected='selected'" : "";
-      html += `<option ${selectedHTML} value="${city.uuid}">${
-         city["City Name"]
-      }</option>`;
+      html += `<option ${selectedHTML} value="${city.uuid}">${city["City Name"]}</option>`;
    });
    return html;
 });

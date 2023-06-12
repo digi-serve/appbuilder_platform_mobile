@@ -49,6 +49,8 @@ module.exports = class ABQL {
       this.data = null;
       if (values.data) {
          this.data = values.data;
+      } else {
+         this.data = this.datacollection.getAllRecords();
       }
    }
 
@@ -148,9 +150,10 @@ module.exports = class ABQL {
     * @return {multi} depending on the type of data we are representing.
     */
    value() {
-      if (this.data) {
+      if (this.data && this.data.length) {
          return this.data;
       }
-      return this.datacollection.getData();
+      this.data = this.datacollection.getAllRecords();
+      return this.data;
    }
 };

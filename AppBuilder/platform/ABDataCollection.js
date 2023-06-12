@@ -51,6 +51,13 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                data["objectName"] = this.name;
                console.error(data);
             }
+            if (data.toLowerCase?.() === "[object, object]") {
+               data["error"] = this.name;
+               console.error(
+                  "bad data from server, try tweaking the ABdefinitions!",
+               data
+            );
+         }
             if (this.name) {
                console.log(":: name:", this.name, {
                   ":: context:": context,
@@ -62,17 +69,17 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                });
             }
             var firstStep;
-            // will be a Promise based on which of the next steps
-            // should be executed.
+         // will be a Promise based on which of the next steps
+         // should be executed.
 
-            // if context is from a "uninitialized" state
-            //    OR this datacollection is a Server Centric set of data:
-            //    OR this is a Query based datacollection
-            if (
-               context.verb == "uninitialized" ||
-               this.isServerPreferred() ||
-               this.settings.isQuery
-            ) {
+         // if context is from a "uninitialized" state
+         //    OR this datacollection is a Server Centric set of data:
+         //    OR this is a Query based datacollection
+         if (
+            context.verb == "uninitialized" ||
+            this.isServerPreferred() ||
+            this.settings.isQuery
+         ) {
                // we need to just accept all the data that came in.
                firstStep = this.datasource
                   .model()
@@ -86,24 +93,24 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   .syncLocalMaster(data);
             }
 
-            firstStep
-               .then((normalizedData) => {
-                  if (this.isServerPreferred()) {
-                     this.reduceCondition(normalizedData);
-                  }
-                  return normalizedData;
-               })
-               .then((normalizedData) => {
-                  this.processIncomingData(normalizedData);
-                  return normalizedData;
-               })
-               .then((normalizedData) => {
-                  if (context.verb != "uninitialized") {
-                     this.emit("REFRESH");
-                  }
+         firstStep
+            .then((normalizedData) => {
+               if (this.isServerPreferred()) {
+                  this.reduceCondition(normalizedData);
+               }
+               return normalizedData;
+            })
+            .then((normalizedData) => {
+               this.processIncomingData(normalizedData);
+               return normalizedData;
+            })
+            .then((normalizedData) => {
+               if (context.verb != "uninitialized") {
+                  this.emit("REFRESH");
+               }
 
-                  // signal our remote data has arrived.
-                  this.emit("init.remote", {});
+               // signal our remote data has arrived.
+               this.emit("init.remote", {});
 
                   // TODO: Legacy: remove this once Events and HRIS are upgraded
                   this.emit("data", normalizedData);
@@ -276,6 +283,12 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   // but just in case:
                   data = data || {};
 
+                  if (data.reducedConditions?.values[0] != undefined) {
+                     // when 'dataCollection.QL().value()' is called,
+                     // this.data is what is returned, update it
+                     this.data = values;
+                  }
+
                   data.reducedConditions = this._reducedConditions;
 
                   return storage.set(this.refStorage(), data);
@@ -342,7 +355,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          ds.model()
             .local()
             .platformInit()
-            .then(() => {
+            .then((objectData) => {
                // once that is done, make sure we can track our DC info
                var lock = storage.Lock(this.refStorage());
                return lock
@@ -354,6 +367,25 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            this.bootState = data.bootState;
                            this._reducedConditions = data.reducedConditions;
 
+                           // when 'dataCollection.QL().value()' is called,
+                           // this.data is what is returned, so lets make sure it's set:
+                           if (
+                              data.reducedConditions?.values[0] != undefined &&
+                              objectData
+                           ) {
+                              // objectData is from the ABObject.model().local(), it may have records beyond the datacollection's
+                              // objectData's key should have a match in reducedConditions.values
+                              this.data = this.data || [];
+                              data.reducedConditions.values.forEach(
+                                 (pkInDC) => {
+                                    if (objectData[pkInDC]) {
+                                       this.data.push(objectData[pkInDC]);
+                                    }
+                                 }
+                              );
+                           }
+
+                           // save our info:
                            if (this._reducedConditions) {
                               if (this.__filterDatasource) {
                                  this.__filterDatasource.setReducedConditions(
@@ -435,45 +467,32 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     *          data:[ {ABObjectData}, {ABObjectData}, ...]
     *        }
     */
-   processIncomingData(data) {
-      //// Web Platform:
-      // // standardize the heights
-      // data.data.forEach((d) => {
-
-      //     // define $height of rows to render in webix elements
-      //     if (d.properties != null && d.properties.height != "undefined" && parseInt(d.properties.height) > 0) {
-      //         d.$height = parseInt(d.properties.height);
-      //     } else if (defaultHeight > 0) {
-      //         d.$height = defaultHeight;
-      //     }
-
-      // });
-
-      return super.processIncomingData(data).then(() => {
-         //// Web Platform:
-         // // when that is done:
-         // this.hideProgressOfComponents();
-
+   processIncomingData(dataNew) {
+      return super.processIncomingData(dataNew).then(() => {
          // make sure we update our bootState!
          if (this.bootState == "uninitialized") {
             this.bootState = "initialized";
-
-            // once that is done, make sure we can track our DC info
-            var lock = storage.Lock(this.refStorage());
-            return lock
-               .acquire()
-               .then(() => {
-                  return storage.get(this.refStorage()).then((data) => {
-                     data = data || {};
-                     data.bootState = this.bootState;
-
-                     return storage.set(this.refStorage(), data);
-                  });
-               })
-               .then(() => {
-                  lock.release();
-               });
          }
+         // once that is done, make sure we can track our DC info
+         var lock = storage.Lock(this.refStorage());
+         return lock
+            .acquire()
+            .then(() => {
+               return storage.get(this.refStorage()).then((data) => {
+                  data = data || {};
+
+                  data.bootState = this.bootState;
+
+                  // when 'dataCollection.QL().value()' is called,
+                  // this is what is returned
+                  this.data = dataNew;
+
+                  return storage.set(this.refStorage(), data);
+               });
+            })
+            .then(() => {
+               lock.release();
+            });
       });
    }
 
@@ -496,10 +515,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    remoteUpdate(data) {
       super.remoteUpdate(data).then(() => {
          // make sure local storage has these values in it:
-         return this.datasource
-            .model()
-            .local()
-            .localStorageStore(data);
+         return this.datasource.model().local().localStorageStore(data);
       });
    }
 
@@ -561,7 +577,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
    //    // get data to data collection
    //    console.error("Where is .loadDataLocal() being called from?");
-   //    debugger;
 
    //    return model
    //       .findAll(cond)
@@ -701,21 +716,31 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
    // }
 
-   // getFirstRecord() {
-
-   // 	var dc = this.__dataCollection;
-   // 	if (dc) {
-
-   // 		var currId = dc.getFirstId();
-   // 		var currItem = dc.getItem(currId);
-
-   // 		return currItem;
-   // 	}
-   // 	else {
-   // 		return null;
-   // 	}
-
-   // }
+   getFirstRecord() {
+      var dc = this.__dataCollection;
+      console.log("getFirstRecord() : dc:", dc.find({}));
+      if (this.data && this.data[0]) {
+         return this.data[0];
+      } else {
+         return new Promise((resolve, reject) => {
+            this.platformFind().then((data) => {
+               return resolve(data[0]);
+            });
+         });
+      }
+   }
+   getAllRecords() {
+      // if initialized...
+      if (this.data) {
+         return this.data;
+      }
+      // else wait for data
+      return new Promise((resolve, reject) => {
+         this.platformFind().then((data) => {
+            return resolve(data);
+         });
+      });
+   }
 
    // getNextRecord(record) {
 
@@ -910,7 +935,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    // 	// }
 
    // }
-
+   // ? @achoobert is this how to do it?
    // reloadData() {
    // 	this.__dataCollection.clearAll();
    // 	return this.loadData(null, null, null);
@@ -984,9 +1009,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
 
       // override unused functions of selection model
-      dataStore.addCss = function() {};
-      dataStore.removeCss = function() {};
-      dataStore.render = function() {};
+      dataStore.addCss = function () {};
+      dataStore.removeCss = function () {};
+      dataStore.render = function () {};
 
       // NOTE: this doesn't seem relevant on the Mobile Platform:
       // if (!dataStore.___AD.onAfterLoad) {
@@ -999,15 +1024,16 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       // }
    }
 
-   /////
-   ///// MOBILE Platform Changes
-   /////
-   ///// These changes will eventually make it into the ABDataCollectionCore
-   ///// once the web and server side platforms are updated to be able to handle
-   ///// modelLocal, modelRemote operations.
+   ///
+   /// MOBILE Platform Changes
+   ///
+   /// These changes will eventually make it into the ABDataCollectionCore
+   /// once the web and server side platforms are updated to be able to handle
+   /// modelLocal, modelRemote operations.
 
    platformFind(model, cond) {
-      // if (bootstate==initialzied) {
+      model = model || this.datasource.model();
+
       if (this.bootState == "initialized") {
          // We have already initialized our data, so that means
          // we have local data that we can work with right now.
@@ -1028,13 +1054,20 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                });
 
                // load our valid entries:
+               // ! This call prevents this from returning found data @achoobert
+               // ? Why would this ever be nessicary?
                this.processIncomingData(validEntries);
+
+               // update our local data:
+               this.data = validEntries;
+               // return validEntries;
 
                // we can start working on this data now
                // NOTE: resolve() should be done in .processIncomingData() now
-               // resolve();
+               // resolve(validEntries);
             })
-            .then(() => {
+            .then((validEntries) => {
+               // ? is it really nessicary to call the remote here? @achoobert
                // However, this local data might be out of date
                // with the server.  So let's spawn a remote
                // lookup in the background:
@@ -1050,11 +1083,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   id: this.id,
                   verb: "refresh"
                });
+
                // id: the datacollection.id
                // verb: tells our ABRelay.listener why this remote lookup was called.
 
                // initiate the request:
                modelRemote.findAll(cond);
+
+               // return valid entries:
+               return validEntries;
             });
       } else {
          //  We have not been initialized yet, so we need to
@@ -1089,9 +1126,12 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @param {int} limit  the limit of # of rows to return each call
     * @param {fn}  callback  a node style callback fn(err, results)
     * @return {Promise}
-    */
-   /*
+    * /
+   
    loadData(start, limit, callback) {
+      console.dir("who is calling loadData()?");
+      )
+      debugger;
       // mark data status is initializing
       if (this._dataStatus == this.dataStatusFlag.notInitial) {
          this._dataStatus = this.dataStatusFlag.initializing;
@@ -1115,19 +1155,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
       // pull filter conditions
       var wheres = this.settings.objectWorkspace.filterConditions;
-
-      // // calculate default value of $height of rows
-      // var defaultHeight = 0;
-      // var minHeight = 0;
-      // var imageFields = obj.fields((f) => f.key == 'image');
-      // imageFields.forEach(function (f) {
-      //  if (parseInt(f.settings.useHeight) == 1 && parseInt(f.settings.imageHeight) > minHeight) {
-      //     minHeight = parseInt(f.settings.imageHeight) + 20;
-      //  }
-      // });
-      // if (minHeight > 0) {
-      //  defaultHeight = minHeight;
-      // }
 
       // set query condition
       var cond = {
@@ -1245,22 +1272,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      .catch(reject);
                });
             })
-            //
-            // Step 3: Now we can pull data to this DataCollection
-            //
-            .then(() => {
-               return new Promise((resolve, reject) => {
-                  // we will keep track of the resolve, reject for this
-                  // operation.
-                  this._pendingLoadDataResolve = {
-                     resolve: resolve,
-                     reject: reject
-                  };
-               });
-            })
       );
    }
-*/
+
+    */
    //
    // Query Interface
    //

@@ -53,6 +53,9 @@ module.exports = class ABModelLocal extends ABModelCore {
     * make sure we are ready for operation on this platform.
     * this implies we need to make sure each ABObject we use can
     * store information in the DB.
+    *
+    * if data is already present, return allObjects
+    *
     * @return {Promise}
     */
    platformInit() {
@@ -68,16 +71,16 @@ module.exports = class ABModelLocal extends ABModelCore {
             .then((allObjects) => {
                // if data was returned, then we have already been initialized.
                if (allObjects) {
-                  resolve();
+                  lock.release();
+                  resolve(allObjects);
                   return;
                }
 
                // if nothing returned, initialize to an empty data set
-               return storage.set(this.refStorage(), {});
-            })
-            .then(() => {
-               lock.release();
-               resolve();
+               return storage.set(this.refStorage(), {}).then(() => {
+                  lock.release();
+                  resolve({});
+               });
             })
             .catch((err) => {
                lock.release();
@@ -183,7 +186,7 @@ module.exports = class ABModelLocal extends ABModelCore {
          .then((returnValue) => {
             // console.log('--- '+this.refStorage()+'.localStorageCreate end', data);
             lock.release();
-            return returnValue;
+            return returnValue || data;
          })
          .catch((err) => {
             lock.release();
@@ -282,7 +285,7 @@ module.exports = class ABModelLocal extends ABModelCore {
          .then((returnValue) => {
             // console.log('--- '+this.refStorage()+'.localStorageUpdate end', data);
             lock.release();
-            return returnValue;
+            return returnValue || data;
          })
          .catch((err) => {
             console.error("!!! error trying to update object:", err);
@@ -371,10 +374,8 @@ module.exports = class ABModelLocal extends ABModelCore {
       }
 
       return this.localStorageUpdate(values).then((data) => {
-         this.normalizeData(data);
-
-         return data;
-      });
+          this.normalizeData(values);
+      })
    }
 
    /**
@@ -461,6 +462,10 @@ module.exports = class ABModelLocal extends ABModelCore {
     *		returns a normalized set of data for this object
     */
    syncRemoteMaster(data) {
+      if (data.data?.length) {
+         console.error("data.data should not be issue here.")
+         data = data.data;
+      }
       return new Promise((resolve, reject) => {
          // this means that we should use whatever the remote gave us:
          // save new items, then replace existing ones
@@ -485,6 +490,10 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    saveNew(allData) {
+      if (allData.data?.length) {
+         console.error("data.data should not be issue here.")
+         allData = allData.data;
+      }
       if (!Array.isArray(allData)) allData = [allData];
 
       var lock = this.lock();
@@ -530,6 +539,10 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    updateExisting(allData) {
+      if (allData.data?.length) {
+         console.error("data.data should not be issue here.")
+         allData = allData.data;
+      }
       if (!Array.isArray(allData)) allData = [allData];
 
       var lock = this.lock();
@@ -576,6 +589,10 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    updateNewer(allData) {
+      if (allData.data?.length) {
+         console.error("data.data should not be issue here.")
+         allData = allData.data;
+      }
       if (!Array.isArray(allData)) allData = [allData];
 
       var lock = this.lock();
