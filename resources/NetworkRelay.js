@@ -54,13 +54,13 @@ class NetworkRelay extends NetworkRest {
       this.rsa = new JSEncrypt.JSEncrypt();
       this.rsaPublicKey = null;
       this.aesKey = null;
-      this.relayState = null;
+    this.relayState = null;
 
-      this.appUUID = null;
-      this.tenantUUID = null
+    this.appUUID = null;
+    this.tenantUUID = null;
 
-      this.tokenLock = new Lock();
-      this.jobTokens = null;
+    this.tokenLock = new Lock();
+    this.jobTokens = null;
       this.jobPackets = null;
       this.jobPacketsTimestamps = {};
 
@@ -137,18 +137,19 @@ class NetworkRelay extends NetworkRest {
     * @return {Promise}
     *    Resolves with {string} of the new authToken.
     */
-   registerAuthToken(preToken) {
-      this.prepare();
-      let authToken = NetworkRelay.randomBytes(64);
-      return super.post({
-         url: "/mobile/register",
-         data: {
-            pre: preToken,
-            new: authToken
-         }
+  registerAuthToken(preToken) {
+    this.prepare();
+    let authToken = NetworkRelay.randomBytes(64);
+    return super
+      .post({
+        url: "/mobile/register",
+        data: {
+          pre: preToken,
+          new: authToken,
+        },
       })
-         .then(() => {
-            return authToken;
+      .then(() => {
+        return authToken;
          })
          .catch((err) => {
             if (err.code >= 400 && err.code < 500) {
@@ -169,24 +170,24 @@ class NetworkRelay extends NetworkRest {
             this.aesKey = value || null;
          });
 
-         var readSyncStatus = storage.get("relayState").then((value) => {
-            this.relayState = value || {
-               aesKeySent: false,
-               lastSyncDate: null
-            };
-         });
+      var readSyncStatus = storage.get("relayState").then((value) => {
+        this.relayState = value || {
+          aesKeySent: false,
+          lastSyncDate: null,
+        };
+      });
 
          var readAppUUID = storage.get("appUUID").then((value) => {
             this.appUUID = value || null;
          });
 
-         var readTenantUUID = storage.get("tenantUUID").then((value) => {
-            // "tenantUUID" was set in Account.js :: importCredentials()
-            this.tenantUUID = value || null;
-         })
+      var readTenantUUID = storage.get("tenantUUID").then((value) => {
+        // "tenantUUID" was set in Account.js :: importCredentials()
+        this.tenantUUID = value || null;
+      });
 
-         // FYI:
-         // we need both a authToken and an AES key to communicate to the Relay
+      // FYI:
+      // we need both a authToken and an AES key to communicate to the Relay
          // server.
 
          Promise.all([readAESKey, readSyncStatus, readAppUUID, readTenantUUID])
@@ -199,12 +200,12 @@ class NetworkRelay extends NetworkRest {
                }
             })
 
-            // associate appUUID with analytics
-            .then(() => {
-               analytics.info({
-                  id: this.appUUID
-               });
-            })
+        // associate appUUID with analytics
+        .then(() => {
+          analytics.info({
+            id: this.appUUID,
+          });
+        })
 
             // skip this process if we are offline:
             .then(() => {
@@ -250,13 +251,13 @@ class NetworkRelay extends NetworkRest {
             .then(() => {
                Log("NetworkRelay: init stage 7");
                if (!this.relayState.aesKeySent) {
-                  // - MF contacts PublicServer.mobile/initresolve  { rsa_aes, userUUID, AppID, AppUUID }
+            // - MF contacts PublicServer.mobile/initresolve  { rsa_aes, userUUID, AppID, AppUUID }
 
-                  var aesObj = {
-                     aesKey: this.aesKey
-                  };
-                  var plaintext = JSON.stringify(aesObj);
-                  var encrypted = this.rsa.encrypt(plaintext);
+            var aesObj = {
+              aesKey: this.aesKey,
+            };
+            var plaintext = JSON.stringify(aesObj);
+            var encrypted = this.rsa.encrypt(plaintext);
 
                   return storage.get("uuid").then((uuid) => {
                      // prevent offline attempt.
@@ -270,21 +271,21 @@ class NetworkRelay extends NetworkRest {
 
                      var data = {
                         rsa_aes: encrypted,
-                        userUUID: uuid,
-                        appID: config.appbuilder.maID,
-                        appUUID: this.appUUID,
-                        tenantUUID: this.tenantUUID
-                     };
+                userUUID: uuid,
+                appID: config.appbuilder.maID,
+                appUUID: this.appUUID,
+                tenantUUID: this.tenantUUID,
+              };
 
-                     // NOTE: use super.post() here so we don't do our .post()
+              // NOTE: use super.post() here so we don't do our .post()
                      // which encrypts the data with AES ...
-                     return super
-                        .post({
-                           url: config.appbuilder.routes.mobileInitResolve,
-                           data: data
-                        })
-                        .then(() => {
-                           this.relayState.aesKeySent = true;
+              return super
+                .post({
+                  url: config.appbuilder.routes.mobileInitResolve,
+                  data: data,
+                })
+                .then(() => {
+                  this.relayState.aesKeySent = true;
                            return storage.set("relayState", this.relayState);
                         });
                   });
@@ -329,14 +330,14 @@ class NetworkRelay extends NetworkRest {
                } else {
                   Log("..fetching RSA public key from server");
                   return super
-                     .get({
-                        url: config.appbuilder.routes.mobileInit, // "/mobile/init",
-                        data: {
-                           appID: config.appbuilder.maID
-                        }
-                     })
-                     .then((data) => {
-                        Log("..got server response");
+              .get({
+                url: config.appbuilder.routes.mobileInit, // "/mobile/init",
+                data: {
+                  appID: config.appbuilder.maID,
+                },
+              })
+              .then((data) => {
+                Log("..got server response");
                         // data should be:
                         // {
                         //  userUUID:'<string>',
@@ -345,13 +346,13 @@ class NetworkRelay extends NetworkRest {
                         // }
 
                         // go ahead and save these values:
-                        return Promise.all([
-                           storage.set("uuid", data.userUUID),
-                           storage.set("rsaPublicKey", data.rsaPublic),
-                           storage.set("appPolicy", data.appPolicy)
-                        ]).then(() => {
-                           Log("..saved server response");
-                           return data.rsaPublic;
+                return Promise.all([
+                  storage.set("uuid", data.userUUID),
+                  storage.set("rsaPublicKey", data.rsaPublic),
+                  storage.set("appPolicy", data.appPolicy),
+                ]).then(() => {
+                  Log("..saved server response");
+                  return data.rsaPublic;
                         });
                      });
                }
@@ -481,17 +482,17 @@ class NetworkRelay extends NetworkRest {
             // if we are ready to talk to MCC:
             if (
                this.relayState &&
-               this.relayState.aesKeySent &&
-               this.isNetworkConnected()
-            ) {
-               this.emit('receiving.start');
-               super
-                  .get({
-                     url: config.appbuilder.routes.relayRequest, // "/mobile/relayrequest",
-                     data: { appUUID: this.appUUID }
-                  })
-                  .then((responses) => {
-                     return responses || [];
+          this.relayState.aesKeySent &&
+          this.isNetworkConnected()
+        ) {
+          this.emit("receiving.start");
+          super
+            .get({
+              url: config.appbuilder.routes.relayRequest, // "/mobile/relayrequest",
+              data: { appUUID: this.appUUID },
+            })
+            .then((responses) => {
+              return responses || [];
                   })
                   .then((responses) => {
                      var all = [];
@@ -767,10 +768,10 @@ class NetworkRelay extends NetworkRest {
          storage.set("rsaPublicKey", null),
          storage.set("relayState", {
             aesKeySent: false,
-            lastSyncDate: null
+            lastSyncDate: null,
          }),
          storage.set("appUUID", null),
-         storage.set("tenantUUID", null)
+         storage.set("tenantUUID", null),
       ]);
    }
 
@@ -798,7 +799,7 @@ class NetworkRelay extends NetworkRest {
     */
    saveTokens() {
       // save this back to our storage:
-      return storage.set("abRelayJobToken", this.jobTokens)
+      return storage.set("abRelayJobToken", this.jobTokens);
    }
 
    /**
@@ -806,7 +807,8 @@ class NetworkRelay extends NetworkRest {
     */
    getJobPackets() {
       if (!this.jobPackets) {
-         return storage.get("abRelayJobPacketsTimestamps")
+         return storage
+            .get("abRelayJobPacketsTimestamps")
             .then((timestamps) => {
                this.jobPacketsTimestamps = timestamps || {};
                return storage.get("abRelayJobPackets");
@@ -817,7 +819,7 @@ class NetworkRelay extends NetworkRest {
                for (let token in this.jobPacketsTimestamps) {
                   let thisTimestamp = this.jobPacketsTimestamps[token];
                   if (Date.now() - thisTimestamp > MAX_JOB_AGE) {
-                     console.log('deleting old job packets: ' + token)
+                     console.log("deleting old job packets: " + token);
                      delete packets[token];
                      delete this.jobPacketsTimestamps[token];
                   }
@@ -841,16 +843,18 @@ class NetworkRelay extends NetworkRest {
     */
    saveJobPackets() {
       // save this back to our storage:
-      return storage.set("abRelayJobPackets", this.jobPackets)
-         .then(() => {
-            // update the timestamp info for any new jobs
-            for (let token in this.jobPackets) {
-               if (!this.jobPacketsTimestamps[token]) {
-                  this.jobPacketsTimestamps[token] = Date.now();
-               }
+      return storage.set("abRelayJobPackets", this.jobPackets).then(() => {
+         // update the timestamp info for any new jobs
+         for (let token in this.jobPackets) {
+            if (!this.jobPacketsTimestamps[token]) {
+               this.jobPacketsTimestamps[token] = Date.now();
             }
-            return storage.set("abRelayJobPacketsTimestamps", this.jobPacketsTimestamps);
-         })
+         }
+         return storage.set(
+            "abRelayJobPacketsTimestamps",
+            this.jobPacketsTimestamps
+         );
+      });
    }
 
    ///
