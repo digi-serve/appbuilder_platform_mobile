@@ -283,12 +283,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   // but just in case:
                   data = data || {};
 
-                  if (data.reducedConditions?.values[0] != undefined) {
-                     // when 'dataCollection.QL().value()' is called,
-                     // this.data is what is returned, update it
-                     this.data = values;
-                  }
-
                   data.reducedConditions = this._reducedConditions;
 
                   return storage.set(this.refStorage(), data);
