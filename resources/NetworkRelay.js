@@ -693,22 +693,21 @@ class NetworkRelay extends NetworkRest {
                }
 
                /**
-                * Recursively searches for an array or null value in the given data.
+                * If the input doesn't have a param "data" return the input.
+                * Else recursively call with input.data
                 * Server is returning up to data.data.data
-                * @param {any} data - The data to search.
-                * @returns {Array|null} - The found array or null if not found.
+                * @param {any} input - The data to search.
+                * @returns {any} usedful data
                 */
-               function findArrayOrNull(data) {
-                  if (Array.isArray(data)) {
-                     return data;
-                  } else if (data.data) {
-                     return findArrayOrNull(data.data);
+               function findNested(input) {
+                  if (input.data) {
+                     return findNested(input.data);
                   } else {
-                     return null;
+                     return input;
                   }
                }
                // but we only want to return the .data portion:
-               data = findArrayOrNull(data) 
+               data = findNested(data);
             })
 
             .then(() => {
