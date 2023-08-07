@@ -13,11 +13,11 @@ import AppPage from "../pages/app/appPage.js";
 var pages = {
    loading: LoadingPage,
    password: null,
-   app: null // will contain all Framework7 sub pages
+   app: null, // will contain all Framework7 sub pages
 };
 
 export default {
-   init: () => {
+   init: async (AB) => {
       // Setup the Password Page
       try {
          pages.password = new PasswordPage();
@@ -32,7 +32,7 @@ export default {
 
       // Setup our Application Page
       try {
-         pages.app = new AppPage();
+         pages.app = new AppPage(AB);
       } catch (err) {
          console.log(err);
          $.alert(
@@ -59,7 +59,7 @@ export default {
          pages.app.show();
       });
 
-      return Promise.resolve(); // nothing async, so just return
+      return pages;
    },
    show: (pageKey) => {
       switch (pageKey) {
@@ -85,5 +85,5 @@ export default {
    consoleDebugging: () => {
       window.appPage = pages.app;
       window.appPage.account = account;
-   }
+   },
 };

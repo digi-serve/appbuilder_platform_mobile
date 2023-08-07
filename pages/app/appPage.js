@@ -17,9 +17,9 @@ import Busy from "../../resources/Busy.js";
 import camera from "../../resources/Camera.js";
 import log from "../../resources/Log.js";
 import Network from "../../resources/Network.js";
-import notifications from "../../resources/Notifications.js";
+// import notifications from "../../resources/Notifications.js";
 import Shake from "shake.js";
-import { storage, Storage } from "../../resources/Storage.js";
+import { storage /*, Storage */ } from "../../resources/Storage.js";
 import updater from "../../resources/Updater.js";
 import config from "../../../config/config.js";
 
@@ -36,8 +36,9 @@ import SettingsComponent from "../settings/settings.js";
 export default class AppPage extends Page {
    /**
     */
-   constructor() {
-      super("opstool-app", "lib/platform/pages/app/app.html");
+   constructor(AB) {
+      super("sdc-app", "lib/platform/pages/app/app.html");
+      this.AB = AB;
 
       // For console debugging only. Don't use these in the app like this.
       // window.appPage = this;
@@ -163,49 +164,48 @@ export default class AppPage extends Page {
 
    /**
     * Check to see if the user account is present.
-    * 
-    * First check device storage for the authToken, if not then scan the URL 
+    *
+    * First check device storage for the authToken, if not then scan the URL
     * for magic link containing a pre-token.
     * e.g. https://example.com/#JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
-    * 
+    *
     * The pre-token is embedded in the hash fragment of the URL, which is never
     * transmitted to the webserver. (It is sent to the MCC server at a later
     * step.)
-    * 
-    * We will use the pre-token to register a new authToken for the user 
+    *
+    * We will use the pre-token to register a new authToken for the user
     * account.
-    * 
+    *
     * @return {Promise}
     */
    checkAccount() {
-      return account.getAuthToken()
-         .then((authToken) => {
-            // User account found on device
-            if (authToken) return true;
-            // Check the URL for magic link pre-token
-            else {
-               let hash = String(document.location.hash);
-               // J.R.R. Token
-               let jrrMatch = hash.match(/JRR=(\w+)/);
-               // Tenant UUID
-               let tenantMatch = hash.match(/tenant=(\w+)/) || {};
-               // Remove tokens from current URL, for bookmarkability
-               window.history.replaceState(null, null, "#");
+      return account.getAuthToken().then((authToken) => {
+         // User account found on device
+         if (authToken) return true;
+         // Check the URL for magic link pre-token
+         else {
+            let hash = String(document.location.hash);
+            // J.R.R. Token
+            let jrrMatch = hash.match(/JRR=(\w+)/);
+            // Tenant UUID
+            let tenantMatch = hash.match(/tenant=(\w+)/) || {};
+            // Remove tokens from current URL, for bookmarkability
+            window.history.replaceState(null, null, "#");
 
-               // No token in URL
-               if (!jrrMatch) {
-                  let err = new Error("No pre-token found");
-                  err.code = "E_NOJRRTOKEN";
-                  return Promise.reject(err);
-               }
-               // Import pre-token from the URL. Generate new authToken.
-               else {
-                  let preToken = jrrMatch[1];
-                  let tenantUUID = tenantMatch[1];
-                  return account.importCredentials(preToken, tenantUUID);
-               }
+            // No token in URL
+            if (!jrrMatch) {
+               let err = new Error("No pre-token found");
+               err.code = "E_NOJRRTOKEN";
+               return Promise.reject(err);
             }
-         })
+            // Import pre-token from the URL. Generate new authToken.
+            else {
+               let preToken = jrrMatch[1];
+               let tenantUUID = tenantMatch[1];
+               return account.importCredentials(preToken, tenantUUID);
+            }
+         }
+      });
    }
 
    /**
@@ -220,7 +220,8 @@ export default class AppPage extends Page {
          );
       }, 10000);
 
-      account.init({ app: this.app })
+      account
+         .init({ app: this.app })
          .then(() => {
             // Load account authToken
             return this.checkAccount();
@@ -344,7 +345,6 @@ export default class AppPage extends Page {
          });
       });
 
-
       // After QR code / deep link import, restart the AB Applications
       account.on("imported", (importState) => {
          if (importState.authToken == true) {
@@ -407,7 +407,6 @@ export default class AppPage extends Page {
          false
       );
    }
-
 
    /**
     * @method defaultRoute

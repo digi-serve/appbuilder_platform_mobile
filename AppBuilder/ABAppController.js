@@ -8,22 +8,24 @@
  */
 "use strict";
 
-import ABApplicationConfig from "../../ABApplicationConfig";
+// import ABApplicationConfig from "../../ABApplicationConfig";
 import EventEmitter from "eventemitter2";
 
 import account from "../resources/Account.js";
 
-import { Storage, storage } from "../resources/Storage.js";
+import { /* Storage, */ storage } from "../resources/Storage.js";
 
 export default class ABAppController extends EventEmitter {
    /**
     * @param {Framework7} app
     * @param {object} [options]
     */
-   constructor(app, options = {}) {
+   constructor(AB, options = {}) {
       super({
-         wildcard: true
+         wildcard: true,
       });
+
+      this.AB = AB;
 
       this.options = options;
 
@@ -34,7 +36,7 @@ export default class ABAppController extends EventEmitter {
       this._status = "constructor";
 
       // default to using the __ContainerApp if the child doesn't override it
-      this.application = ABApplicationConfig.getDefault();
+      this.application = this.AB.applicationNew({});
 
       // this.f7App = app;
 
@@ -243,7 +245,7 @@ export default class ABAppController extends EventEmitter {
       field.settings.options.forEach((o) => {
          var item = {
             id: o.id,
-            name: o.text
+            name: o.text,
          };
 
          var label = o.text;
