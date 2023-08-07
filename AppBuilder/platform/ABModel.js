@@ -45,10 +45,6 @@ var ABModelRelay = require("./ABModelRelay");
 // });
 
 module.exports = class ABModel extends ABModelCore {
-   constructor(object) {
-      super(object);
-   }
-
    local() {
       var newModel = new ABModelLocal(this.object);
       newModel.contextKey(this.responseContext.key);
@@ -321,7 +317,7 @@ module.exports = class ABModel extends ABModelCore {
                return [];
             });
          })
-         .then((remoteData) => {
+         .then((/* remoteData */) => {
             // if we are supposed to work with local data:
             // 	then make the local request and return the data
             // else

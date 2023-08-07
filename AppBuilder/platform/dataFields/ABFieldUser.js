@@ -8,10 +8,6 @@
 var ABFieldUserCore = require("../../core/dataFields/ABFieldUserCore");
 
 module.exports = class ABFieldUser extends ABFieldUserCore {
-   constructor(attributes, object) {
-      super(attributes, object);
-   }
-
    // Make this platform specific:
    // to be honest, might not even be applicable here on a mobile device:
    getUsers() {

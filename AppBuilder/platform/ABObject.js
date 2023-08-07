@@ -9,8 +9,8 @@ var ABObjectCore = require("../core/ABObjectCore");
 var Network = require("../../resources/Network").default;
 
 module.exports = class ABObject extends ABObjectCore {
-   constructor(attributes, application) {
-      super(attributes, application);
+   constructor(...args) {
+      super(...args);
 
       // Setup a listener for this Object to catch updates from the relay
       Network.on(ABObjectCore.contextKey(), (context, data) => {
@@ -57,7 +57,7 @@ module.exports = class ABObject extends ABObjectCore {
                   // }
                   // if this is a response to one of our .updates()
                   if (context.jobID) {
-                     // Where is `latestUpdates` set? 
+                     // Where is `latestUpdates` set?
                      // @see ABModelRelay.js maybe?
                      if (!this.latestUpdates) {
                         return;
@@ -348,9 +348,7 @@ module.exports = class ABObject extends ABObjectCore {
 
       return Promise.resolve()
          .then(() => {
-            return this.model()
-               .local()
-               .localStorageCreate(data);
+            return this.model().local().localStorageCreate(data);
          })
          .then(() => {
             this.emit("created", data);
@@ -385,9 +383,7 @@ module.exports = class ABObject extends ABObjectCore {
          var PK = this.PK();
          var id = data;
          if (data[PK]) id = data[PK];
-         return this.model()
-            .local()
-            .localStorageDestroy(id);
+         return this.model().local().localStorageDestroy(id);
       });
    }
 
@@ -418,9 +414,7 @@ module.exports = class ABObject extends ABObjectCore {
       if (!data[UUID]) return Promise.resolve();
 
       return Promise.resolve().then(() => {
-         return this.model()
-            .local()
-            .localStorageUpdate(data);
+         return this.model().local().localStorageUpdate(data);
       });
    }
 };

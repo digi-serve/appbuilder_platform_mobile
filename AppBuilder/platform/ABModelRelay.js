@@ -6,16 +6,12 @@
  *
  */
 
-const { values } = require("lodash");
+// const { values } = require("lodash");
 var ABModelCore = require("../core/ABModelCore");
 
 var Network = require("../../resources/Network").default;
 
 module.exports = class ABModelRelay extends ABModelCore {
-   constructor(object) {
-      super(object);
-   }
-
    /**
     * @method create
     * update model values on the server.

@@ -44,10 +44,6 @@ var storage = require("../../resources/Storage").storage;
 // });
 
 module.exports = class ABModelLocal extends ABModelCore {
-   constructor(object) {
-      super(object);
-   }
-
    /**
     * platformInit
     * make sure we are ready for operation on this platform.
@@ -188,7 +184,7 @@ module.exports = class ABModelLocal extends ABModelCore {
             lock.release();
             return returnValue || data;
          })
-         .catch((err) => {
+         .catch((/* err */) => {
             lock.release();
          });
    }
@@ -205,8 +201,8 @@ module.exports = class ABModelLocal extends ABModelCore {
          .then((allObjects) => {
             // if this is a UUID:
             if (isNaN(parseInt(id)) || (id.indexOf && id.indexOf("-") > -1)) {
-               for (var o in allObjects) {
-                  var obj = allObjects[o];
+               for (let o in allObjects) {
+                  let obj = allObjects[o];
                   if (obj.uuid == id) {
                      delete allObjects[o];
                   }
@@ -217,8 +213,8 @@ module.exports = class ABModelLocal extends ABModelCore {
 
                // search the objects and remove one with matching PK
                var newList = {};
-               for (var o in allObjects) {
-                  var obj = allObjects[o];
+               for (let o in allObjects) {
+                  let obj = allObjects[o];
                   if (obj[PK] != id) {
                      newList[obj[UUID]] = obj;
                   }
@@ -321,8 +317,8 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @method findAll
     * performs a data find with the provided condition.
     */
-   findAll(cond) {
-      cond = cond || {};
+   findAll(/* cond */) {
+      // cond = cond || {};
 
       var lock = this.lock();
       return lock
@@ -373,9 +369,9 @@ module.exports = class ABModelLocal extends ABModelCore {
          values.uuid = id;
       }
 
-      return this.localStorageUpdate(values).then((data) => {
-          this.normalizeData(values);
-      })
+      return this.localStorageUpdate(values).then((/* data */) => {
+         this.normalizeData(values);
+      });
    }
 
    /**
@@ -463,7 +459,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    syncRemoteMaster(data) {
       if (data.data?.length) {
-         console.error("data.data should not be issue here.")
+         console.error("data.data should not be issue here.");
          data = data.data;
       }
       return new Promise((resolve, reject) => {
@@ -491,7 +487,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    saveNew(allData) {
       if (allData.data?.length) {
-         console.error("data.data should not be issue here.")
+         console.error("data.data should not be issue here.");
          allData = allData.data;
       }
       if (!Array.isArray(allData)) allData = [allData];
@@ -540,7 +536,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    updateExisting(allData) {
       if (allData.data?.length) {
-         console.error("data.data should not be issue here.")
+         console.error("data.data should not be issue here.");
          allData = allData.data;
       }
       if (!Array.isArray(allData)) allData = [allData];
@@ -590,7 +586,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    updateNewer(allData) {
       if (allData.data?.length) {
-         console.error("data.data should not be issue here.")
+         console.error("data.data should not be issue here.");
          allData = allData.data;
       }
       if (!Array.isArray(allData)) allData = [allData];

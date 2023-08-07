@@ -15,8 +15,8 @@ var Network = require("../../resources/Network").default;
 var storage = require("../../resources/Storage").storage;
 
 module.exports = class ABDataCollection extends ABDataCollectionCore {
-   constructor(attributes, application, page) {
-      super(attributes, application, page);
+   constructor(...args) {
+      super(...args);
 
       this.bootState = "??";
       // bootState represents where we are on the platform setup.
@@ -55,31 +55,31 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                data["error"] = this.name;
                console.error(
                   "bad data from server, try tweaking the ABdefinitions!",
-               data
-            );
-         }
+                  data
+               );
+            }
             if (this.name) {
                console.log(":: name:", this.name, {
                   ":: context:": context,
-                  ":: data:": data
+                  ":: data:": data,
                });
             } else {
                console.log(":: context", context, {
-                  ":: data": data
+                  ":: data": data,
                });
             }
             var firstStep;
-         // will be a Promise based on which of the next steps
-         // should be executed.
+            // will be a Promise based on which of the next steps
+            // should be executed.
 
-         // if context is from a "uninitialized" state
-         //    OR this datacollection is a Server Centric set of data:
-         //    OR this is a Query based datacollection
-         if (
-            context.verb == "uninitialized" ||
-            this.isServerPreferred() ||
-            this.settings.isQuery
-         ) {
+            // if context is from a "uninitialized" state
+            //    OR this datacollection is a Server Centric set of data:
+            //    OR this is a Query based datacollection
+            if (
+               context.verb == "uninitialized" ||
+               this.isServerPreferred() ||
+               this.settings.isQuery
+            ) {
                // we need to just accept all the data that came in.
                firstStep = this.datasource
                   .model()
@@ -93,24 +93,24 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   .syncLocalMaster(data);
             }
 
-         firstStep
-            .then((normalizedData) => {
-               if (this.isServerPreferred()) {
-                  this.reduceCondition(normalizedData);
-               }
-               return normalizedData;
-            })
-            .then((normalizedData) => {
-               this.processIncomingData(normalizedData);
-               return normalizedData;
-            })
-            .then((normalizedData) => {
-               if (context.verb != "uninitialized") {
-                  this.emit("REFRESH");
-               }
+            firstStep
+               .then((normalizedData) => {
+                  if (this.isServerPreferred()) {
+                     this.reduceCondition(normalizedData);
+                  }
+                  return normalizedData;
+               })
+               .then((normalizedData) => {
+                  this.processIncomingData(normalizedData);
+                  return normalizedData;
+               })
+               .then((normalizedData) => {
+                  if (context.verb != "uninitialized") {
+                     this.emit("REFRESH");
+                  }
 
-               // signal our remote data has arrived.
-               this.emit("init.remote", {});
+                  // signal our remote data has arrived.
+                  this.emit("init.remote", {});
 
                   // TODO: Legacy: remove this once Events and HRIS are upgraded
                   this.emit("data", normalizedData);
@@ -254,7 +254,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {Promise} resolved when conditions are stored
     */
    reduceCondition(values) {
-      new Promise((resolve, reject) => {
+      new Promise((resolve /*, reject */) => {
          var pk = this.datasource.PK();
          if (!Array.isArray(values)) values = [values];
          var listIDs = values.map((v) => {
@@ -262,7 +262,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          });
          this._reducedConditions = {
             pk: pk,
-            values: listIDs
+            values: listIDs,
          };
 
          if (this.__filterDatasource) {
@@ -290,6 +290,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             })
             .then(() => {
                lock.release();
+               resolve();
             });
       });
    }
@@ -398,7 +399,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            // save our info:
                            return storage.set(this.refStorage(), {
                               bootState: this.bootState,
-                              reducedConditions: this._reducedConditions
+                              reducedConditions: this._reducedConditions,
                            });
                         }
                      });
@@ -716,7 +717,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       if (this.data && this.data[0]) {
          return this.data[0];
       } else {
-         return new Promise((resolve, reject) => {
+         return new Promise((resolve /*, reject */) => {
             this.platformFind().then((data) => {
                return resolve(data[0]);
             });
@@ -729,7 +730,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          return this.data;
       }
       // else wait for data
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve /*, reject */) => {
          this.platformFind().then((data) => {
             return resolve(data);
          });
@@ -960,8 +961,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     */
    _dataCollectionNew(data) {
       // get a webix data collection
+      /* global webix */
       let dc = new webix.DataCollection({
-         data: data || []
+         data: data || [],
       });
 
       this._extendCollection(dc);
@@ -1075,7 +1077,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                modelRemote.contextKey(ABDataCollectionCore.contextKey());
                modelRemote.contextValues({
                   id: this.id,
-                  verb: "refresh"
+                  verb: "refresh",
                });
 
                // id: the datacollection.id
@@ -1099,7 +1101,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          modelRemote.contextKey(ABDataCollectionCore.contextKey());
          modelRemote.contextValues({
             id: this.id,
-            verb: "uninitialized"
+            verb: "uninitialized",
          });
          // id: the datacollection.id
          // verb: tells our ABRelay.listener why this remote lookup was called.
@@ -1277,7 +1279,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    QL() {
       var params = {
          key: ABQL.common().key,
-         dc: this.id
+         dc: this.id,
       };
       return this.application.qlopNew(params);
    }
