@@ -8,7 +8,7 @@
 const ABField = require("./ABField");
 
 module.exports = class ABFieldSelectivity extends ABField {
-   constructor(attributes, object) {
-      super(attributes, object);
+   static defaults() {
+      return { key: "selectivity" };
    }
 };
