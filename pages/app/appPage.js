@@ -57,7 +57,7 @@ export default class AppPage extends Page {
       this.storage = storage;
       this.templates = {};
       this.components = {};
-      this.applications = ABApplicationList;
+      this.applications = ABApplicationList.map((App) => new App(AB));
       this.dataReady = $.Deferred();
       this.routerReady = $.Deferred();
 

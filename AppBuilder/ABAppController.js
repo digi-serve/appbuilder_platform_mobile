@@ -9,13 +9,13 @@
 "use strict";
 
 // import ABApplicationConfig from "../../ABApplicationConfig";
-import EventEmitter from "eventemitter2";
+import EventEmitter2 from "eventemitter2";
 
 import account from "../resources/Account.js";
 
 import { /* Storage, */ storage } from "../resources/Storage.js";
 
-export default class ABAppController extends EventEmitter {
+export default class ABAppController extends EventEmitter2 {
    /**
     * @param {Framework7} app
     * @param {object} [options]
@@ -214,7 +214,7 @@ export default class ABAppController extends EventEmitter {
     * @return {ABDataCollection}
     */
    dataCollection(key) {
-      return this.application.datacollectionByID(key);
+      return this.AB.datacollectionByID(key);
    }
 
    /**

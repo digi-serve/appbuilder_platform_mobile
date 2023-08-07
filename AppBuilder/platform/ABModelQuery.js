@@ -1,2 +1,2 @@
-const ABModelCore = require("../core/ABModelCore");
-module.exports = class ABModelQuery extends ABModelCore {};
+const ABModel = require("./ABModel");
+module.exports = class ABModelQuery extends ABModel {};
