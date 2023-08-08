@@ -7,7 +7,7 @@
 
 var ABDataCollectionCore = require("../core/ABDataCollectionCore");
 
-var ABQL = require("./qlOld/ABQL");
+// var ABQL = require("./ql/ABQL");
 
 var Account = require("../../resources/Account").default;
 var Analytics = require("../../resources/Analytics").default;
@@ -1276,11 +1276,30 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    // Query Interface
    //
 
+   // QL() {
+   //    var params = {
+   //       key: ABQL.common().key,
+   //       dc: this.id,
+   //    };
+   //    return this.application.qlopNew(params);
+   // }
+
+   // this.QL().value() is the same as this.getAllRecords(). Unnecessary if we aren't actually using QL to do anything.
+   // If we need it should switch to the new ABQL
+   // Mock QL so that the current calls still work.
    QL() {
-      var params = {
-         key: ABQL.common().key,
-         dc: this.id,
+      console.warn(
+         `Depreciating ABDatacollection.QL(). Try ABDatacollection.getAllRecords() instead?`
+      );
+      return {
+         value: (...args) => {
+            if (args.length > 0)
+               console.warn(
+                  `ABDatacollection.QL().value() called with args`,
+                  args
+               );
+            return this.getAllRecords();
+         },
       };
-      return this.application.qlopNew(params);
    }
 };
