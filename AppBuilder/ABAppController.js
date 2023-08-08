@@ -293,7 +293,7 @@ export default class ABAppController extends EventEmitter2 {
     * @return {ABDataCollection}
     */
    object(key) {
-      return this.application.objectByID(key);
+      return this.AB.objectByID(key);
    }
 
    /**

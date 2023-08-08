@@ -33,7 +33,7 @@ const Logger = new Logs();
 
 import SettingsComponent from "../settings/settings.js";
 
-export default class AppPage extends Page {
+export class AppPage extends Page {
    /**
     */
    constructor(AB) {
@@ -112,15 +112,7 @@ export default class AppPage extends Page {
                //     });
                // },
                // return the ABApplication matching the given .id
-               getApplication: (id) => {
-                  var mApp = this.applications.find((a) => {
-                     return a.ID == id || a.application.ID == id;
-                  });
-                  if (mApp) {
-                     return mApp;
-                  }
-                  return null;
-               },
+               getApplication: (id) => this.getApplicationByID(id),
             };
          },
 
@@ -206,6 +198,14 @@ export default class AppPage extends Page {
             }
          }
       });
+   }
+
+   getApplicationByID(id) {
+      return (
+         this.applications.find((a) => {
+            return a.ID == id || a.application.ID == id;
+         }) ?? null
+      );
    }
 
    /**
@@ -699,4 +699,11 @@ export default class AppPage extends Page {
          appFeedback.close();
       }
    }
+}
+
+// Singleton
+let instance;
+export default function getAppPage(...args) {
+   if (!instance) instance = new AppPage(...args);
+   return instance;
 }
