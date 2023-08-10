@@ -76,6 +76,9 @@ module.exports = class ABModelRelay extends ABModelCore {
     */
    findAll(cond) {
       cond = cond || {};
+      // Tell the server to get the fully populated relation data
+      // This the old format, no longer giving by default for performance reasons
+      cond.disableMinifyRelation = true;
 
       // this is where the logic will get tricky:
       // As the platform implementation of .findAll()
@@ -122,7 +125,7 @@ module.exports = class ABModelRelay extends ABModelCore {
          var params = this.urlParamsUpdate(id, values);
          var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
          responseContext.context.verb = "update";
-         responseContext.context.jobID = this.object.application.uuid();
+         responseContext.context.jobID = this.AB.uuid();
          this.object.latestUpdates = this.object.latestUpdates || {};
          this.object.latestUpdates[id] = responseContext.context.jobID;
          return Network.put(params, responseContext).then(() => {

@@ -353,7 +353,7 @@ module.exports = class ABModel extends ABModelCore {
    update(id, values) {
       this.prepareMultilingualData(values);
 
-      values.updated_at = this.object.application.updatedAt();
+      // values.updated_at = this.object.application.updatedAt();
 
       // remove empty properties
       for (var key in values) {
@@ -364,9 +364,9 @@ module.exports = class ABModel extends ABModelCore {
          Promise.resolve()
 
             .then(() => {
-               this.object.application.datacollections().forEach((dc) => {
+               this.AB.datacollections().forEach((dc) => {
                   // if datacollection has a datasource and its id matches the connectedObj
-                  if (dc.datasource && dc.datasource.id == this.object.id) {
+                  if (dc.datasource?.id == this.object.id) {
                      // tell it to load data
                      if (dc.__dataCollection.exists(id)) {
                         var entry = dc.__dataCollection.getItem(id);
@@ -379,7 +379,7 @@ module.exports = class ABModel extends ABModelCore {
                      dc.loadDataDelayed();
                   }
                   // if the datacollection has a field of the objecte we updated we need to update interval
-                  if (dc.model && dc.model.object) {
+                  if (dc.model?.object) {
                      dc.model.object.fields().forEach((f) => {
                         if (
                            f.datasourceLink &&
