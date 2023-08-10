@@ -51,7 +51,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                data["objectName"] = this.name;
                console.error(data);
             }
-            if (data.toLowerCase?.() === "[object, object]") {
+            if (
+               typeof data == "string" &&
+               /\[[Oo]bject,? [Oo]bject\]/.test(data)
+            ) {
                data["error"] = this.name;
                console.error(
                   "bad data from server, try tweaking the ABdefinitions!",
