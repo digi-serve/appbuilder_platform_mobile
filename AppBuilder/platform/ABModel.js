@@ -209,7 +209,7 @@ module.exports = class ABModel extends ABModelCore {
 
       // make sure any values we create have a UUID field set:
       var UUID = this.object.fieldUUID(values);
-      if (!values[UUID]) values[UUID] = this.object.application.uuid();
+      if (!values[UUID]) values[UUID] = this.AB.uuid();
 
       return (
          Promise.resolve()
@@ -233,7 +233,7 @@ module.exports = class ABModel extends ABModelCore {
 
             .then(() => {
                // get a list of each connected object
-               var connFields = this.object.connectFields(true);
+               var connFields = this.object.connectFields();
                // for each object
                connFields.forEach((field) => {
                   // get the current value associated with that object and stop if there is none
@@ -242,18 +242,16 @@ module.exports = class ABModel extends ABModelCore {
                      // get that ABObject
                      var connectedObj = field.datasourceLink;
                      // search loaded datacollections to see if they contain the connectedObj
-                     connectedObj.application
-                        .datacollections()
-                        .forEach((dc) => {
-                           // if datacollection has a datasource and its id matches the connectedObj
-                           if (
-                              dc.datasource &&
-                              dc.datasource.id == connectedObj.id
-                           ) {
-                              // tell it to load data
-                              dc.loadData();
-                           }
-                        });
+                     connectedObj.AB.datacollections().forEach((dc) => {
+                        // if datacollection has a datasource and its id matches the connectedObj
+                        if (
+                           dc.datasource &&
+                           dc.datasource.id == connectedObj.id
+                        ) {
+                           // tell it to load data
+                           dc.loadData();
+                        }
+                     });
                   }
                });
             })

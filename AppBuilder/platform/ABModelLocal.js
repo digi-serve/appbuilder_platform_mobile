@@ -298,7 +298,7 @@ module.exports = class ABModelLocal extends ABModelCore {
 
       // make sure any values we create have a UUID field set:
       var UUID = this.object.fieldUUID(values);
-      if (!values[UUID]) values[UUID] = this.object.application.uuid();
+      if (!values[UUID]) values[UUID] = this.AB.uuid();
 
       return this.localStorageCreate(values);
    }
