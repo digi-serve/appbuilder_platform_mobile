@@ -715,29 +715,35 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    // }
 
    getFirstRecord() {
-      var dc = this.__dataCollection;
-      console.log("getFirstRecord() : dc:", dc.find({}));
-      if (this.data && this.data[0]) {
-         return this.data[0];
-      } else {
-         return new Promise((resolve /*, reject */) => {
-            this.platformFind().then((data) => {
-               return resolve(data[0]);
-            });
-         });
-      }
+      const id = this.__dataCollection.getFirstId();
+      return this.__dataCollection.getItem(id);
+      // var dc = this.__dataCollection;
+      // console.log("getFirstRecord() : dc:", dc.find({}));
+      // if (this.data && this.data[0]) {
+      //    return this.data[0];
+      // } else {
+      //    return new Promise((resolve /*, reject */) => {
+      //       this.platformFind().then((data) => {
+      //          return resolve(data[0]);
+      //       });
+      //    });
+      // }
    }
    getAllRecords() {
-      // if initialized...
-      if (this.data) {
-         return this.data;
-      }
-      // else wait for data
-      return new Promise((resolve /*, reject */) => {
-         this.platformFind().then((data) => {
-            return resolve(data);
-         });
-      });
+      // Should we use the Webix Datacollection here? This appears to work well.
+      // If we use this.data we will miss updates. Would need to refactor our
+      // OBJ.on listeners (line 127)
+      return this.__dataCollection.find({});
+      // // if initialized...
+      // if (this.data) {
+      //    return this.data;
+      // }
+      // // else wait for data
+      // return new Promise((resolve /*, reject */) => {
+      //    this.platformFind().then((data) => {
+      //       return resolve(data);
+      //    });
+      // });
    }
 
    // getNextRecord(record) {
