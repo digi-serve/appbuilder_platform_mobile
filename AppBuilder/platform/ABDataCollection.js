@@ -365,24 +365,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            this.bootState = data.bootState;
                            this._reducedConditions = data.reducedConditions;
 
-                           // when 'dataCollection.QL().value()' is called,
-                           // this.data is what is returned, so lets make sure it's set:
-                           if (
-                              data.reducedConditions?.values[0] != undefined &&
-                              objectData
-                           ) {
-                              // objectData is from the ABObject.model().local(), it may have records beyond the datacollection's
-                              // objectData's key should have a match in reducedConditions.values
-                              this.data = this.data || [];
-                              data.reducedConditions.values.forEach(
-                                 (pkInDC) => {
-                                    if (objectData[pkInDC]) {
-                                       this.data.push(objectData[pkInDC]);
-                                    }
-                                 }
-                              );
-                           }
-
                            // save our info:
                            if (this._reducedConditions) {
                               if (this.__filterDatasource) {
@@ -480,10 +462,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   data = data || {};
 
                   data.bootState = this.bootState;
-
-                  // when 'dataCollection.QL().value()' is called,
-                  // this is what is returned
-                  this.data = dataNew;
 
                   return storage.set(this.refStorage(), data);
                });
@@ -717,33 +695,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    getFirstRecord() {
       const id = this.__dataCollection.getFirstId();
       return this.__dataCollection.getItem(id);
-      // var dc = this.__dataCollection;
-      // console.log("getFirstRecord() : dc:", dc.find({}));
-      // if (this.data && this.data[0]) {
-      //    return this.data[0];
-      // } else {
-      //    return new Promise((resolve /*, reject */) => {
-      //       this.platformFind().then((data) => {
-      //          return resolve(data[0]);
-      //       });
-      //    });
-      // }
    }
    getAllRecords() {
-      // Should we use the Webix Datacollection here? This appears to work well.
-      // If we use this.data we will miss updates. Would need to refactor our
-      // OBJ.on listeners (line 127)
+      // This appears to work well.
       return this.__dataCollection.find({});
-      // // if initialized...
-      // if (this.data) {
-      //    return this.data;
-      // }
-      // // else wait for data
-      // return new Promise((resolve /*, reject */) => {
-      //    this.platformFind().then((data) => {
-      //       return resolve(data);
-      //    });
-      // });
    }
 
    // getNextRecord(record) {
@@ -1062,10 +1017,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                // ! This call prevents this from returning found data @achoobert
                // ? Why would this ever be nessicary?
                this.processIncomingData(validEntries);
-
-               // update our local data:
-               this.data = validEntries;
-               // return validEntries;
 
                // we can start working on this data now
                // NOTE: resolve() should be done in .processIncomingData() now
