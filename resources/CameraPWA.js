@@ -147,7 +147,7 @@ class CameraPWA extends EventEmitter {
 
          this._getPicture('camera')
             .then((file) => {
-               filename = file.name + '-' + uuid();
+               filename = uuid() + "_" + file.name;
                fileEntry = file;
                url = URL.createObjectURL(file);
                return fileStorage.put(filename, file);
@@ -194,7 +194,7 @@ class CameraPWA extends EventEmitter {
 
          this._getPicture('library')
             .then((file) => {
-               filename = file.name + '-' + uuid();
+               filename = uuid() + "_" + file.name;
                fileEntry = file;
                url = URL.createObjectURL(file);
                return fileStorage.put(filename, file);
