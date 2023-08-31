@@ -42,7 +42,6 @@ class CameraPWA extends EventEmitter {
       this.init();
    }
 
-
    /**
     * Internal function to trigger the device camera and deliver the image
     * file.
@@ -52,23 +51,23 @@ class CameraPWA extends EventEmitter {
     * @return {Promise}
     *    Resolves with a {File}
     */
-   _getPicture(type="camera") {
+   _getPicture(type = "camera") {
       return new Promise((resolve, reject) => {
          // Get new picture from device camera
-         if (type == 'camera') {
-            this._$input.attr('capture', 'camera');
+         if (type == "camera") {
+            this._$input.attr("capture", "camera");
          }
          // Get picture from device photo album
          else {
-            this._$input.removeAttr('capture');
+            this._$input.removeAttr("capture");
          }
-         
+
          // Enable
          let isCameraActive = true;
-         $('body').append(this._$backend);
+         $("body").append(this._$backend);
 
          // Event handling
-         this._$input.one('change', () => {
+         this._$input.one("change", () => {
             if (isCameraActive) {
                isCameraActive = false;
                let file = this._$input.get(0).files[0];
@@ -78,31 +77,30 @@ class CameraPWA extends EventEmitter {
                }
                // Sometimes the 'change' event triggers on a cancel
                else {
-                  reject(new Error('Canceled'));
+                  reject(new Error("Canceled"));
                }
             }
          });
-         $(window).one('focus', () => {
+         $(window).one("focus", () => {
             // This 'focus' event fires after the camera dialog closes and
             // the original page gets focus again.
             setTimeout(() => {
                // Clear file list
-               this._$reset.trigger('click');
+               this._$reset.trigger("click");
                // Clean up DOM
                this._$backend.remove();
                // If cancel happened with no 'change' event we will catch it here
                if (isCameraActive) {
                   isCameraActive = false;
-                  reject(new Error('Canceled'));
+                  reject(new Error("Canceled"));
                }
             }, 600);
          });
 
          // Activate the device camera
-         this._$input.trigger('click');
+         this._$input.trigger("click");
       });
    }
-
 
    init() {
       // Hidden HTML elements used to trigger camera in _getPicture()
@@ -145,7 +143,7 @@ class CameraPWA extends EventEmitter {
          let fileEntry = null;
          let url = null;
 
-         this._getPicture('camera')
+         this._getPicture("camera")
             .then((file) => {
                filename = uuid() + "_" + file.name;
                fileEntry = file;
@@ -156,15 +154,14 @@ class CameraPWA extends EventEmitter {
                resolve({
                   filename,
                   fileEntry,
-                  url
+                  url,
                });
             })
             .catch((err) => {
                if (err.message == "Canceled") {
                   // User canceled the photo. Not a real error.
                   reject(err);
-               }
-               else {
+               } else {
                   Log("CameraPWA:getCameraPhoto():Error", err);
                   reject(err);
                }
@@ -192,26 +189,45 @@ class CameraPWA extends EventEmitter {
          let fileEntry = null;
          let url = null;
 
-         this._getPicture('library')
+         this._getPicture("library")
             .then((file) => {
                filename = uuid() + "_" + file.name;
                fileEntry = file;
                url = URL.createObjectURL(file);
-               return fileStorage.put(filename, file);
+
+               // determine size of file
+               let quality = 1;
+               let sizeInBytes = fileEntry.size;
+               // if larger than 2.5 MB, compress
+               if (sizeInBytes > 2500000) {
+                  // calculate needed ratio
+                  quality = Math.min(
+                     Math.max(250000 / sizeInBytes, 0.0000000001),
+                     1
+                  );
+                  return fileStorage
+                     .compress(file, quality)
+                     .then((compressedFile) => {
+                        // The next steps in the app HAVE to wait for me to return
+                        return fileStorage.put(filename, compressedFile);
+                     });
+               } else {
+                  // no compression needed
+                  return fileStorage.put(filename, file);
+               }
             })
             .then(() => {
                resolve({
                   filename,
                   fileEntry,
-                  url
+                  url,
                });
             })
             .catch((err) => {
                if (err.message == "Canceled") {
                   // User canceled the photo. Not a real error.
                   reject(err);
-               }
-               else {
+               } else {
                   Log("CameraPWA:getCameraPhoto():Error", err);
                   reject(err);
                }
@@ -224,11 +240,11 @@ class CameraPWA extends EventEmitter {
    ////////
 
    /**
-    * Copies an existing image into the temp directory and delivers the 
+    * Copies an existing image into the temp directory and delivers the
     * URL for it.
     *
     * This is no longer necessary under PWA.
-    * 
+    *
     * @param {string|File} imageFile
     *      Either a string filename, or a File object for this image
     *      file.
@@ -241,14 +257,11 @@ class CameraPWA extends EventEmitter {
          .then(() => {
             if (imageFile instanceof File) {
                return imageFile;
-            }
-            else if (typeof imageFile == 'string') {
-               return this.loadPhotoByName(imageFile)
-                  .then((image) => {
-                     return image.fileEntry;
-                  })
-            }
-            else {
+            } else if (typeof imageFile == "string") {
+               return this.loadPhotoByName(imageFile).then((image) => {
+                  return image.fileEntry;
+               });
+            } else {
                throw new TypeError();
             }
          })
@@ -257,7 +270,6 @@ class CameraPWA extends EventEmitter {
             return url;
          });
    }
-
 
    /**
     * Remove a photo by its filename.
@@ -269,7 +281,6 @@ class CameraPWA extends EventEmitter {
       return fileStorage.delete(photoName);
    }
 
-
    /**
     *  Remove all locally saved photos
     * @return {Promise}
@@ -278,13 +289,12 @@ class CameraPWA extends EventEmitter {
       return fileStorage.deleteAll();
    }
 
-
    /**
     * TODO: find out what this is used for and refactor it for PWA
     */
    imageCleanUp() {
-      console.error('imageCleanUp() what does it even do?');
-      return Promise.reject(new Error('Deprecated?'));
+      console.error("imageCleanUp() what does it even do?");
+      return Promise.reject(new Error("Deprecated?"));
 
       return new Promise((resolve, reject) => {
          // make sure _testDirectoryEntry is created before trying to use:
@@ -316,7 +326,7 @@ class CameraPWA extends EventEmitter {
                            var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
                            if (diff > 14) {
                               item.remove(
-                                 function() {
+                                 function () {
                                     console.log("File removed");
                                     if (item.name.indexOf("receipt-") > -1) {
                                        storage.set(
@@ -328,7 +338,7 @@ class CameraPWA extends EventEmitter {
                                        );
                                     }
                                  },
-                                 function() {
+                                 function () {
                                     console.log("Error while removing file");
                                  }
                               );
@@ -348,22 +358,19 @@ class CameraPWA extends EventEmitter {
       });
    }
 
-
    /**
     * Calculate the total size of all locally saved images?
     * @return {Promise}
     *    Resolves with {int} total storage in MB
     */
    imageLookUp() {
-      return fileStorage.getTotalSize()
-         .then((sizeInBytes) => {
-            sizeInBytes = sizeInBytes || 0;
-            let sizeInMegabytes = Number(sizeInBytes / 1024 / 1024).toFixed(2);
-            console.log("Total Storage: " + sizeInMegabytes);
-            return sizeInMegabytes;
-         });
+      return fileStorage.getTotalSize().then((sizeInBytes) => {
+         sizeInBytes = sizeInBytes || 0;
+         let sizeInMegabytes = Number(sizeInBytes / 1024 / 1024).toFixed(2);
+         console.log("Total Storage: " + sizeInMegabytes);
+         return sizeInMegabytes;
+      });
    }
-
 
    /**
     * Loads a previously saved photo by its filename.
@@ -378,22 +385,22 @@ class CameraPWA extends EventEmitter {
     */
    loadPhotoByName(filename) {
       return new Promise((resolve, reject) => {
-         fileStorage.get(filename)
+         fileStorage
+            .get(filename)
             .then((imageFile) => {
                let url = URL.createObjectURL(imageFile);
                resolve({
                   filename: filename,
                   fileEntry: imageFile,
-                  url: url
+                  url: url,
                });
             })
             .catch((err) => {
                Log("Unable to find photo file", err);
                reject(err);
-            })
+            });
       });
    }
-
 
    /**
     * Read the given file's data and deliver it as a base64 ascii string.
@@ -402,24 +409,67 @@ class CameraPWA extends EventEmitter {
     *      Filename
     * @return {Promise}
     *      Resolves with {string}
+    */ /**
+    * Read the given file's data, compress it if needed, and deliver it as a base64 ascii string.
+    *
+    * @param {string} name
+    *      Filename
+    * @return {Promise}
+    *      Resolves with {string}
     */
-   base64ByName(name) {
-      return new Promise((resolve, reject) => {
-         fileStorage.get(name)
-            .then((file) => {
-               // Read the file's data
-               var reader = new FileReader();
-               reader.onloadend = function() {
-                  var binary = this.result;
-                  var base64 = window.btoa(binary);
-                  resolve(base64);
-               };
-               reader.readAsBinaryString(file);
-            })
-            .catch(reject);
-      });
+   // base64ByName(name) {
+   //    return new Promise((resolve, reject) => {
+   //       fileStorage
+   //          .get(name)
+   //          .then((file) => {
+   //             // Read the file's data
+   //             var reader = new FileReader();
+   //             reader.onloadend = function () {
+   //                var binary = this.result;
+   //                var base64 = window.btoa(binary);
+   //                resolve(base64);
+   //             };
+   //             reader.readAsBinaryString(file);
+   //          })
+   //          .catch(reject);
+   //    });
+   // }
+
+   async base64ByName(name) {
+      const file = await fileStorage.get(name);
+      const sizeInBytes = file.size;
+
+      // Determine if compression is needed
+      let quality = 1;
+      if (sizeInBytes > 500) {
+         quality = Math.min(Math.max(500 / sizeInBytes, 0.00000001), 1).toFixed(
+            2
+         );
+         const compressedBlob = await fileStorage.compress(file, quality);
+         return this.convertBlobToBase64(compressedBlob);
+      } else {
+         return this.convertBlobToBase64(file);
+      }
    }
 
+   /**
+    * Convert a Blob to a base64 string.
+    *
+    * @param {Blob} blob
+    *      Blob to convert
+    * @return {Promise}
+    *      Resolves with {string}
+    */
+   convertBlobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+         const reader = new FileReader();
+         reader.onloadend = function () {
+            const base64 = reader.result.split(",")[1]; // Remove data URL prefix
+            resolve(base64);
+         };
+         reader.readAsDataURL(blob);
+      });
+   }
 
    /**
     * Read the given file's data and deliver it as a Blob.
@@ -433,10 +483,9 @@ class CameraPWA extends EventEmitter {
       return fileStorage.get(name);
    }
 
-
    /**
     * DEPRECATED
-    * 
+    *
     * Assigning an existing photo file a new name within the same directory.
     *
     * @param {string} fromName
@@ -446,41 +495,43 @@ class CameraPWA extends EventEmitter {
    rename(fromName, toName) {
       throw new Error("rename() is deprecated");
    }
-   
 
-    /**
-     * Convert a base64 string in a Blob according to the data and contentType.
-     * 
-     * @param b64Data {String} Pure base64 string without contentType
-     * @param contentType {String} the content type of the file i.e (image/jpeg - image/png - text/plain)
-     * @param sliceSize {Int} SliceSize to process the byteCharacters
-     * @see http://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
-     * @return Blob
-     */
-    b64toBlob(b64Data, contentType, sliceSize) {
-            contentType = contentType || '';
-            sliceSize = sliceSize || 512;
+   /**
+    * Convert a base64 string in a Blob according to the data and contentType.
+    *
+    * @param b64Data {String} Pure base64 string without contentType
+    * @param contentType {String} the content type of the file i.e (image/jpeg - image/png - text/plain)
+    * @param sliceSize {Int} SliceSize to process the byteCharacters
+    * @see http://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
+    * @return Blob
+    */
+   b64toBlob(b64Data, contentType, sliceSize) {
+      contentType = contentType || "";
+      sliceSize = sliceSize || 512;
 
-            var byteCharacters = atob(b64Data);
-            var byteArrays = [];
+      var byteCharacters = atob(b64Data);
+      var byteArrays = [];
 
-            for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-                var slice = byteCharacters.slice(offset, offset + sliceSize);
+      for (
+         var offset = 0;
+         offset < byteCharacters.length;
+         offset += sliceSize
+      ) {
+         var slice = byteCharacters.slice(offset, offset + sliceSize);
 
-                var byteNumbers = new Array(slice.length);
-                for (var i = 0; i < slice.length; i++) {
-                    byteNumbers[i] = slice.charCodeAt(i);
-                }
+         var byteNumbers = new Array(slice.length);
+         for (var i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+         }
 
-                var byteArray = new Uint8Array(byteNumbers);
+         var byteArray = new Uint8Array(byteNumbers);
 
-                byteArrays.push(byteArray);
-            }
+         byteArrays.push(byteArray);
+      }
 
-          var blob = new Blob(byteArrays, {type: contentType});
-          return blob;
-    }
-
+      var blob = new Blob(byteArrays, { type: contentType });
+      return blob;
+   }
 
    /**
     * Save binary data to a file.
@@ -490,26 +541,23 @@ class CameraPWA extends EventEmitter {
     * @param {string} [mimeType]
     * @return {Promise}
     */
-   saveBinaryToName(data, filename, mimeType=null) {
+   saveBinaryToName(data, filename, mimeType = null) {
       let file;
       if (!mimeType) {
          file = new File([data], filename);
-      }
-      else {
+      } else {
          file = new File([data], filename, { type: mimeType });
       }
       let url = URL.createObjectURL(file);
 
-      return fileStorage.put(filename, file)
-         .then(() => {
-            return {
-               filename: filename,
-               fileEntry: file,
-               url: url
-            }
-         });
+      return fileStorage.put(filename, file).then(() => {
+         return {
+            filename: filename,
+            fileEntry: file,
+            url: url,
+         };
+      });
    }
-
 }
 
 export default CameraPWA;
