@@ -8,16 +8,12 @@
  * This platform ABMLClass will define 2 methods that allow for the translation
  * untranslation of this data.
  */
-var ABDefinition = require("./ABDefinition");
-var ABMLClassCore = require("../core/ABMLClassCore");
+// var ABDefinition = require("./ABDefinition");
+const ABMLClassCore = require("../core/ABMLClassCore");
 
-var translate = require("../../resources/Translate").translate;
+const { translate } = require("../../resources/Translate");
 
 module.exports = class ABMLClass extends ABMLClassCore {
-   constructor(fieldList) {
-      super(fieldList);
-   }
-
    /**
     * @method translate()
     *

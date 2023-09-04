@@ -8,7 +8,7 @@
 // var ABApplicationBase = require(path.join(__dirname,  "..", "..", "assets", "opstools", "AppBuilder", "classes",  "ABApplicationBase.js"));
 var ABApplicationCore = require("../core/ABApplicationCore");
 let ABDataCollection = require("./ABDataCollection");
-let ABObject = require("./ABObject");
+// let ABObject = require("./ABObject");
 let ABObjectQuery = require("./ABObjectQuery");
 
 var ABDefinition = require("./ABDefinition");
@@ -34,10 +34,6 @@ var __AllDatacollections = {
 // {obj} : a hash of all ABDataCollection in our system.
 
 module.exports = class ABApplication extends ABApplicationCore {
-   constructor(attributes) {
-      super(attributes);
-   }
-
    definitionForID(id) {
       return ABDefinition.definition(id);
    }
@@ -161,7 +157,7 @@ module.exports = class ABApplication extends ABApplicationCore {
     *
     * @return {ABMobileApp}
     */
-   processNew(id) {
+   processNew(/* id */) {
       // var processDef = ABDefinition.definition(id);
       // if (processDef) {
       //    return new ABProcess(processDef, this);

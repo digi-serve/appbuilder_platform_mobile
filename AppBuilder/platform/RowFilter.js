@@ -3,78 +3,78 @@ var RowFilterCore = require("../core/RowFilterCore");
 var Account = require("../../resources/Account").default;
 
 module.exports = class RowFilter extends RowFilterCore {
-   constructor(App, idBase) {
-      super(App, idBase);
+   constructor(App, idBase, AB) {
+      super(App, idBase, AB);
 
       // Initialize our Platform Account Holder:
       this.Account = Account;
 
-      var L = this.Label;
+      // var L = this.Label;
 
-      var labels = {
-         common: (App || {}).labels,
-         component: {
-            // and: L('ab.filter_fields.and', "*And"),
-            // or: L('ab.filter_fields.or', "*Or"),
-            // addNewFilter: L('ab.filter_fields.addNewFilter', "*Add a filter"),
-            // thisObject: L('ab.filter_fields.thisObject', "*This Object"),
-            // inQuery: L('ab.filter_fields.inQuery', "*In Query"),
-            // notInQuery: L('ab.filter_fields.notInQuery', "*Not In Query"),
-            // inQueryField: L('ab.filter_fields.inQueryField', "*By Query Field"),
-            // notInQueryField: L('ab.filter_fields.notInQueryField', "*Not By Query Field"),
-            // inQueryFieldQueryPlaceholder: L('ab.filter_fields.inQueryFieldQueryPlaceholder', "*Choose a Query"),
-            // inQueryFieldFieldPlaceholder: L('ab.filter_fields.inQueryFieldFieldPlaceholder', "*Choose a Field"),
-            // sameAsUser: L('ab.filter_fields.sameAsUser', "*Same As User"),
-            // notSameAsUser: L('ab.filter_fields.notSameAsUser', "*Not Same As User"),
-            // sameAsField: L('ab.filter_fields.sameAsFild', "*Same As Field"),
-            // notSameAsField: L('ab.filter_fields.notSameAsFild', "*Not Field"),
-            // inDataCollection: L('ab.filter_fields.inDataCollection', "*In Data Collection"),
-            // notInDataCollection: L('ab.filter_fields.notInDataCollection', "*Not In Data Collection"),
-            // containsCondition: L('ab.filter_fields.containsCondition', "*contains"),
-            // notContainCondition: L('ab.filter_fields.notContainCondition', "*doesn't contain"),
-            // isCondition: L('ab.filter_fields.isCondition', "*is"),
-            // isNotCondition: L('ab.filter_fields.isNotCondition', "*is not"),
-            // beforeCondition: L('ab.filter_fields.beforeCondition', "*is before"),
-            // afterCondition: L('ab.filter_fields.afterCondition', "*is after"),
-            // onOrBeforeCondition: L('ab.filter_fields.onOrBeforeCondition', "*is on or before"),
-            // onOrAfterCondition: L('ab.filter_fields.onOrAfterCondition', "*is on or after"),
-            // equalCondition: L('ab.filter_fields.equalCondition', ":"),
-            // notEqualCondition: L('ab.filter_fields.notEqualCondition', "≠"),
-            // lessThanCondition: L('ab.filter_fields.lessThanCondition', "<"),
-            // moreThanCondition: L('ab.filter_fields.moreThanCondition', ">"),
-            // lessThanOrEqualCondition: L('ab.filter_fields.lessThanOrEqualCondition', "≤"),
-            // moreThanOrEqualCondition: L('ab.filter_fields.moreThanOrEqualCondition', "≥"),
-            // equalListCondition: L('ab.filter_fields.equalListCondition', "*equals"),
-            // notEqualListCondition: L('ab.filter_fields.notEqualListCondition', "*does not equal"),
-            // checkedCondition: L('ab.filter_fields.checkedCondition', "*is checked"),
-            // notCheckedCondition: L('ab.filter_fields.notCheckedCondition', "*is not checked"),
-            // isCurrentUserCondition: L('ab.filter_fields.isCurrentUserCondition', "*is current user"),
-            // isNotCurrentUserCondition: L('ab.filter_fields.isNotCurrentUserCondition', "*is not current user")
-         }
-      };
+      // var labels = {
+      //    common: (App || {}).labels,
+      //    component: {
+      //       // and: L('ab.filter_fields.and', "*And"),
+      //       // or: L('ab.filter_fields.or', "*Or"),
+      //       // addNewFilter: L('ab.filter_fields.addNewFilter', "*Add a filter"),
+      //       // thisObject: L('ab.filter_fields.thisObject', "*This Object"),
+      //       // inQuery: L('ab.filter_fields.inQuery', "*In Query"),
+      //       // notInQuery: L('ab.filter_fields.notInQuery', "*Not In Query"),
+      //       // inQueryField: L('ab.filter_fields.inQueryField', "*By Query Field"),
+      //       // notInQueryField: L('ab.filter_fields.notInQueryField', "*Not By Query Field"),
+      //       // inQueryFieldQueryPlaceholder: L('ab.filter_fields.inQueryFieldQueryPlaceholder', "*Choose a Query"),
+      //       // inQueryFieldFieldPlaceholder: L('ab.filter_fields.inQueryFieldFieldPlaceholder', "*Choose a Field"),
+      //       // sameAsUser: L('ab.filter_fields.sameAsUser', "*Same As User"),
+      //       // notSameAsUser: L('ab.filter_fields.notSameAsUser', "*Not Same As User"),
+      //       // sameAsField: L('ab.filter_fields.sameAsFild', "*Same As Field"),
+      //       // notSameAsField: L('ab.filter_fields.notSameAsFild', "*Not Field"),
+      //       // inDataCollection: L('ab.filter_fields.inDataCollection', "*In Data Collection"),
+      //       // notInDataCollection: L('ab.filter_fields.notInDataCollection', "*Not In Data Collection"),
+      //       // containsCondition: L('ab.filter_fields.containsCondition', "*contains"),
+      //       // notContainCondition: L('ab.filter_fields.notContainCondition', "*doesn't contain"),
+      //       // isCondition: L('ab.filter_fields.isCondition', "*is"),
+      //       // isNotCondition: L('ab.filter_fields.isNotCondition', "*is not"),
+      //       // beforeCondition: L('ab.filter_fields.beforeCondition', "*is before"),
+      //       // afterCondition: L('ab.filter_fields.afterCondition', "*is after"),
+      //       // onOrBeforeCondition: L('ab.filter_fields.onOrBeforeCondition', "*is on or before"),
+      //       // onOrAfterCondition: L('ab.filter_fields.onOrAfterCondition', "*is on or after"),
+      //       // equalCondition: L('ab.filter_fields.equalCondition', ":"),
+      //       // notEqualCondition: L('ab.filter_fields.notEqualCondition', "≠"),
+      //       // lessThanCondition: L('ab.filter_fields.lessThanCondition', "<"),
+      //       // moreThanCondition: L('ab.filter_fields.moreThanCondition', ">"),
+      //       // lessThanOrEqualCondition: L('ab.filter_fields.lessThanOrEqualCondition', "≤"),
+      //       // moreThanOrEqualCondition: L('ab.filter_fields.moreThanOrEqualCondition', "≥"),
+      //       // equalListCondition: L('ab.filter_fields.equalListCondition', "*equals"),
+      //       // notEqualListCondition: L('ab.filter_fields.notEqualListCondition', "*does not equal"),
+      //       // checkedCondition: L('ab.filter_fields.checkedCondition', "*is checked"),
+      //       // notCheckedCondition: L('ab.filter_fields.notCheckedCondition', "*is not checked"),
+      //       // isCurrentUserCondition: L('ab.filter_fields.isCurrentUserCondition', "*is current user"),
+      //       // isNotCurrentUserCondition: L('ab.filter_fields.isNotCurrentUserCondition', "*is not current user")
+      //    },
+      // };
 
       // internal list of Webix IDs to reference our UI components.
-      var ids = {};
+      // var ids = {};
 
-      var batchName; // we need to revert to this default when switching away from a in/by query field
+      // var batchName; // we need to revert to this default when switching away from a in/by query field
 
-      var recordRuleOptions = [];
-      var recordRuleFieldOptions = [];
+      // var recordRuleOptions = [];
+      // var recordRuleFieldOptions = [];
 
-      // internal business logic
-      var _logic = this._logic;
+      // // internal business logic
+      // var _logic = this._logic;
 
-      this._logic.callbacks = {
-         /**
-          * @function onChange
-          * called when we have made changes to the filter field settings
-          * of our Current Object.
-          *
-          * this is meant to alert our parent component to respond to the
-          * change.
-          */
-         onChange: function() {}
-      };
+      // this._logic.callbacks = {
+      //    /**
+      //     * @function onChange
+      //     * called when we have made changes to the filter field settings
+      //     * of our Current Object.
+      //     *
+      //     * this is meant to alert our parent component to respond to the
+      //     * change.
+      //     */
+      //    onChange: function () {},
+      // };
 
       // /**
       //  * @method getFieldList

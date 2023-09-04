@@ -8,8 +8,4 @@
 
 var ABFieldJSONCore = require("../../core/dataFields/ABFieldJsonCore");
 
-module.exports = class ABFieldJSON extends ABFieldJSONCore {
-   constructor(attributes, object) {
-      super(attributes, object);
-   }
-};
+module.exports = class ABFieldJSON extends ABFieldJSONCore {};
