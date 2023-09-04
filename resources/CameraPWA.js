@@ -196,21 +196,15 @@ class CameraPWA extends EventEmitter {
                url = URL.createObjectURL(file);
 
                // determine size of file
-               let quality = 1;
                let sizeInBytes = fileEntry.size;
-               // if larger than 2.5 MB, compress
-               if (sizeInBytes > 2500000) {
-                  // calculate needed ratio
-                  quality = Math.min(
-                     Math.max(250000 / sizeInBytes, 0.0000000001),
-                     1
-                  );
-                  return fileStorage
-                     .compress(file, quality)
-                     .then((compressedFile) => {
-                        // The next steps in the app HAVE to wait for me to return
-                        return fileStorage.put(filename, compressedFile);
-                     });
+               // maximum size for passage through relay seems to be about 512 Mb
+               let maxSize = 500000;
+               // compress the image before it goes into localStorage
+               if (sizeInBytes > maxSize) {
+                  return this.recurseShrink(file).then((compressedFile) => {
+                     // The next steps in the app HAVE to wait for me to return
+                     return fileStorage.put(filename, compressedFile);
+                  });
                } else {
                   // no compression needed
                   return fileStorage.put(filename, file);
@@ -403,50 +397,41 @@ class CameraPWA extends EventEmitter {
    }
 
    /**
-    * Read the given file's data and deliver it as a base64 ascii string.
+    * Recursively compresses the given file, if needed, and delivers it as a base64 ASCII string.
     *
-    * @param {string} name
-    *      Filename
-    * @return {Promise}
-    *      Resolves with {string}
-    */ /**
-    * Read the given file's data, compress it if needed, and deliver it as a base64 ascii string.
-    *
-    * @param {string} name
-    *      Filename
-    * @return {Promise}
-    *      Resolves with {string}
+    * @param {File} file
+    *      The file to compress and process.
+    * @param {number} quality
+    *      The desired compression quality, a decimal value between 0 and 1.
+    * @return {Promise<File>}
+    *      Resolves with a file containing the compressed image data.
     */
-   // base64ByName(name) {
-   //    return new Promise((resolve, reject) => {
-   //       fileStorage
-   //          .get(name)
-   //          .then((file) => {
-   //             // Read the file's data
-   //             var reader = new FileReader();
-   //             reader.onloadend = function () {
-   //                var binary = this.result;
-   //                var base64 = window.btoa(binary);
-   //                resolve(base64);
-   //             };
-   //             reader.readAsBinaryString(file);
-   //          })
-   //          .catch(reject);
-   //    });
-   // }
+   async recurseShrink(file, quality) {
+      // maximum size for passage through relay seems to be about 512 Mb
+      let maxSize = 500000;
+      quality =
+         quality || Math.min(Math.max(maxSize / file.size, 0.00000001), 1);
+      const compressedFile = await fileStorage.compress(file, quality);
+      const newSizeInBytes = compressedFile.size;
+      if (newSizeInBytes < maxSize) {
+         return compressedFile;
+      } else {
+         // reduce quality further to force file size down
+         quality = quality * 0.6;
+         return this.recurseShrink(file, quality);
+      }
+   }
 
    async base64ByName(name) {
       const file = await fileStorage.get(name);
       const sizeInBytes = file.size;
 
       // Determine if compression is needed
-      let quality = 1;
-      if (sizeInBytes > 500) {
-         quality = Math.min(Math.max(500 / sizeInBytes, 0.00000001), 1).toFixed(
-            2
-         );
-         const compressedBlob = await fileStorage.compress(file, quality);
-         return this.convertBlobToBase64(compressedBlob);
+      // maximum size for passage through relay seems to be about 500000 bytes
+      let maxSize = 500000;
+      if (sizeInBytes > maxSize) {
+         // ensure file is compressed to less than 500000 bytes
+         return this.convertBlobToBase64(this.recurseShrink(file));
       } else {
          return this.convertBlobToBase64(file);
       }

@@ -161,9 +161,6 @@ class FileStorage extends EventEmitter {
     * * @param {Blob} file
     */
    async compress(file, quality) {
-      const removeExtension = (fileName) =>
-         fileName.substring(0, fileName.lastIndexOf(".")) || fileName;
-   
       return new Promise((resolve, reject) => {
          new Compressor(file, {
             quality,
