@@ -56,10 +56,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                /\[[Oo]bject,? [Oo]bject\]/.test(data)
             ) {
                data["error"] = this.name;
-               console.error(
-                  "bad data from server, try tweaking the ABdefinitions!",
+               let error = new Error(
+                  "Server sent bad data, try tweaking this datacollection: ",
+                  this.name,
+                  " returned ",
                   data
                );
+               console.error(error);
+               // send to sails log:
+               Analytics.logError(error);
             }
             if (this.name) {
                console.log(":: name:", this.name, {
