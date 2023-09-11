@@ -27,6 +27,11 @@ module.exports = class ABObject extends ABObjectCore {
                console.error({ "Error getting data: ": data.name });
             }
             console.log(":: data:", data);
+            if (data === "[object Object]"){
+               // we need to figure out the context of this
+               console.dir("we are getting bad data from the server??? context: ", context);
+               console.error(context.error.message)
+            }
 
             context.verb = context.verb || "unknown";
             switch (context.verb) {
