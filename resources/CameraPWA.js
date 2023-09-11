@@ -148,7 +148,21 @@ class CameraPWA extends EventEmitter {
                filename = uuid() + "_" + file.name;
                fileEntry = file;
                url = URL.createObjectURL(file);
-               return fileStorage.put(filename, file);
+               // determine size of file
+               let sizeInBytes = fileEntry.size;
+               // maximum size for passage through relay seems to be about 512 Mb
+               let maxSize = 500000;
+               // compress the image before it goes into localStorage
+
+               if (!sizeInBytes || sizeInBytes > maxSize) {
+                  return this.recurseShrink(file).then((compressedFile) => {
+                     // The next steps in the app HAVE to wait for me to return
+                     return fileStorage.put(filename, compressedFile);
+                  });
+               } else {
+                  // no compression needed
+                  return fileStorage.put(filename, file);
+               }
             })
             .then(() => {
                resolve({
