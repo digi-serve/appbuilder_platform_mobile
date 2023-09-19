@@ -423,8 +423,14 @@ class CameraPWA extends EventEmitter {
    async recurseShrink(file, quality) {
       // maximum size for passage through relay seems to be about 512 Mb
       let maxSize = 500000;
+      // base64 encoding increases file size
+      let expectedBase64SizeIncrease = file.size * 1.4;
       quality =
-         quality || Math.min(Math.max(maxSize / file.size, 0.00000001), 1);
+         quality ||
+         Math.min(
+            Math.max(maxSize / expectedBase64SizeIncrease, 0.000000001),
+            1
+         );
       const compressedFile = await fileStorage.compress(file, quality);
       const newSizeInBytes = compressedFile.size;
       if (newSizeInBytes < maxSize) {
@@ -445,7 +451,27 @@ class CameraPWA extends EventEmitter {
       let maxSize = 500000;
       if (sizeInBytes > maxSize) {
          // ensure file is compressed to less than 500000 bytes
-         return this.convertBlobToBase64(this.recurseShrink(file));
+         //return this.convertBlobToBase64(this.recurseShrink(file));
+         const timeoutMilliseconds = 10000; // Set your desired timeout in milliseconds (e.g., 10 seconds)
+
+         Promise.race([
+            this.convertBlobToBase64(this.recurseShrink(file)),
+            new Promise((_, reject) => {
+               setTimeout(() => {
+                  reject(
+                     new Error(
+                        "Compressing unsuccessful, please try a smaller image"
+                     )
+                  );
+               }, timeoutMilliseconds);
+            }),
+         ])
+            .then((base64Data) => {
+               return base64Data;
+            })
+            .catch((error) => {
+               return error;
+            });
       } else {
          return this.convertBlobToBase64(file);
       }

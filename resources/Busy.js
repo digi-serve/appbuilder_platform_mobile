@@ -35,6 +35,10 @@ class Busy extends EventEmitter {
          this.busyInProgress = true;
          var xlatedText = t(text);
          this.app.dialog.preloader(xlatedText);
+         setTimeout(() => {
+            // Force kill the preloader
+            this.app.dialog.close();
+         }, 20000);
       }
    }
 
@@ -48,8 +52,8 @@ class Busy extends EventEmitter {
 
       if (this.busyInProgress) {
          this.busyInProgress = false;
-         this.app.dialog.close();
       }
+         this.app.dialog.close();
    }
 }
 

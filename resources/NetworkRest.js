@@ -152,12 +152,21 @@ class NetworkRest extends EventEmitter {
     * @return {bool}
     */
    isNetworkConnected() {
-      // until Cordova plugin is installed and working:
-      if (typeof Connection == "undefined") {
-         return true;
+      // lets try some unorthodox methods to determine if we are connected
+      if (navigator.onLine === false) {
+         return false;
       }
+      // if ("connection" in navigator) {
+      //    const connection = navigator.connection ||
+      //       navigator.mozConnection ||
+      //       navigator.webkitConnection || { type: "none" };
 
-      return this.networkStatus() != Connection.NONE;
+      //    return connection.type !== "none";
+      // }
+      else {
+         // Handle cases where the API is not supported (e.g., desktop browsers)
+         return navigator.onLine;
+      }
    }
 
    /**
