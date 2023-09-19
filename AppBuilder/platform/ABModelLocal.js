@@ -8,6 +8,8 @@
 var ABModelCore = require("../core/ABModelCore");
 var storage = require("../../resources/Storage").storage;
 
+var merge = require("lodash/merge");
+
 module.exports = class ABModelLocal extends ABModelCore {
    /**
     * platformInit
@@ -435,7 +437,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     *		returns a normalized set of data for this object
     */
    syncRemoteMaster(data) {
-      this.dataVerify(data);
+      data = this.dataVerify(data);
       return new Promise((resolve, reject) => {
          // this means that we should use whatever the remote gave us:
          // save new items and replace existing ones
@@ -458,7 +460,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    saveNew(allData) {
-      this.dataVerify(allData);
+      allData = this.dataVerify(allData);
 
       var lock = this.lock();
       return lock
@@ -546,7 +548,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    updateNewer(allData) {
-      this.dataVerify(allData);
+      allData = this.dataVerify(allData);
 
       var lock = this.lock();
       return lock
@@ -571,7 +573,7 @@ module.exports = class ABModelLocal extends ABModelCore {
                   return;
                }
 
-               // if entry DOES exist, then
+               // if entry DOES exist
                if (allObjects[data[UUID]]) {
                   var newDate = new Date(data.updated_at);
 
@@ -583,12 +585,19 @@ module.exports = class ABModelLocal extends ABModelCore {
                      );
                      return;
                   }
-                  // if the new data is later than our old Data
+                  // compare dates
                   if (newDate > oldDate) {
                      allObjects[data[UUID]] = data;
+                  } else {
+                     // there may be new information: fold it into the existing record
+                     // use lodash merge
+                     allObjects[data[UUID]] = merge(
+                        allObjects[data[UUID]],
+                        data
+                     );
                   }
                } else {
-                  // else add it:
+                  // else add it as new record:
                   allObjects[data[UUID]] = data;
                }
             });

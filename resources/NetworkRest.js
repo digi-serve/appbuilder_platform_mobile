@@ -248,23 +248,31 @@ class NetworkRest extends EventEmitter {
                      }
                   }
 
-                  var error = new Error(
-                     "NetworkRest._request() error with .ajax() command:"
-                  );
-                  error.response = jqXHR.responseText;
+                  // Maybe we lost the connection mid-send
+                  if (!this.isNetworkConnected()) {
+                     // add it to the queue and retry later
+                     this.queue(params, jobResponse);
+                     let error = new Error(
+                        "Network error: adding to queue for later retry."
+                     );
+                     reject(error);
+                  } else {
+                     let error = new Error(
+                        "NetworkRest._request() error with .ajax() command:"
+                     );
+                     error.response = jqXHR.responseText;
                   error.text = text;
                   error.err = err;
                   error.code = jqXHR.status;
                   analytics.logError(error);
                   Log.error(error);
-                  // TODO: insert some default error handling for expected
-                  // situations:
-                  reject(error);
+                     // TODO: insert some default error handling for expected
+                     // situations:
+                     reject(error);
+                  }
                });
-         } 
-
-         // Network is not connected
-         else {
+         } else {
+            // Network is not connected
             // now Queue this request params.
             analytics.log(
                "NetworkRest:_request(): Network is offline. Queuing request."
