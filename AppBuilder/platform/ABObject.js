@@ -88,7 +88,9 @@ module.exports = class ABObject extends ABObjectCore {
                         if (exists) {
                            this.model()
                               .local()
-                              .syncLocalMaster(data)
+                              // .syncLocalMaster(data) // ! changing this to remoteMaster
+                              // ! the whole point of the UPDATE is to push an overruling change
+                              .syncRemoteMaster(data)
                               .then(() => {
                                  // alert any DataCollections that are using this
                                  // object that there might be new data for them to
