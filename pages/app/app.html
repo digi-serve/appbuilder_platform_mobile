@@ -1,13 +1,13 @@
-<div class="statusbar"></div>
+<div class="statusbar" data-cy="statusbar"></div>
 
 <div class="panel panel-left panel-reveal theme-dark">
-    <div class="view view-left" name="left" id="left-view" data-url="/nav">
+    <div class="view view-left" name="left" id="left-view" data-url="/nav" data-cy="left">
     <!-- see nav.html -->
     </div>
 </div>
 
 <div class="panel panel-right panel-reveal">
-    <div class="view view-right" name="right" id="right-view" data-url="/log">
+    <div class="view view-right" name="right" id="right-view" data-url="/log" data-cy="right">
     <!-- see log.html -->
     </div>
 </div>
@@ -18,7 +18,7 @@
 
 
 <!-- This will be placed inside a Framework7 dialog box -->
-<div id="relay-loader">
+<div id="relay-loader" style="display: none;">
     <div class="preloader" style="margin-top: 15px"></div>
     <div class="progressbar" style="margin-top: 15px"></div>
     <!--

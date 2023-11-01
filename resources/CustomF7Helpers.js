@@ -29,6 +29,19 @@ Template7.registerHelper("print", (parent, object, alternateObject) => {
    return typeof result != "undefined" ? result : "";
 });
 
+// Helper to display object property that have two or more word names
+// in a HTML friendly way. replace spaces with underscores
+// ex: {{print parent 'object'}}\
+// "Pu Juan" becomes "Pu_Juan"
+/* global Template7 */
+Template7.registerHelper("printHTML", (parent, object, alternateObject) => {
+   if (!parent) {
+      return "";
+   }
+   var result = parent[object] ? parent[object] : parent[alternateObject];
+   return typeof result != "undefined" ? result.replace(/ /g, "_") : "";
+});
+
 // Helper to format date string into usable date Information
 // default format is "YYYY-MM-DD"
 // ex: {{date parent 'object'}} outputs YYYY-MM-DD of the date passed

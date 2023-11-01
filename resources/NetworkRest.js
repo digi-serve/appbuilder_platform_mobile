@@ -83,6 +83,9 @@ class NetworkRest extends EventEmitter {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
          }
+         if (response.status != "success") {
+            this.queue(params, jobResponse);
+         }
          return response;
       });
    }
@@ -105,6 +108,9 @@ class NetworkRest extends EventEmitter {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
          }
+         if (response.status != "success") {
+            this.queue(params, jobResponse);
+         }
          return response;
       });
    }
@@ -126,6 +132,10 @@ class NetworkRest extends EventEmitter {
       return this._request(params, jobResponse).then((response) => {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
+         }
+
+         if (response.status != "success") {
+            this.queue(params, jobResponse);
          }
          return response;
       });
@@ -228,10 +238,12 @@ class NetworkRest extends EventEmitter {
                               );
                               reject(err);
                            });
-                           return;
-                     }
-                     // no more retries left
-                     else {
+                        return;
+                     } else {
+                        // no more retries left
+                        // should we emit an offline event here?
+                        // should packet at issue be reported?
+                        this.emit("offline");
                         // reject() will be called below
                      }
                   } else if (jqXHR.readyState == 4) {

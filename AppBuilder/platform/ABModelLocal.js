@@ -103,51 +103,51 @@ module.exports = class ABModelLocal extends ABModelCore {
    }
 
    localStorageCreate(data) {
-      var UUID = this.object.fieldUUID(data);
+      // this performs the same as saveNew, but for a single record: so send to saveNew()
+      this.saveNew([data]);
+      // var UUID = this.object.fieldUUID(data);
 
-      var lock = this.lock();
-      return lock
-         .acquire()
-         .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageCreate start', allData);
-            return this.getLocalData();
-         })
-         .then((allObjects) => {
-            // if current data item is not in allObjects, add it:
-            if (!allObjects[data[UUID]]) {
-               allObjects[data[UUID]] = data;
-            }
+      // var lock = this.lock();
+      // return lock
+      //    .acquire()
+      //    .then(() => {
+      //       return this.getLocalData();
+      //    })
+      //    .then((allObjects) => {
+      //       // if current data item is not in allObjects, add it:
+      //       if (!allObjects[data[UUID]]) {
+      //          allObjects[data[UUID]] = data;
+      //       }
 
-            return allObjects;
-         })
-         .then((allObjects) => {
-            // make sure our copy of the data has all the fields in
-            // the incoming data:
+      //       return allObjects;
+      //    })
+      //    .then((allObjects) => {
+      //       // make sure our copy of the data has all the fields in
+      //       // the incoming data:
 
-            var ours = allObjects[data[UUID]];
-            for (var d in data) {
-               // Question: do we store __relation  fields?
-               // if (d.indexOf('__relation') == -1) {
+      //       var ours = allObjects[data[UUID]];
+      //       for (var d in data) {
+      //          // Question: do we store __relation  fields?
+      //          // if (d.indexOf('__relation') == -1) {
 
-               if (!ours[d]) {
-                  ours[d] = data[d];
-               }
-               // }
-            }
+      //          if (!ours[d]) {
+      //             ours[d] = data[d];
+      //          }
+      //          // }
+      //       }
 
-            return allObjects;
-         })
-         .then((allObjects) => {
-            return this.saveLocalData(allObjects);
-         })
-         .then((returnValue) => {
-            // console.log('--- '+this.refStorage()+'.localStorageCreate end', data);
-            lock.release();
-            return returnValue || data;
-         })
-         .catch((/* err */) => {
-            lock.release();
-         });
+      //       return allObjects;
+      //    })
+      //    .then((allObjects) => {
+      //       return this.saveLocalData(allObjects);
+      //    })
+      //    .then((returnValue) => {
+      //       lock.release();
+      //       return returnValue || data;
+      //    })
+      //    .catch((/* err */) => {
+      //       lock.release();
+      //    });
    }
 
    localStorageDestroy(id) {
@@ -286,7 +286,9 @@ module.exports = class ABModelLocal extends ABModelCore {
       // since this is new data:
       values["created_at"] = new Date();
 
-      return this.localStorageCreate(values);
+      // this performs the same as saveNew, but for a single record: so send to saveNew()
+      // return this.localStorageCreate(values);
+      return this.saveNew(values);
    }
 
    /**

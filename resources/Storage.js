@@ -183,7 +183,8 @@ class Storage extends EventEmitter {
       // } else {
       //    console.log("-----> Storage stop encrypting ", diff);
       // }
-      return ciphertext.toString() + ":::" + iv.toString();
+      // return ciphertext.toString() + ":::" + iv.toString();
+      return `${ciphertext}:::${iv}`;
    }
 
    /**
@@ -194,20 +195,9 @@ class Storage extends EventEmitter {
     * @return {string}
     */
    decrypt(encoded) {
-      // var startTime = new Date().getTime();
-      var parts = encoded.split(":::");
-      var ciphertext = parts[0];
-      var iv = CryptoJS.enc.Hex.parse(parts[1]);
-      var decrypted = CryptoJS.AES.decrypt(ciphertext, this.key, {
-         iv: iv
-      }).toString(CryptoJS.enc.Utf8);
-      // var diff = new Date().getTime() - startTime;
-      // if (diff > 999) {
-      //    console.warn("-----> Storage stop decrypting ", diff);
-      //    console.log("Big Data", decrypted);
-      // } else {
-      //    console.log("-----> Storage stop decrypting ", diff);
-      // }
+      const [ciphertext, ivHex] = encoded.split(":::");
+      const iv = CryptoJS.enc.Hex.parse(ivHex);
+      const decrypted = CryptoJS.AES.decrypt(ciphertext, this.key, { iv }).toString(CryptoJS.enc.Utf8);
       return decrypted;
    }
 
