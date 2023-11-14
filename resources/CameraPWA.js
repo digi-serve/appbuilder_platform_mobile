@@ -112,7 +112,7 @@ class CameraPWA extends EventEmitter {
                right: 0;
                visibility: hidden;
          ">
-            <input type="file" accept="image/jpeg,image/jpg,image/gif,image/png" capture="camera" />
+            <input data-cy="hiddenFileInput" type="file" accept="image/jpeg,image/jpg,image/gif,image/png" capture="camera" />
             <input type="reset" />
          </form>
       `);
