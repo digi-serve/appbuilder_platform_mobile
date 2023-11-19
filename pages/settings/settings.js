@@ -81,7 +81,8 @@ export default class SettingsComponent extends Component {
     */
    renderPackageInfo() {
       if (this.appInfo) {
-         this.$("#update-info .card-content").html(
+         this.$("#update-info-content").remove();
+         this.$("#update-info .card-content").prepend(
             this.templates.updateInfo(this.appInfo)
          );
       }
