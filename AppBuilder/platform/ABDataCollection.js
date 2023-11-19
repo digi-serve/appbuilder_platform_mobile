@@ -55,14 +55,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                typeof data == "string" &&
                /\[[Oo]bject,? [Oo]bject\]/.test(data)
             ) {
-               data["error"] = this.name;
+               let objName = this.name;
                let error = new Error(
-                  "Server sent bad data, try tweaking this datacollection: ",
-                  this.name,
-                  " returned ",
-                  data
+                  `Server sent bad data, try tweaking this datacollection: '${objName}'`
                );
-               console.error(error);
                // send to sails log:
                Analytics.logError(error);
             }

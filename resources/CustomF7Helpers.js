@@ -167,6 +167,11 @@ Template7.registerHelper("translate", (appID, obj, item) => {
 
 // create a helper in template7 so we can properly display numbers with commas
 Template7.registerHelper("commas", (parent, field) => {
+   // check all fields and return 0 if undefined
+   if (!parent || (!field && typeof parent != "number")) {
+      console.error("commas helper: parent or field is undefined!");
+      return "0";
+   }
    var number = field ? parent[field] : parent;
    if (number === undefined || number === null) {
       return "0";
