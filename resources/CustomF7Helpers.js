@@ -179,6 +179,21 @@ Template7.registerHelper("commas", (parent, field) => {
    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 });
 
+// set number to absolute value before displaying
+Template7.registerHelper("commasAbs", (parent, field) => {
+   // check all fields and return 0 if undefined
+   if (!parent || (!field && typeof parent != "number")) {
+      console.error("commas helper: parent or field is undefined!");
+      return "0";
+   }
+   var number = field ? parent[field] : parent;
+   if (number === undefined || number === null) {
+      return "0";
+   }
+   let absoluteNum = Math.abs(Number(number));
+   return absoluteNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+});
+
 Template7.registerHelper("cities", (cities, selected) => {
    var html = "";
    cities.forEach((city) => {
