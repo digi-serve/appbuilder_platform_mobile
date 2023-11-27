@@ -10,6 +10,7 @@ import account from "../../resources/Account.js";
 import analytics from "../../resources/Analytics.js";
 import Component from "./component.js";
 import Log from "../../resources/Log.js";
+import qrPage from "../qrScanner/qrScanner.js";
 import camera from "../../resources/Camera.js";
 import updater from "../../resources/Updater.js";
 
@@ -30,6 +31,8 @@ export default class SettingsComponent extends Component {
 
       this.isUpdateReady = false;
       this.appInfo = null;
+      this.qrScannerStatus = {};
+      this.qrScanAttempted = "no";
       this.pfsBackupDate = null;
       this.appInfo = null;
       this.camera = camera;
@@ -73,7 +76,46 @@ export default class SettingsComponent extends Component {
          this.appInfo = info;
          this.renderPackageInfo();
       });
+
+      // QR code scanner
+      qrPage.on("cancel", () => {
+         qrPage.hide();
+      });
+      qrPage.on("error", (err) => {
+         qrPage.hide();
+         Log.alert("<t>Unable to access camera</t>", "<t>Error</t>");
+         analytics.logError(err);
+         this.$("#qr-scan-warning").show();
+      });
+      qrPage.on("scan", (text) => {
+         qrPage.hide();
+         this.$("#qr-scan-warning").hide();
+
+         account.importSettings(text);
+      });
    }
+
+   /**
+    * @return {boolean}
+    */
+   wasQrScanAttempted() {
+      return window.QRScanner && this.qrScanAttempted == "yes";
+   }
+
+   /**
+    * Open the QR Code Scanner page.
+    */
+   showQrPage() {
+      this.qrScanAttempted = "yes";
+      this.saveData("qrScanAttempted", "yes");
+      analytics.event("QR scan");
+      qrPage.show();
+   }
+
+   // The AppPage controller will pass in a reference to the PFS object
+   // setPFS(pfs) {
+   //     this.pfs = pfs;
+   // }
 
    /**
     * Render the App Info card
