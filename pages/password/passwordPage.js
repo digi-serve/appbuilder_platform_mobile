@@ -19,7 +19,7 @@ export default class PasswordPage extends Page {
       super(
          "password-page",
          "lib/platform/pages/password/password.html",
-         "lib/platform/pages/password/password.css"
+         "lib/platform/pages/password/password.css",
       );
    }
 
@@ -40,8 +40,21 @@ export default class PasswordPage extends Page {
       storage.get("__sdc_initialized").then((value) => {
          // Reveal the SETUP screen for first time use,
          if (value != 1) {
+            // Detects if device is on iOS
+            const isIos = () => {
+               const userAgent = window.navigator.userAgent.toLowerCase();
+               return /iphone|ipad|ipod/.test(userAgent);
+            };
+            // Detects if device is in standalone mode
+            const isInStandaloneMode = () =>
+               "standalone" in window.navigator && window.navigator.standalone;
+            // Show install instructions
+            if (isIos() && !isInStandaloneMode()) {
+               this.$("div.ios-instruct").show();
+            } else {
             this.startChecking();
             this.$setup.show();
+            }
          }
          // or the SECURITY CHECK screen after that.
          else {
@@ -98,14 +111,12 @@ export default class PasswordPage extends Page {
             "<t>Are you sure?</t>",
             () => {
                analytics.event("reset data");
-               Promise.all([
-                  storage.clearAll(),
-                  fileStorage.deleteAll()
-               ])
-                  .then(() => {
+               Promise.all([storage.clearAll(), fileStorage.deleteAll()]).then(
+                  () => {
                      document.location.reload();
-                  });
-            }
+                  },
+               );
+            },
          );
       });
 
@@ -214,12 +225,7 @@ export default class PasswordPage extends Page {
 
       // scanner has position absolute, so it doesn't center naturally
       // like the password box.
-      $scanner.width(
-         $scanner
-            .siblings("input")
-            .eq(0)
-            .outerWidth()
-      );
+      $scanner.width($scanner.siblings("input").eq(0).outerWidth());
       $scanner.css("left", parseInt($password.css("margin-left")) - 15);
 
       // trigger CSS animation
