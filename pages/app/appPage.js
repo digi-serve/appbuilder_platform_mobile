@@ -200,6 +200,54 @@ export class AppPage extends Page {
       });
    }
 
+   /**
+    * update with a new user account
+    *
+    * we will be given the authToken and tenantUUID from the QR code
+    * e.g. https://example.com/#JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
+    * -> authToken = 058b3d5d8c9f33dc2545f2d5e804b4fd,
+    *
+    * The pre-token is embedded in the hash fragment of the URL, which is never
+    * transmitted to the webserver. (It is sent to the MCC server at a later
+    * step.)
+    *
+    * We will use the pre-token to register a new authToken for the user
+    * account.
+    *
+    * @return {Promise}
+    */
+   updateAccount(authToken, tenantUUID) {
+      // check both variables to be sure they are safe strings
+      // check for sql symbols
+      let sqlCheck = /['";]/;
+      if (sqlCheck.test(authToken) || sqlCheck.test(tenantUUID)) {
+         let err = new Error("Invalid authToken or tenantUUID");
+         err.code = "E_BADAUTHTOKEN";
+         return Promise.reject(err);
+      }
+
+      // No token in URL
+      if (!authToken) {
+         let err = new Error("No pre-token found");
+         err.code = "E_NOJRRTOKEN";
+         return Promise.reject(err);
+      }
+      // Import pre-token from the URL. Generate new authToken.
+      else {
+         // importCredentials then refresh the page
+         return Promise.all([
+            account
+               .importCredentials(authToken, tenantUUID)
+               .then(() => {
+                  this.fetchApplicationData({ refreshPage: true });
+               })
+               .catch((err) => {
+                  console.log(err);
+               }),
+         ]);
+      }
+   }
+
    getApplicationByID(id) {
       return (
          this.applications.find((a) => {
