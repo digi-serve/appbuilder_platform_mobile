@@ -24,7 +24,8 @@ import EventEmitter from "eventemitter2";
 import Log from "./Log";
 import uuid from "uuid/v1";
 
-import { Decoder } from "@nuintun/qrcode";
+// import { Decoder } from "@nuintun/qrcode";
+// import { Decoder } from "@nuintun/qrcode";
 import { storage } from "./Storage.js";
 import fileStorage from "./FileStorage.js";
 
