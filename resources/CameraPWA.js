@@ -228,9 +228,29 @@ class CameraPWA extends EventEmitter {
                let sizeInBytes = fileEntry.size;
                // maximum size for passage through relay seems to be about 512 Mb
                let maxSize = 500000;
+
+               // check the format and the size of the image
+               // if it is not a jpeg or png reject the promise
+               if (file.type != "image/jpeg" && file.type != "image/png") {
+                  reject(
+                     new Error(
+                        "Image is not a jpeg or png, please select a jpeg or png"
+                     )
+                  );
+                  return;
+               }
+
                // compress the image before it goes into localStorage
 
-               if (!sizeInBytes || sizeInBytes > maxSize) {
+               if (sizeInBytes > maxSize) {
+                  if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
+                     reject(
+                        new Error(
+                           "Image is too large, please select a smaller image"
+                        )
+                     );
+                     return;
+                  }
                   return this.recurseShrink(file).then((compressedFile) => {
                      // The next steps in the app HAVE to wait for me to return
                      return fileStorage.put(filename, compressedFile);
@@ -316,6 +336,16 @@ class CameraPWA extends EventEmitter {
                let maxSize = 500000;
                // compress the image before it goes into localStorage
                if (sizeInBytes > maxSize) {
+                  // check if we are in iOS or Safari
+                  // tell the user to upload a smaller image
+                  if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
+                     reject(
+                        new Error(
+                           "Image is too large, please select a smaller image"
+                        )
+                     );
+                     return;
+                  }
                   return this.recurseShrink(file).then((compressedFile) => {
                      // The next steps in the app HAVE to wait for me to return
                      return fileStorage.put(filename, compressedFile);
@@ -538,6 +568,7 @@ class CameraPWA extends EventEmitter {
          return compressedFile;
       } else {
          // reduce quality further to force file size down
+         console.error("We're shrinking this again!!!")
          quality = quality * 0.6;
          return this.recurseShrink(file, quality);
       }
