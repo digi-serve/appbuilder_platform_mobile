@@ -370,7 +370,8 @@ class NetworkRest extends EventEmitter {
                analytics.logError(err);
                reject(err);
 
-               this.queueLock.release();
+               // this may be undefined?
+               this.queueLock?.release();
             });
       });
    }
@@ -458,9 +459,14 @@ class NetworkRest extends EventEmitter {
                Log.error("commAPI queueFlush error", err);
                analytics.logError(err);
 
-               this.queueLock.release().then(() => {
+               if (this.queueLock){
+                  this.queueLock?.release().then(() => {
+                     reject(err);
+                  });
+               } else {
+                  console.error("queueLock is undefined");
                   reject(err);
-               });
+               }
             });
       });
    }
