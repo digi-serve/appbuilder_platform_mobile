@@ -460,8 +460,11 @@ class NetworkRest extends EventEmitter {
                analytics.logError(err);
 
                if (this.queueLock){
-                  this.queueLock?.release().then(() => {
-                     reject(err);
+                  // wait for the queue lock to resolve as a promise before trying to release it
+                  this.queueLock.then(() => {
+                     this.queueLock?.release().then(() => {
+                        reject(err);
+                     });
                   });
                } else {
                   console.error("queueLock is undefined");
