@@ -424,7 +424,7 @@ class NetworkRest extends EventEmitter {
                      // temporarily search the queue for mobile/register
                      // and skip it if found
                      // TODO remove this when users don't have to scan QR from within app
-                     if (!params.headers.url.includes("/mobile/register")) {
+                     if (!params.url.includes("/mobile/register")) {
                         var job = entry.jobResponse;
                         this._resend(params, job)
                            .then(() => {
