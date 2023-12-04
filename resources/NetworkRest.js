@@ -344,6 +344,10 @@ class NetworkRest extends EventEmitter {
     */
    queue(data, jobResponse) {
       var refQueue = this.refQueue();
+      if (data.url.includes("/mobile/register")) {
+         Log.error("Queueing a QR scan doesn't seem to work...", data);
+         return Promise.resolve();
+      }
 
       return new Promise((resolve, reject) => {
          this.queueLock
@@ -417,12 +421,17 @@ class NetworkRest extends EventEmitter {
                   } else {
                      var entry = queue.shift();
                      var params = entry.data;
-                     var job = entry.jobResponse;
-                     this._resend(params, job)
-                        .then(() => {
-                           processRequest(cb);
-                        })
-                        .catch(cb);
+                     // temporarily search the queue for mobile/register
+                     // and skip it if found
+                     // TODO remove this when users don't have to scan QR from within app
+                     if (!params.headers.url.includes("/mobile/register")) {
+                        var job = entry.jobResponse;
+                        this._resend(params, job)
+                           .then(() => {
+                              processRequest(cb);
+                           })
+                           .catch(cb);
+                     }
                   }
                };
 
