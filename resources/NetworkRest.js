@@ -71,19 +71,20 @@ class NetworkRest extends EventEmitter {
     * @param {obj} params the request parameters that need to be executed on
     *              the AppBuilder Server
     * @param {obj} jobResponse the callback info for handling the response.
+    * @param {default true boolean} queue if true
     *              {
     *                  key:'unique.key',
     *                  context:{ obj data }
     *              }
     * @return {Promise}
     */
-   post(params, jobResponse) {
+   post(params, jobResponse, queue = true) {
       params.type = params.type || "POST";
       return this._request(params, jobResponse).then((response) => {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
          }
-         if (response.status != "success") {
+         if (response.status != "success" && queue) {
             this.queue(params, jobResponse);
          }
          return response;
@@ -459,17 +460,8 @@ class NetworkRest extends EventEmitter {
                Log.error("commAPI queueFlush error", err);
                analytics.logError(err);
 
-               if (this.queueLock){
-                  // wait for the queue lock to resolve as a promise before trying to release it
-                  this.queueLock.then(() => {
-                     this.queueLock?.release().then(() => {
-                        reject(err);
-                     });
-                  });
-               } else {
-                  console.error("queueLock is undefined");
-                  reject(err);
-               }
+               this.queueLock?.release();
+               reject(err);
             });
       });
    }
