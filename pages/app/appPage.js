@@ -53,6 +53,27 @@ export class AppPage extends Page {
          },
          false
       );
+      // handle back button clicks
+      var backPresses = 0;
+      var maxBackPresses = 3;
+      function handleBackButton() {
+         if (backPresses >= maxBackPresses) {
+            window.history.back();
+         } else {
+            window.history.pushState({}, "");
+         }
+      }
+      window.addEventListener("load", function () {
+         window.history.pushState({ noBackExitsApp: true }, "");
+      });
+      window.addEventListener("popstate", function (event) {
+         if (event.state && event.state.noBackExitsApp) {
+            window.history.pushState({ noBackExitsApp: true }, "");
+         } else {
+            backPresses++;
+            handleBackButton();
+         }
+      });
 
       this.storage = storage;
       this.templates = {};
