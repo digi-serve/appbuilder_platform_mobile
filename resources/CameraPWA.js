@@ -171,18 +171,19 @@ class CameraPWA extends EventEmitter {
 
                
                if (sizeInBytes > maxSize) {
-                  if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
-                     // TODO find a way to compress on iOS
-                     let err = new Error("Image is too large, please select a smaller image");
-                     reject(err);
-                     return err;
-                  } else {
+                  // ONLY if browser is safari
+                  // if (na
+                     // // TODO find a way to compress on iOS
+                     // let err = new Error("Image is too large, please select a smaller image");
+                     // reject(err);
+                     // return err;
+                  // } else {
                      // compress the image before it goes into localStorage
                      return this.recurseShrink(file).then((compressedFile) => {
                         // The next steps in the app HAVE to wait for me to return
                         return fileStorage.put(filename, compressedFile);
                      });
-                  }
+                  // }
                } else {
                   // no compression needed
                   return fileStorage.put(filename, file);
@@ -239,19 +240,19 @@ class CameraPWA extends EventEmitter {
                let maxSize = 500000;
                if (sizeInBytes > maxSize) {
                   // check if we are in iOS or Safari
-                  if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
-                     // tell the user to upload a smaller image
-                     // TODO find a way to compress on iOS
-                     let err = new Error("Image is too large, please select a smaller image");
-                     reject(err);
-                     return err;
-                  } else {
+                  // if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
+                  //    // tell the user to upload a smaller image
+                  //    // TODO find a way to compress on iOS
+                  //    let err = new Error("Image is too large, please select a smaller image");
+                  //    reject(err);
+                  //    return err;
+                  // } else {
                      // compress the image before it goes into localStorage
                      return this.recurseShrink(file).then((compressedFile) => {
                         // The next steps in the app HAVE to wait for me to return
                         return fileStorage.put(filename, compressedFile);
                      });
-                  }
+                  // }
                } else {
                   // no compression needed, iOS and Safari can send it fine
                   return fileStorage.put(filename, file);
