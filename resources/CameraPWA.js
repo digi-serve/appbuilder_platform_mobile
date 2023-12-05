@@ -28,6 +28,7 @@ import uuid from "uuid/v1";
 // import { Decoder } from "@nuintun/qrcode";
 import { storage } from "./Storage.js";
 import fileStorage from "./FileStorage.js";
+const ValidImageTypes = ["image/jpg", "image/jpeg", "image/png", "image/gif", "image/bmp"];
 
 const defaultHeight = 2000;
 const defaultWidth = 2000;
@@ -42,80 +43,6 @@ class CameraPWA extends EventEmitter {
       this._$reset = null;
 
       this.init();
-   }
-
-   /**
-    * Internal function to trigger the device camera and deliver the code
-    *
-    * @param {string} type
-    *    Either 'camera' or 'library'
-    * @return {Promise}
-    *    Resolves with a {File}
-    */
-   _getPictureCode(type = "camera") {
-      return new Promise((resolve, reject) => {
-         // Get new picture from device camera
-         if (type == "camera") {
-            this._$input.attr("capture", "camera");
-         }
-         // Get picture from device photo album
-         else {
-            this._$input.removeAttr("capture");
-         }
-
-         // Enable
-         let isCameraActive = true;
-         $("body").append(this._$backend);
-
-         // Event handling
-         this._$input.one("change", () => {
-            if (isCameraActive) {
-               isCameraActive = false;
-               let file = this._$input.get(0).files[0];
-               // A photo was captured
-               if (file) {
-                  if (file.type && !file.type.startsWith("image/")) {
-                     console.log("File is not an image.", file.type, file);
-                     reject(new Error("File is not an image."));
-                  }
-                  const qrCode = new Decoder();
-                  // qrCode.setOptions({ inversionAttempts: "attemptBoth" });
-                  const reader = new FileReader();
-                  reader.addEventListener("load", (event) => {
-                     let img = event.target.result;
-                     resolve(qrCode.scan(img));
-                     // return jsQR(img, defaultWidth, defaultHeight);
-                  });
-                  // return the data paramiter once it finishes
-                  // let param = await
-                  // console.log(`@achoobert the scanned code is here ${param}`);
-                  reader.readAsDataURL(file);
-               }
-               // Sometimes the 'change' event triggers on a cancel
-               else {
-                  reject(new Error("Canceled"));
-               }
-            }
-         });
-         // $(window).one("focus", () => {
-         //    // This 'focus' event fires after the camera dialog closes and
-         //    // the original page gets focus again.
-         //    setTimeout(() => {
-         //       // Clear file list
-         //       this._$reset.trigger("click");
-         //       // Clean up DOM
-         //       this._$backend.remove();
-         //       // If cancel happened with no 'change' event we will catch it here
-         //       if (isCameraActive) {
-         //          isCameraActive = false;
-         //          reject(new Error("Canceled"));
-         //       }
-         //    }, 600);
-         // });
-
-         // Activate the device camera
-         this._$input.trigger("click");
-      });
    }
 
    /**
@@ -149,7 +76,12 @@ class CameraPWA extends EventEmitter {
                let file = this._$input.get(0).files[0];
                // A photo was captured
                if (file) {
-                  resolve(file);
+                  if (ValidImageTypes.includes(file["type"])) {
+                     resolve(file);
+                  } else {
+                     console.log("File is not valid.", file.type, file);
+                     reject(new Error("File is not valid"));
+                  }
                }
                // Sometimes the 'change' event triggers on a cancel
                else {
@@ -231,30 +163,26 @@ class CameraPWA extends EventEmitter {
 
                // check the format and the size of the image
                // if it is not a jpeg or png reject the promise
-               if (file.type != "image/jpeg" && file.type != "image/png") {
-                  reject(
-                     new Error(
-                        "Image is not a jpeg or png, please select a jpeg or png"
-                     )
-                  );
-                  return;
+               if (!ValidImageTypes.includes(file["type"])) {
+                  let err = new Error("Image is not a valid type");
+                  reject(err);
+                  return err;
                }
 
-               // compress the image before it goes into localStorage
-
+               
                if (sizeInBytes > maxSize) {
                   if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
-                     reject(
-                        new Error(
-                           "Image is too large, please select a smaller image"
-                        )
-                     );
-                     return;
+                     // TODO find a way to compress on iOS
+                     let err = new Error("Image is too large, please select a smaller image");
+                     reject(err);
+                     return err;
+                  } else {
+                     // compress the image before it goes into localStorage
+                     return this.recurseShrink(file).then((compressedFile) => {
+                        // The next steps in the app HAVE to wait for me to return
+                        return fileStorage.put(filename, compressedFile);
+                     });
                   }
-                  return this.recurseShrink(file).then((compressedFile) => {
-                     // The next steps in the app HAVE to wait for me to return
-                     return fileStorage.put(filename, compressedFile);
-                  });
                } else {
                   // no compression needed
                   return fileStorage.put(filename, file);
@@ -273,31 +201,6 @@ class CameraPWA extends EventEmitter {
                   reject(err);
                } else {
                   Log("CameraPWA:getCameraPhoto():Error", err);
-                  reject(err);
-               }
-            });
-      });
-   }
-   /**
-    * Activate the camera for the user, and return the decoded QR code.
-    *
-    * @param {int} width
-    * @param {int} height
-    * @return {Promise}
-    *    Resolves with raw text of the QR code.
-    */
-   getCameraQR(width = defaultWidth, height = defaultHeight) {
-      return new Promise((resolve, reject) => {
-         this._getPictureCode("camera")
-            .then((data) => {
-               resolve(data);
-            })
-            .catch((err) => {
-               if (err.message == "Canceled") {
-                  // User canceled the photo. Not a real error.
-                  reject(err);
-               } else {
-                  Log("CameraPWA:getCameraQR():Error", err);
                   reject(err);
                }
             });
@@ -334,24 +237,23 @@ class CameraPWA extends EventEmitter {
                let sizeInBytes = fileEntry.size;
                // maximum size for passage through relay seems to be about 512 Mb
                let maxSize = 500000;
-               // compress the image before it goes into localStorage
                if (sizeInBytes > maxSize) {
                   // check if we are in iOS or Safari
-                  // tell the user to upload a smaller image
                   if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
-                     reject(
-                        new Error(
-                           "Image is too large, please select a smaller image"
-                        )
-                     );
-                     return;
+                     // tell the user to upload a smaller image
+                     // TODO find a way to compress on iOS
+                     let err = new Error("Image is too large, please select a smaller image");
+                     reject(err);
+                     return err;
+                  } else {
+                     // compress the image before it goes into localStorage
+                     return this.recurseShrink(file).then((compressedFile) => {
+                        // The next steps in the app HAVE to wait for me to return
+                        return fileStorage.put(filename, compressedFile);
+                     });
                   }
-                  return this.recurseShrink(file).then((compressedFile) => {
-                     // The next steps in the app HAVE to wait for me to return
-                     return fileStorage.put(filename, compressedFile);
-                  });
                } else {
-                  // no compression needed
+                  // no compression needed, iOS and Safari can send it fine
                   return fileStorage.put(filename, file);
                }
             })
@@ -517,7 +419,7 @@ class CameraPWA extends EventEmitter {
     * @param {string} filename
     * @return {Promise}
     *    {
-    *       filename: <string>,
+    *       filename: <strding>,
     *       File: <File>,
     *       url: <string> // only valid for current session
     *    }
