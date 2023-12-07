@@ -71,17 +71,21 @@ class NetworkRest extends EventEmitter {
     * @param {obj} params the request parameters that need to be executed on
     *              the AppBuilder Server
     * @param {obj} jobResponse the callback info for handling the response.
+    * @param {default true boolean} queue if true
     *              {
     *                  key:'unique.key',
     *                  context:{ obj data }
     *              }
     * @return {Promise}
     */
-   post(params, jobResponse) {
+   post(params, jobResponse, queue = true) {
       params.type = params.type || "POST";
       return this._request(params, jobResponse).then((response) => {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
+         }
+         if (response.status != "success" && queue) {
+            this.queue(params, jobResponse);
          }
          return response;
       });
@@ -105,6 +109,9 @@ class NetworkRest extends EventEmitter {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
          }
+         if (response.status != "success") {
+            this.queue(params, jobResponse);
+         }
          return response;
       });
    }
@@ -126,6 +133,10 @@ class NetworkRest extends EventEmitter {
       return this._request(params, jobResponse).then((response) => {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
+         }
+
+         if (response.status != "success") {
+            this.queue(params, jobResponse);
          }
          return response;
       });
@@ -152,12 +163,21 @@ class NetworkRest extends EventEmitter {
     * @return {bool}
     */
    isNetworkConnected() {
-      // until Cordova plugin is installed and working:
-      if (typeof Connection == "undefined") {
-         return true;
+      // lets try some unorthodox methods to determine if we are connected
+      if (navigator.onLine === false) {
+         return false;
       }
+      // if ("connection" in navigator) {
+      //    const connection = navigator.connection ||
+      //       navigator.mozConnection ||
+      //       navigator.webkitConnection || { type: "none" };
 
-      return this.networkStatus() != Connection.NONE;
+      //    return connection.type !== "none";
+      // }
+      else {
+         // Handle cases where the API is not supported (e.g., desktop browsers)
+         return navigator.onLine;
+      }
    }
 
    /**
@@ -219,10 +239,12 @@ class NetworkRest extends EventEmitter {
                               );
                               reject(err);
                            });
-                           return;
-                     }
-                     // no more retries left
-                     else {
+                        return;
+                     } else {
+                        // no more retries left
+                        // should we emit an offline event here?
+                        // should packet at issue be reported?
+                        this.emit("offline");
                         // reject() will be called below
                      }
                   } else if (jqXHR.readyState == 4) {
@@ -239,23 +261,31 @@ class NetworkRest extends EventEmitter {
                      }
                   }
 
-                  var error = new Error(
-                     "NetworkRest._request() error with .ajax() command:"
-                  );
-                  error.response = jqXHR.responseText;
+                  // Maybe we lost the connection mid-send
+                  if (!this.isNetworkConnected()) {
+                     // add it to the queue and retry later
+                     this.queue(params, jobResponse);
+                     let error = new Error(
+                        "Network error: adding to queue for later retry."
+                     );
+                     reject(error);
+                  } else {
+                     let error = new Error(
+                        "NetworkRest._request() error with .ajax() command:"
+                     );
+                     error.response = jqXHR.responseText;
                   error.text = text;
                   error.err = err;
                   error.code = jqXHR.status;
                   analytics.logError(error);
                   Log.error(error);
-                  // TODO: insert some default error handling for expected
-                  // situations:
-                  reject(error);
+                     // TODO: insert some default error handling for expected
+                     // situations:
+                     reject(error);
+                  }
                });
-         } 
-
-         // Network is not connected
-         else {
+         } else {
+            // Network is not connected
             // now Queue this request params.
             analytics.log(
                "NetworkRest:_request(): Network is offline. Queuing request."
@@ -314,6 +344,10 @@ class NetworkRest extends EventEmitter {
     */
    queue(data, jobResponse) {
       var refQueue = this.refQueue();
+      if (data.url.includes("/mobile/register")) {
+         Log.error("Queueing a QR scan doesn't seem to work...", data);
+         return Promise.resolve();
+      }
 
       return new Promise((resolve, reject) => {
          this.queueLock
@@ -341,7 +375,8 @@ class NetworkRest extends EventEmitter {
                analytics.logError(err);
                reject(err);
 
-               this.queueLock.release();
+               // this may be undefined?
+               this.queueLock?.release();
             });
       });
    }
@@ -386,12 +421,17 @@ class NetworkRest extends EventEmitter {
                   } else {
                      var entry = queue.shift();
                      var params = entry.data;
-                     var job = entry.jobResponse;
-                     this._resend(params, job)
-                        .then(() => {
-                           processRequest(cb);
-                        })
-                        .catch(cb);
+                     // temporarily search the queue for mobile/register
+                     // and skip it if found
+                     // TODO remove this when users don't have to scan QR from within app
+                     if (!params.url.includes("/mobile/register")) {
+                        var job = entry.jobResponse;
+                        this._resend(params, job)
+                           .then(() => {
+                              processRequest(cb);
+                           })
+                           .catch(cb);
+                     }
                   }
                };
 
@@ -429,9 +469,8 @@ class NetworkRest extends EventEmitter {
                Log.error("commAPI queueFlush error", err);
                analytics.logError(err);
 
-               this.queueLock.release().then(() => {
-                  reject(err);
-               });
+               this.queueLock?.release();
+               reject(err);
             });
       });
    }

@@ -7,8 +7,4 @@
 
 var ABFieldEmailCore = require("../../core/dataFields/ABFieldEmailCore");
 
-module.exports = class ABFieldEmail extends ABFieldEmailCore {
-   constructor(attributes, object) {
-      super(attributes, object);
-   }
-};
+module.exports = class ABFieldEmail extends ABFieldEmailCore {};

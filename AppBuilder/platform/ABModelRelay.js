@@ -6,16 +6,12 @@
  *
  */
 
-const { values } = require("lodash");
+// const { values } = require("lodash");
 var ABModelCore = require("../core/ABModelCore");
 
 var Network = require("../../resources/Network").default;
 
 module.exports = class ABModelRelay extends ABModelCore {
-   constructor(object) {
-      super(object);
-   }
-
    /**
     * @method create
     * update model values on the server.
@@ -25,7 +21,7 @@ module.exports = class ABModelRelay extends ABModelCore {
 
       // make sure any values we create have a UUID field set:
       var UUID = this.object.fieldUUID(values);
-      if (!values[UUID]) values[UUID] = this.object.application.uuid();
+      if (!values[UUID]) values[UUID] = this.AB.uuid();
 
       return Promise.resolve().then(() => {
          // fire off a Relay Request to create this on the server too:
@@ -80,6 +76,9 @@ module.exports = class ABModelRelay extends ABModelCore {
     */
    findAll(cond) {
       cond = cond || {};
+      // Tell the server to get the fully populated relation data
+      // This the old format, no longer giving by default for performance reasons
+      cond.disableMinifyRelation = true;
 
       // this is where the logic will get tricky:
       // As the platform implementation of .findAll()
@@ -126,7 +125,7 @@ module.exports = class ABModelRelay extends ABModelCore {
          var params = this.urlParamsUpdate(id, values);
          var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
          responseContext.context.verb = "update";
-         responseContext.context.jobID = this.object.application.uuid();
+         responseContext.context.jobID = this.AB.uuid();
          this.object.latestUpdates = this.object.latestUpdates || {};
          this.object.latestUpdates[id] = responseContext.context.jobID;
          return Network.put(params, responseContext).then(() => {

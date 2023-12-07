@@ -11,12 +11,4 @@
 
 var ABViewCore = require("../../core/views/ABViewCore");
 
-module.exports = class ABView extends ABViewCore {
-   constructor(values, application, parent, defaultValues) {
-      super(values, application, parent, defaultValues);
-   }
-
-   ///
-   /// Instance Methods
-   ///
-};
+module.exports = class ABView extends ABViewCore {};

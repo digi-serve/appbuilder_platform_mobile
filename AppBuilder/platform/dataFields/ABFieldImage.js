@@ -7,8 +7,4 @@
 
 var ABFieldImageCore = require("../../core/dataFields/ABFieldImageCore");
 
-module.exports = class ABFieldImage extends ABFieldImageCore {
-   constructor(attributes, object) {
-      super(attributes, object);
-   }
-};
+module.exports = class ABFieldImage extends ABFieldImageCore {};

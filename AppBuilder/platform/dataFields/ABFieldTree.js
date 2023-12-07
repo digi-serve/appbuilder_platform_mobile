@@ -7,8 +7,4 @@
 
 var ABFieldTreeCore = require("../../core/dataFields/ABFieldTreeCore");
 
-module.exports = class ABFieldTree extends ABFieldTreeCore {
-   constructor(attributes, object) {
-      super(attributes, object);
-   }
-};
+module.exports = class ABFieldTree extends ABFieldTreeCore {};

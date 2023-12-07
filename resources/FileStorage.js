@@ -3,6 +3,7 @@ import uuid from 'uuid/v1';
 import { storage, Storage } from './Storage.js';
 import analytics from './Analytics.js';
 import Log from './Log.js';
+import Compressor from "compressorjs";
 
 const storeName = "file_data";
 
@@ -150,10 +151,43 @@ class FileStorage extends EventEmitter {
             req.onsuccess = (event) => {
                let file = req.result;
                resolve(file);
-            }
+            };
          }
       });
    }
+
+   /**
+    * Compress a file using the browser's built-in compression.
+    * * @param {Blob} file
+    */
+   async compress(file, quality) {
+      return new Promise((resolve, reject) => {
+         new Compressor(file, {
+            quality,
+            // The compression process is asynchronous,
+            // which means you have to access the `result` in the `success` hook function.
+            success(compressedFile) {
+               if (compressedFile instanceof Blob) {
+                  // Convert Blob to File if needed
+                  const compressedFileFromBlob = new File(
+                     [compressedFile],
+                     file.name,
+                     {
+                        type: compressedFile.type,
+                     }
+                  );
+                  resolve(compressedFileFromBlob);
+               } else {
+                  reject(new Error("Invalid compressed file format"));
+               }
+            },
+            error(err) {
+               reject(err.message);
+            },
+         });
+      });
+   }
+   
 
 
    /**
@@ -210,7 +244,6 @@ class FileStorage extends EventEmitter {
             });
       });
    }
-
 
    /**
     * Delete all stored files.

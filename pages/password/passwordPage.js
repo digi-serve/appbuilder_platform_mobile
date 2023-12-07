@@ -19,7 +19,7 @@ export default class PasswordPage extends Page {
       super(
          "password-page",
          "lib/platform/pages/password/password.html",
-         "lib/platform/pages/password/password.css"
+         "lib/platform/pages/password/password.css",
       );
    }
 
@@ -40,11 +40,37 @@ export default class PasswordPage extends Page {
       storage.get("__sdc_initialized").then((value) => {
          // Reveal the SETUP screen for first time use,
          if (value != 1) {
-            this.startChecking();
-            this.$setup.show();
-         }
-         // or the SECURITY CHECK screen after that.
-         else {
+            // Detects if device is on iOS
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            const isIos = () => {
+               return /iphone|ipad|ipod/.test(userAgent);
+            };
+            // detect if in chrome
+            if (/crios/.test(userAgent)) {
+               this.$("div.use-chrome-warning").hide();
+               this.$("div.ios-instruct").hide();
+               this.$("div.chrome-install-instructions").show();
+            } else {
+               this.$("div.use-chrome-warning").show();
+               this.$("div.chrome-install-instructions").hide();
+               this.$("div.safari-install-instructions").show();
+            }
+            
+            // Detects if device is in standalone mode
+            const isInStandaloneMode = () =>
+               "standalone" in window.navigator && window.navigator.standalone;
+            // Show install instructions
+            if (isIos() && !isInStandaloneMode()) {
+               this.$("div.ios-instruct").show();
+            } else {
+               this.startChecking();
+               this.$setup.show();
+               // if the user is on iOS and Safari, and it is their first time using the app,
+               // show a message explaining that they should use Chrome.
+               // class: use-chrome-warning
+               
+            }
+         } else {
             this.$unlock.show();
          }
       });
@@ -98,14 +124,12 @@ export default class PasswordPage extends Page {
             "<t>Are you sure?</t>",
             () => {
                analytics.event("reset data");
-               Promise.all([
-                  storage.clearAll(),
-                  fileStorage.deleteAll()
-               ])
-                  .then(() => {
+               Promise.all([storage.clearAll(), fileStorage.deleteAll()]).then(
+                  () => {
                      document.location.reload();
-                  });
-            }
+                  },
+               );
+            },
          );
       });
 
@@ -214,12 +238,7 @@ export default class PasswordPage extends Page {
 
       // scanner has position absolute, so it doesn't center naturally
       // like the password box.
-      $scanner.width(
-         $scanner
-            .siblings("input")
-            .eq(0)
-            .outerWidth()
-      );
+      $scanner.width($scanner.siblings("input").eq(0).outerWidth());
       $scanner.css("left", parseInt($password.css("margin-left")) - 15);
 
       // trigger CSS animation

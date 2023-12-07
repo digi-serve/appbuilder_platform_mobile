@@ -9,8 +9,15 @@
 
 import EventEmitter from "eventemitter2";
 //import "./Countly.js"; // copied from Countly cordova plugin
-// import * as version from "../../../../version.js";
-const VERSION = require("../../../../version.js");
+let version;
+try {
+   version = VERSION;
+   /* global VERSION */
+   /* Version from package.json. Set by the DefinePlugin in webpack. */
+} catch (err) {
+   console.warn("VERSION variable not found");
+}
+
 console.log("Sentry.io plugin begin require/init");
 var sentry = require("@sentry/browser");
 var Countly = require("countly-sdk-web");
@@ -35,7 +42,7 @@ class Analytics extends EventEmitter {
             sentry.init({
                dsn: process?.env?.SENTRY_DEV_DSN || config.sentryio.dsn, // "https://9df6fd4623934fadb4a9ee6bb6ec887f@sentry.io/1186956",
                debug: true,
-               release: VERSION.version || null,
+               release: version,
             });
             console.log("Sentry.io plugin initilized");
             this.sentry = sentry;
@@ -55,7 +62,7 @@ class Analytics extends EventEmitter {
          //track web page views automatically (recommended)
          Countly.q.push(["track_pageview"]);
 
-         const features = ["sessions", "views", "crashes", "events"];
+         // const features = ["sessions", "views", "crashes", "events"];
          try {
             Countly.init({
                url: config.countly.url,

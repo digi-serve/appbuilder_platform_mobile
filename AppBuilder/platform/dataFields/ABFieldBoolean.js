@@ -7,8 +7,4 @@
 
 var ABFieldBooleanCore = require("../../core/dataFields/ABFieldBooleanCore");
 
-module.exports = class ABFieldBoolean extends ABFieldBooleanCore {
-   constructor(attributes, object) {
-      super(attributes, object);
-   }
-};
+module.exports = class ABFieldBoolean extends ABFieldBooleanCore {};

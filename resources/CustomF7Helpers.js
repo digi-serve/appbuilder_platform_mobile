@@ -1,4 +1,5 @@
-import Applications from "../../applications/applications.js";
+// import Applications from "../../applications/applications.js";
+import getAppPage from "../pages/app/appPage.js";
 
 ("use strict");
 
@@ -7,10 +8,10 @@ if (typeof Template7 == "undefined") {
    throw new Error("Template7 is required to build helpers");
 }
 
-// Applications is required...imported above
-if (typeof Applications == "undefined") {
-   throw new Error("Applications is required to build helpers");
-}
+// // Applications is required...imported above
+// if (typeof Applications == "undefined") {
+//    throw new Error("Applications is required to build helpers");
+// }
 
 // moment is required
 if (typeof moment == "undefined") {
@@ -18,13 +19,27 @@ if (typeof moment == "undefined") {
 }
 
 // Helper to display object properties that have two or more word names
-// ex: {{print parent 'object'}}
+// ex: {{print parent 'object'}}\
+/* global Template7 */
 Template7.registerHelper("print", (parent, object, alternateObject) => {
    if (!parent) {
       return "";
    }
    var result = parent[object] ? parent[object] : parent[alternateObject];
    return typeof result != "undefined" ? result : "";
+});
+
+// Helper to display object property that have two or more word names
+// in a HTML friendly way. replace spaces with underscores
+// ex: {{print parent 'object'}}\
+// "Pu Juan" becomes "Pu_Juan"
+/* global Template7 */
+Template7.registerHelper("printHTML", (parent, object, alternateObject) => {
+   if (!parent) {
+      return "";
+   }
+   var result = parent[object] ? parent[object] : parent[alternateObject];
+   return typeof result != "undefined" ? result.replace(/ /g, "_") : "";
 });
 
 // Helper to format date string into usable date Information
@@ -36,6 +51,7 @@ Template7.registerHelper("date", (parent, object, template) => {
    if (typeof template == "string") {
       temp = template;
    }
+   /* global moment */
    return moment(parent[object]).format(temp);
 });
 
@@ -53,16 +69,14 @@ Template7.registerHelper("initial", (parent, object, alternateObject) => {
 // ex: {{listItem 'app' 'obj' 'item' selected}}
 Template7.registerHelper(
    "listItem",
-   (app, obj, item, selected, language_code) => {
-      var thisApp = Applications.filter((x) => {
-         return (x.id = app);
-      })[0];
+   (appID, obj, item, selected, language_code) => {
+      const app = getAppPage().getApplicationByID(appID);
 
       // this is a sample of how we populate list options
-      var list = thisApp.listItems(
+      var list = app.listItems(
          obj,
          item,
-         language_code || thisApp.application.languageDefault()
+         language_code || app.application.languageDefault()
       );
 
       if (selected[item]) {
@@ -85,45 +99,42 @@ Template7.registerHelper(
 // %selected% will return selected='selected' if you are using this in a select input
 // %label% will return the translated label of the option
 // %id% will return the id/value of the option
-Template7.registerHelper("listItems", (app, obj, item, selected, template) => {
-   var thisApp = Applications.filter((x) => {
-      return (x.id = app);
-   })[0];
+Template7.registerHelper(
+   "listItems",
+   (appID, obj, item, selected, template) => {
+      const app = getAppPage().getApplicationByID(appID);
 
-   // this is a sample of how we populate list options
-   var list = thisApp.listItems(
-      obj,
-      item,
-      thisApp.application.languageDefault()
-   );
+      // this is a sample of how we populate list options
+      var list = app.listItems(obj, item, app.application.languageDefault());
 
-   // If data is selected, get text
-   if (selected && selected[item]) {
-      var selectedItem = selected[item];
+      // If data is selected, get text
+      if (selected && selected[item]) {
+         var selectedItem = selected[item];
 
-      var chosen = list.filter((p) => {
-         return p.id == selectedItem;
-      })[0];
+         var chosen = list.filter((p) => {
+            return p.id == selectedItem;
+         })[0];
+      }
+
+      if (list.length) {
+         var html = "";
+         list.forEach((l) => {
+            var selectedAttr = "";
+            if (chosen && chosen.id == l.id) {
+               selectedAttr = "selected='selected'";
+            }
+            html += template
+               .replace(/%label%/g, l.label)
+               .replace(/%name%/g, l.name)
+               .replace(/%id%/g, l.id)
+               .replace(/%selected%/g, selectedAttr);
+         });
+         return html;
+      } else {
+         return [];
+      }
    }
-
-   if (list.length) {
-      var html = "";
-      list.forEach((l) => {
-         var selectedAttr = "";
-         if (chosen && chosen.id == l.id) {
-            selectedAttr = "selected='selected'";
-         }
-         html += template
-            .replace(/%label%/g, l.label)
-            .replace(/%name%/g, l.name)
-            .replace(/%id%/g, l.id)
-            .replace(/%selected%/g, selectedAttr);
-      });
-      return html;
-   } else {
-      return [];
-   }
-});
+);
 
 // Translate text that our Translate.js cannot
 // ex: {{L 'text'}}
@@ -133,12 +144,13 @@ Template7.registerHelper("L", (text) => {
 
 // Helper to get the translated value of a field that was a select list
 // ex: {{listItem 'app' 'obj' 'item' selected}}
-Template7.registerHelper("translate", (app, obj, item) => {
-   var thisApp = Applications.filter((x) => {
-      return (x.id = app);
-   })[0];
+Template7.registerHelper("translate", (appID, obj, item) => {
+   const app = getAppPage().getApplicationByID(appID);
+   // var thisApp = Applications.filter((x) => {
+   //    return (x.id = app);
+   // })[0];
 
-   var lang = thisApp.application.languageDefault();
+   var lang = app.application.languageDefault();
 
    if (!obj || !obj.translations || !obj.translations.length) return "";
 
@@ -155,11 +167,31 @@ Template7.registerHelper("translate", (app, obj, item) => {
 
 // create a helper in template7 so we can properly display numbers with commas
 Template7.registerHelper("commas", (parent, field) => {
+   // check all fields and return 0 if undefined
+   if (!parent || (!field && typeof parent != "number")) {
+      console.error("commas helper: parent or field is undefined!");
+      return "0";
+   }
    var number = field ? parent[field] : parent;
    if (number === undefined || number === null) {
       return "0";
    }
    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+});
+
+// set number to absolute value before displaying
+Template7.registerHelper("commasAbs", (parent, field) => {
+   // check all fields and return 0 if undefined
+   if (!parent || (!field && typeof parent != "number")) {
+      console.error("commas helper: parent or field is undefined!");
+      return "0";
+   }
+   var number = field ? parent[field] : parent;
+   if (number === undefined || number === null) {
+      return "0";
+   }
+   let absoluteNum = Math.abs(Number(number));
+   return absoluteNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 });
 
 Template7.registerHelper("cities", (cities, selected) => {

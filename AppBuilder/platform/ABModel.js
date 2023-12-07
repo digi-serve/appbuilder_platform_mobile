@@ -45,10 +45,6 @@ var ABModelRelay = require("./ABModelRelay");
 // });
 
 module.exports = class ABModel extends ABModelCore {
-   constructor(object) {
-      super(object);
-   }
-
    local() {
       var newModel = new ABModelLocal(this.object);
       newModel.contextKey(this.responseContext.key);
@@ -69,141 +65,6 @@ module.exports = class ABModel extends ABModelCore {
       return this.relay();
    }
 
-   //   	getLocalData() {
-
-   // 		var storage = AB.Platform.storage;
-   // 		return storage.get(this.object.name)
-   // 			.then((allObjects)=>{
-
-   // 				allObjects = allObjects || {};
-   // 				return allObjects;
-   // 			})
-   //   	}
-
-   //   	saveLocalData(allObjects) {
-   // 		var storage = AB.Platform.storage;
-   // 		return storage.set(this.object.name, allObjects);
-   //   	}
-
-   //   	localStorageCreate(data) {
-
-   //   		var UUID = this.object.fieldUUID();
-   //   		return this.getLocalData()
-   // 			.then((allObjects) =>{
-
-   // 				// if current data item is not in allObjects, add it:
-   // 				if (!allObjects[data[UUID]]) {
-   // 					allObjects[data[UUID]] = data;
-   // 				}
-
-   // 				return allObjects;
-   // 			})
-   // 			.then((allObjects)=>{
-
-   // 				// make sure our copy of the data has all the fields in
-   // 				// the incoming data:
-
-   // 				var ours = allObjects[data[UUID]];
-   // 				for (var d in data) {
-   // 					if (!ours[d]) {
-   // 						ours[d] = data[d];
-   // 					}
-   // 				}
-
-   // 				return allObjects;
-   // 			})
-   // 			.then((allObjects)=>{
-   // 				return this.saveLocalData(allObjects);
-   // 			})
-   //   	}
-
-   //   	localStorageDestroy(id) {
-
-   //   		var UUID = this.object.fieldUUID();
-   //   		return this.getLocalData()
-   // 			.then((allObjects)=>{
-
-   // 				// if this is a UUID:
-   // 				if (parseInt(id) == NaN) {
-   // 					delete allObjects[id]
-   // 				} else {
-   // 					var PK = this.object.PK();
-
-   // 					// search the objects and remove one with matching PK
-   // 					var newList = {};
-   // 					for(var o in allObjects) {
-   // 						var obj = allObjects[o];
-   // 						if (obj[PK] != id) {
-   // 							newList[obj[UUID]] = obj;
-   // 						}
-   // 					}
-   // 					allObjects = newList;
-   // 				}
-
-   // 				return this.saveLocalData(allObjects);
-   // 			})
-   //   	}
-
-   //   	// make sure we locally store these values
-   //   	localStorageStore(allData) {
-
-   //   		var UUID = this.object.fieldUUID();
-
-   //   		if (!Array.isArray(allData)) allData = [allData];
-
-   //   		return this.getLocalData()
-   // 			.then((allObjects) =>{
-
-   // 				allData.forEach((data)=>{
-
-   // 					// if data doesn't have our UUID we can't track it:
-   // 					if (!data[UUID]) return;
-
-   // 					// if entry doesn't already exist, then add it:
-   // 					if (!allObjects[data[UUID]]) {
-   // 						allObjects[data[UUID]] = data;
-   // 					}
-
-   // 				})
-
-   // 				return allObjects;
-   // 			})
-   // 			.then((allObjects)=>{
-   // 				return this.saveLocalData(allObjects);
-   // 			})
-   //   	}
-
-   //   	// update an entry IF WE CURRENTLY track it locally
-   //   	localStorageUpdate(data) {
-
-   //   		var UUID = this.object.fieldUUID();
-
-   //   		// we can't resolve this entry if it doesn't have our UUID
-   //   		if (!data[UUID]) return;
-
-   //   		return this.getLocalData()
-   // 			.then((allObjects) =>{
-
-   // //// TODO:  be smarter here.  just because we get updated of an updated
-   // //// value from the server, doesn't mean it's more important than our value.
-
-   // 				// if current data item is currently one we track
-   // 				if (allObjects[data[UUID]]) {
-
-   // 					// update currentValue with the values provided in data
-   // 					var currentValue = allObjects[data[UUID]];
-   // 					for (var d in data) {
-   // 						currentValue[d] = data[d];
-   // 					}
-   // 				}
-
-   // 				return allObjects;
-   // 			})
-   // 			.then((allObjects)=>{
-   // 				return this.saveLocalData(allObjects);
-   // 			})
-   //   	}
-
    /**
     * @method create
     * update model values on the server.
@@ -213,7 +74,7 @@ module.exports = class ABModel extends ABModelCore {
 
       // make sure any values we create have a UUID field set:
       var UUID = this.object.fieldUUID(values);
-      if (!values[UUID]) values[UUID] = this.object.application.uuid();
+      if (!values[UUID]) values[UUID] = this.AB.uuid();
 
       return (
          Promise.resolve()
@@ -237,7 +98,7 @@ module.exports = class ABModel extends ABModelCore {
 
             .then(() => {
                // get a list of each connected object
-               var connFields = this.object.connectFields(true);
+               var connFields = this.object.connectFields();
                // for each object
                connFields.forEach((field) => {
                   // get the current value associated with that object and stop if there is none
@@ -246,18 +107,16 @@ module.exports = class ABModel extends ABModelCore {
                      // get that ABObject
                      var connectedObj = field.datasourceLink;
                      // search loaded datacollections to see if they contain the connectedObj
-                     connectedObj.application
-                        .datacollections()
-                        .forEach((dc) => {
-                           // if datacollection has a datasource and its id matches the connectedObj
-                           if (
-                              dc.datasource &&
-                              dc.datasource.id == connectedObj.id
-                           ) {
-                              // tell it to load data
-                              dc.loadData();
-                           }
-                        });
+                     connectedObj.AB.datacollections().forEach((dc) => {
+                        // if datacollection has a datasource and its id matches the connectedObj
+                        if (
+                           dc.datasource &&
+                           dc.datasource.id == connectedObj.id
+                        ) {
+                           // tell it to load data
+                           dc.loadData();
+                        }
+                     });
                   }
                });
             })
@@ -321,7 +180,7 @@ module.exports = class ABModel extends ABModelCore {
                return [];
             });
          })
-         .then((remoteData) => {
+         .then((/* remoteData */) => {
             // if we are supposed to work with local data:
             // 	then make the local request and return the data
             // else
@@ -357,7 +216,7 @@ module.exports = class ABModel extends ABModelCore {
    update(id, values) {
       this.prepareMultilingualData(values);
 
-      values.updated_at = this.object.application.updatedAt();
+      // values.updated_at = this.object.application.updatedAt();
 
       // remove empty properties
       for (var key in values) {
@@ -368,9 +227,9 @@ module.exports = class ABModel extends ABModelCore {
          Promise.resolve()
 
             .then(() => {
-               this.object.application.datacollections().forEach((dc) => {
+               this.AB.datacollections().forEach((dc) => {
                   // if datacollection has a datasource and its id matches the connectedObj
-                  if (dc.datasource && dc.datasource.id == this.object.id) {
+                  if (dc.datasource?.id == this.object.id) {
                      // tell it to load data
                      if (dc.__dataCollection.exists(id)) {
                         var entry = dc.__dataCollection.getItem(id);
@@ -383,7 +242,7 @@ module.exports = class ABModel extends ABModelCore {
                      dc.loadDataDelayed();
                   }
                   // if the datacollection has a field of the objecte we updated we need to update interval
-                  if (dc.model && dc.model.object) {
+                  if (dc.model?.object) {
                      dc.model.object.fields().forEach((f) => {
                         if (
                            f.datasourceLink &&

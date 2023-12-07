@@ -17,9 +17,9 @@ import Busy from "../../resources/Busy.js";
 import camera from "../../resources/Camera.js";
 import log from "../../resources/Log.js";
 import Network from "../../resources/Network.js";
-import notifications from "../../resources/Notifications.js";
+import qrPage from "../qrScanner/qrScanner.js";
 import Shake from "shake.js";
-import { storage, Storage } from "../../resources/Storage.js";
+import { storage /*, Storage */ } from "../../resources/Storage.js";
 import updater from "../../resources/Updater.js";
 import config from "../../../config/config.js";
 
@@ -33,11 +33,12 @@ const Logger = new Logs();
 
 import SettingsComponent from "../settings/settings.js";
 
-export default class AppPage extends Page {
+export class AppPage extends Page {
    /**
     */
-   constructor() {
-      super("opstool-app", "lib/platform/pages/app/app.html");
+   constructor(AB) {
+      super("sdc-app", "lib/platform/pages/app/app.html");
+      this.AB = AB;
 
       // For console debugging only. Don't use these in the app like this.
       // window.appPage = this;
@@ -52,15 +53,48 @@ export default class AppPage extends Page {
          },
          false
       );
+      // handle back button clicks
+      var backPresses = 0;
+      var maxBackPresses = 3;
+      function handleBackButton() {
+         if (backPresses >= maxBackPresses) {
+            window.history.back();
+         } else {
+            window.history.pushState({}, "");
+         }
+      }
+      window.addEventListener("load", function () {
+         window.history.pushState({ noBackExitsApp: true }, "");
+      });
+      window.addEventListener("popstate", function (event) {
+         if (event.state && event.state.noBackExitsApp) {
+            window.history.pushState({ noBackExitsApp: true }, "");
+         } else {
+            backPresses++;
+            handleBackButton();
+         }
+      });
 
       this.storage = storage;
       this.templates = {};
       this.components = {};
-      this.applications = ABApplicationList;
+      this.applications = ABApplicationList.map((App) => new App(AB));
       this.dataReady = $.Deferred();
       this.routerReady = $.Deferred();
 
-      var updateOnLogin = localStorage.getItem("updateOnLogin");
+      // if this is null, don't crash the entire app:
+      // var updateOnLogin = localStorage.getItem("updateOnLogin");
+      var updateOnLogin = null;
+      try {
+         updateOnLogin = localStorage.getItem("updateOnLogin") ?? true;
+         // if (updateOnLogin == null) {
+         //    localStorage.setItem("updateOnLogin", "true");
+         //    updateOnLogin = true;
+         // }
+      } catch (e) {
+         console.error("WARNING localStorage not available!");
+         updateOnLogin = "true";
+      }
       if (updateOnLogin == "true") {
          this.updateOnLogin = true;
       } else if (updateOnLogin == "false") {
@@ -111,15 +145,7 @@ export default class AppPage extends Page {
                //     });
                // },
                // return the ABApplication matching the given .id
-               getApplication: (id) => {
-                  var mApp = this.applications.find((a) => {
-                     return a.ID == id || a.application.ID == id;
-                  });
-                  if (mApp) {
-                     return mApp;
-                  }
-                  return null;
-               },
+               getApplication: (id) => this.getApplicationByID(id),
             };
          },
 
@@ -163,49 +189,104 @@ export default class AppPage extends Page {
 
    /**
     * Check to see if the user account is present.
-    * 
-    * First check device storage for the authToken, if not then scan the URL 
+    *
+    * First check device storage for the authToken, if not then scan the URL
     * for magic link containing a pre-token.
     * e.g. https://example.com/#JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
-    * 
+    *
     * The pre-token is embedded in the hash fragment of the URL, which is never
     * transmitted to the webserver. (It is sent to the MCC server at a later
     * step.)
-    * 
-    * We will use the pre-token to register a new authToken for the user 
+    *
+    * We will use the pre-token to register a new authToken for the user
     * account.
-    * 
+    *
     * @return {Promise}
     */
    checkAccount() {
-      return account.getAuthToken()
-         .then((authToken) => {
-            // User account found on device
-            if (authToken) return true;
-            // Check the URL for magic link pre-token
-            else {
-               let hash = String(document.location.hash);
-               // J.R.R. Token
-               let jrrMatch = hash.match(/JRR=(\w+)/);
-               // Tenant UUID
-               let tenantMatch = hash.match(/tenant=(\w+)/) || {};
-               // Remove tokens from current URL, for bookmarkability
-               window.history.replaceState(null, null, "#");
+      return account.getAuthToken().then((authToken) => {
+         // User account found on device
+         if (authToken) return true;
+         // Check the URL for magic link pre-token
+         else {
+            let hash = String(document.location.hash);
+            // J.R.R. Token
+            let jrrMatch = hash.match(/JRR=(\w+)/);
+            // Tenant UUID
+            let tenantMatch = hash.match(/tenant=(\w+)/) || {};
+            // Remove tokens from current URL, for bookmarkability
+            window.history.replaceState(null, null, "#");
 
-               // No token in URL
-               if (!jrrMatch) {
-                  let err = new Error("No pre-token found");
-                  err.code = "E_NOJRRTOKEN";
-                  return Promise.reject(err);
-               }
-               // Import pre-token from the URL. Generate new authToken.
-               else {
-                  let preToken = jrrMatch[1];
-                  let tenantUUID = tenantMatch[1];
-                  return account.importCredentials(preToken, tenantUUID);
-               }
+            // No token in URL
+            if (!jrrMatch) {
+               let err = new Error("No pre-token found");
+               err.code = "E_NOJRRTOKEN";
+               return Promise.reject(err);
             }
-         })
+            // Import pre-token from the URL. Generate new authToken.
+            else {
+               let preToken = jrrMatch[1];
+               let tenantUUID = tenantMatch[1];
+               return account.importCredentials(preToken, tenantUUID);
+            }
+         }
+      });
+   }
+
+   /**
+    * update with a new user account
+    *
+    * we will be given the authToken and tenantUUID from the QR code
+    * e.g. https://example.com/#JRR=058b3d5d8c9f33dc2545f2d5e804b4fd
+    * -> authToken = 058b3d5d8c9f33dc2545f2d5e804b4fd,
+    *
+    * The pre-token is embedded in the hash fragment of the URL, which is never
+    * transmitted to the webserver. (It is sent to the MCC server at a later
+    * step.)
+    *
+    * We will use the pre-token to register a new authToken for the user
+    * account.
+    *
+    * @return {Promise}
+    */
+   updateAccount(authToken, tenantUUID) {
+      // check both variables to be sure they are safe strings
+      // check for sql symbols
+      let sqlCheck = /['";]/;
+      if (sqlCheck.test(authToken) || sqlCheck.test(tenantUUID)) {
+         let err = new Error("Invalid authToken or tenantUUID");
+         err.code = "E_BADAUTHTOKEN";
+         return Promise.reject(err);
+      }
+
+      // No token in URL
+      if (!authToken) {
+         let err = new Error("No pre-token found");
+         err.code = "E_NOJRRTOKEN";
+         return Promise.reject(err);
+      }
+      // Import pre-token from the URL. Generate new authToken.
+      else {
+         // importCredentials then refresh the page
+         return Promise.all([
+            account
+               .importCredentials(authToken, tenantUUID)
+               .then(() => {
+                  this.fetchApplicationData({ refreshPage: true });
+               })
+               .catch((err) => {
+                  console.log(err);
+               }),
+         ]);
+      }
+   }
+
+   getApplicationByID(id) {
+      return (
+         this.applications.find((a) => {
+            return a.ID == id || a.application.ID == id;
+         }) ?? null
+      );
    }
 
    /**
@@ -220,7 +301,8 @@ export default class AppPage extends Page {
          );
       }, 10000);
 
-      account.init({ app: this.app })
+      account
+         .init({ app: this.app })
          .then(() => {
             // Load account authToken
             return this.checkAccount();
@@ -297,7 +379,12 @@ export default class AppPage extends Page {
                   analytics.logError(err);
                   break;
             }
-            this.dataReady.reject();
+            // this.dataReady.reject();
+            return Promise.all([this.components["settings"].dataReady]).then(
+               () => {
+                  this.dataReady.resolve();
+               }
+            );
          });
    }
 
@@ -305,6 +392,16 @@ export default class AppPage extends Page {
     * Initialize things that depend on the DOM
     */
    init() {
+      // This was needed in the past because the QR code scanner could
+      // remain active even after the app reloaded.
+      qrPage.hide();
+
+      // When the QR code scanner page is closed after completing a scan,
+      // show this app page again.
+      qrPage.on("hide", () => {
+         this.show();
+      });
+
       this.dataReady.done(() => {
          this.begin();
       });
@@ -343,7 +440,6 @@ export default class AppPage extends Page {
             analytics.logError(err);
          });
       });
-
 
       // After QR code / deep link import, restart the AB Applications
       account.on("imported", (importState) => {
@@ -407,7 +503,6 @@ export default class AppPage extends Page {
          false
       );
    }
-
 
    /**
     * @method defaultRoute
@@ -568,14 +663,23 @@ export default class AppPage extends Page {
       this.openRelayLoader("<t>Updating Data</t>");
 
       // Show message if it takes too long
+      var warnUI = setTimeout(() => {
+         this.app.dialog.toast(
+            "<t>Data update is taking a long time...</t>",
+            "<t>Sorry</t>"
+         );
+         // analytics.log("warn (45 secs) during fetchApplicationData()");
+      }, 45000);
+
+      // Show message if it takes too long
       var waitToClose = setTimeout(() => {
          this.closeRelayLoader();
          this.app.dialog.alert(
             "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
             "<t>Sorry</t>"
          );
-         analytics.log("Timeout (45 secs) during fetchApplicationData()");
-      }, 45000);
+         analytics.log("Timeout (90 secs) during fetchApplicationData()");
+      }, 90000);
 
       // track all the inits in progress:
       var allInits = [];
@@ -588,6 +692,7 @@ export default class AppPage extends Page {
       // listen for when inits are complete
       return Promise.all(allInits)
          .then(() => {
+            clearTimeout(warnUI);
             clearTimeout(waitToClose);
             this.closeRelayLoader();
 
@@ -597,6 +702,7 @@ export default class AppPage extends Page {
          })
          .catch((err) => {
             this.closeRelayLoader();
+            // clearTimeout(warnUI);
             clearTimeout(waitToClose);
             console.log(err.message);
             console.log(err.stack);
@@ -700,4 +806,11 @@ export default class AppPage extends Page {
          appFeedback.close();
       }
    }
+}
+
+// Singleton
+let instance;
+export default function getAppPage(...args) {
+   if (!instance) instance = new AppPage(...args);
+   return instance;
 }

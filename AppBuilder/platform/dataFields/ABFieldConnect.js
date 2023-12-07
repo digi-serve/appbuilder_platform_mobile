@@ -7,8 +7,4 @@
 
 var ABFieldConnectCore = require("../../core/dataFields/ABFieldConnectCore");
 
-module.exports = class ABFieldConnect extends ABFieldConnectCore {
-   constructor(attributes, object) {
-      super(attributes, object);
-   }
-};
+module.exports = class ABFieldConnect extends ABFieldConnectCore {};

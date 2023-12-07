@@ -8,46 +8,9 @@
 var ABModelCore = require("../core/ABModelCore");
 var storage = require("../../resources/Storage").storage;
 
-// /**
-//  * @method triggerEvent
-//  * Publish a event when data in the model is changed
-//  *
-//  * @param {string} action - create, update, delete
-//  * @param {ABObject} object
-//  * @param {*} data
-//  */
-// function triggerEvent(action, object, data) {
-
-// 	// Trigger a event to data collections of application and the live display pages
-// 	AD.comm.hub.publish('ab.datacollection.' + action, {
-// 		objectId: object.id,
-// 		data: data
-// 	});
-
-// }
-
-// // Start listening for server events for object updates and call triggerEvent as the callback
-// io.socket.on("ab.datacollection.create", function (msg) {
-//   triggerEvent("create", {id:msg.objectId}, msg.data);
-// });
-
-// io.socket.on("ab.datacollection.delete", function (msg) {
-//   triggerEvent("delete", {id:msg.objectId}, msg.id);
-// });
-
-// io.socket.on("ab.datacollection.stale", function (msg) {
-//   triggerEvent("stale", {id:msg.objectId}, msg.data);
-// });
-
-// io.socket.on("ab.datacollection.update", function (msg) {
-//   triggerEvent("update", {id:msg.objectId}, msg.data);
-// });
+var merge = require("lodash/merge");
 
 module.exports = class ABModelLocal extends ABModelCore {
-   constructor(object) {
-      super(object);
-   }
-
    /**
     * platformInit
     * make sure we are ready for operation on this platform.
@@ -60,8 +23,6 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    platformInit() {
       return new Promise((resolve, reject) => {
-         // var storage = AB.Platform.storage;
-
          var lock = this.lock();
          lock
             .acquire()
@@ -98,8 +59,6 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    platformReset() {
       return new Promise((resolve, reject) => {
-         // var storage = AB.Platform.storage;
-
          var lock = this.lock();
          lock
             .acquire()
@@ -133,7 +92,6 @@ module.exports = class ABModelLocal extends ABModelCore {
     *			{ uuid: {obj1}, uuid2:{obj2} }
     */
    getLocalData() {
-      // var storage = AB.Platform.storage;
       return storage.get(this.refStorage()).then((allObjects) => {
          allObjects = allObjects || {};
          return allObjects;
@@ -141,56 +99,55 @@ module.exports = class ABModelLocal extends ABModelCore {
    }
 
    saveLocalData(allObjects) {
-      // var storage = AB.Platform.storage;
       return storage.set(this.refStorage(), allObjects);
    }
 
    localStorageCreate(data) {
-      var UUID = this.object.fieldUUID(data);
+      // this performs the same as saveNew, but for a single record: so send to saveNew()
+      this.saveNew([data]);
+      // var UUID = this.object.fieldUUID(data);
 
-      var lock = this.lock();
-      return lock
-         .acquire()
-         .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageCreate start', allData);
-            return this.getLocalData();
-         })
-         .then((allObjects) => {
-            // if current data item is not in allObjects, add it:
-            if (!allObjects[data[UUID]]) {
-               allObjects[data[UUID]] = data;
-            }
+      // var lock = this.lock();
+      // return lock
+      //    .acquire()
+      //    .then(() => {
+      //       return this.getLocalData();
+      //    })
+      //    .then((allObjects) => {
+      //       // if current data item is not in allObjects, add it:
+      //       if (!allObjects[data[UUID]]) {
+      //          allObjects[data[UUID]] = data;
+      //       }
 
-            return allObjects;
-         })
-         .then((allObjects) => {
-            // make sure our copy of the data has all the fields in
-            // the incoming data:
+      //       return allObjects;
+      //    })
+      //    .then((allObjects) => {
+      //       // make sure our copy of the data has all the fields in
+      //       // the incoming data:
 
-            var ours = allObjects[data[UUID]];
-            for (var d in data) {
-               // Question: do we store __relation  fields?
-               // if (d.indexOf('__relation') == -1) {
+      //       var ours = allObjects[data[UUID]];
+      //       for (var d in data) {
+      //          // Question: do we store __relation  fields?
+      //          // if (d.indexOf('__relation') == -1) {
 
-               if (!ours[d]) {
-                  ours[d] = data[d];
-               }
-               // }
-            }
+      //          if (!ours[d]) {
+      //             ours[d] = data[d];
+      //          }
+      //          // }
+      //       }
 
-            return allObjects;
-         })
-         .then((allObjects) => {
-            return this.saveLocalData(allObjects);
-         })
-         .then((returnValue) => {
-            // console.log('--- '+this.refStorage()+'.localStorageCreate end', data);
-            lock.release();
-            return returnValue || data;
-         })
-         .catch((err) => {
-            lock.release();
-         });
+      //       return allObjects;
+      //    })
+      //    .then((allObjects) => {
+      //       return this.saveLocalData(allObjects);
+      //    })
+      //    .then((returnValue) => {
+      //       lock.release();
+      //       return returnValue || data;
+      //    })
+      //    .catch((/* err */) => {
+      //       lock.release();
+      //    });
    }
 
    localStorageDestroy(id) {
@@ -203,22 +160,33 @@ module.exports = class ABModelLocal extends ABModelCore {
             return this.getLocalData();
          })
          .then((allObjects) => {
+            // TODO use this.object.fieldUUID() to get the field name of the UUID
             // if this is a UUID:
-            if (isNaN(parseInt(id)) || (id.indexOf && id.indexOf("-") > -1)) {
-               for (var o in allObjects) {
-                  var obj = allObjects[o];
-                  if (obj.uuid == id) {
-                     delete allObjects[o];
+            if (this.isUUID(id)) {
+               // if we can quickly locate the entry, remove it:
+               if (allObjects[id]) {
+                  console.log(
+                     "ABModelLocal.js: localStorageDestroy(): removing entry::",
+                     id,
+                     allObjects[id]
+                  );
+                  delete allObjects[id];
+               } else {
+                  // else we need to search for it:
+                  for (let o in allObjects) {
+                     let obj = allObjects[o];
+                     if (obj.uuid == id) {
+                        delete allObjects[o];
+                     }
                   }
                }
-               // allObjects = allObjects.filter((o)=>{ return o.uuid != id;});
             } else {
                var PK = this.object.PK();
 
                // search the objects and remove one with matching PK
                var newList = {};
-               for (var o in allObjects) {
-                  var obj = allObjects[o];
+               for (let o in allObjects) {
+                  let obj = allObjects[o];
                   if (obj[PK] != id) {
                      newList[obj[UUID]] = obj;
                   }
@@ -239,10 +207,20 @@ module.exports = class ABModelLocal extends ABModelCore {
          });
    }
 
+   isUUID(str) {
+      const uuidPattern =
+         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidPattern.test(str);
+   }
+
    // make sure we locally store these values
    localStorageStore(allData) {
-      // Transition: move to .saveNew()
-      return this.saveNew(allData);
+      console.error(
+         "who is calling ABModelLocal.localStorageStore()?",
+         allData
+      );
+      // only keep if newer
+      return this.updateNewer(allData);
    }
 
    // update an entry IF WE CURRENTLY track it locally
@@ -256,12 +234,12 @@ module.exports = class ABModelLocal extends ABModelCore {
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageUpdate start', data);
             return this.getLocalData();
          })
          .then((allObjects) => {
             //// TODO:  be smarter here.  just because we get updated of an updated
             //// value from the server, doesn't mean it's more important than our value.
+            // this should only accessed when editing entries locally: from a form
 
             // if current data item is currently one we track
             var foundEntry = null;
@@ -283,7 +261,6 @@ module.exports = class ABModelLocal extends ABModelCore {
             return this.saveLocalData(allObjects);
          })
          .then((returnValue) => {
-            // console.log('--- '+this.refStorage()+'.localStorageUpdate end', data);
             lock.release();
             return returnValue || data;
          })
@@ -302,9 +279,16 @@ module.exports = class ABModelLocal extends ABModelCore {
 
       // make sure any values we create have a UUID field set:
       var UUID = this.object.fieldUUID(values);
-      if (!values[UUID]) values[UUID] = this.object.application.uuid();
+      if (!values[UUID]) values[UUID] = this.AB.uuid();
 
-      return this.localStorageCreate(values);
+      // ensure values date_updated is set
+      values["updated_at"] = new Date();
+      // since this is new data:
+      values["created_at"] = new Date();
+
+      // this performs the same as saveNew, but for a single record: so send to saveNew()
+      // return this.localStorageCreate(values);
+      return this.saveNew(values);
    }
 
    /**
@@ -321,14 +305,13 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @method findAll
     * performs a data find with the provided condition.
     */
-   findAll(cond) {
-      cond = cond || {};
+   findAll(/* cond */) {
+      // cond = cond || {};
 
       var lock = this.lock();
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageUpdate start', data);
             return this.getLocalData();
          })
          .then((allObjects) => {
@@ -372,10 +355,12 @@ module.exports = class ABModelLocal extends ABModelCore {
       if (!values.uuid) {
          values.uuid = id;
       }
+      // ensure values date_updated is set
+      values["updated_at"] = new Date();
 
-      return this.localStorageUpdate(values).then((data) => {
-          this.normalizeData(values);
-      })
+      return this.localStorageUpdate(values).then((/* data */) => {
+         this.normalizeData(values);
+      });
    }
 
    /**
@@ -394,7 +379,6 @@ module.exports = class ABModelLocal extends ABModelCore {
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore start', allData);
             return this.getLocalData();
          })
          .then((allObjects) => {
@@ -402,7 +386,6 @@ module.exports = class ABModelLocal extends ABModelCore {
             return foundEntry ? true : false;
          })
          .then((returnValue) => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore end', allData);
             lock.release();
             return returnValue;
          })
@@ -432,15 +415,9 @@ module.exports = class ABModelLocal extends ABModelCore {
          // we are being given data from the server
          // but our local data could be more relevant
 
-         // v0.1 initial sync logic
+         // v0.2 initial sync logic
          // save new items, update only newer copies
-         this.saveNew(data)
-            .then(() => {
-               //// TODO: consider a more github like approach that would allow us
-               //// to merge changes together during this process.
-
-               return this.updateNewer(data);
-            })
+         this.updateNewer(data)
             .then(() => {
                // normalize our data before we return it
                this.normalizeData(data);
@@ -462,17 +439,11 @@ module.exports = class ABModelLocal extends ABModelCore {
     *		returns a normalized set of data for this object
     */
    syncRemoteMaster(data) {
-      if (data.data?.length) {
-         console.error("data.data should not be issue here.")
-         data = data.data;
-      }
+      data = this.dataVerify(data);
       return new Promise((resolve, reject) => {
          // this means that we should use whatever the remote gave us:
-         // save new items, then replace existing ones
-         this.saveNew(data)
-            .then(() => {
-               return this.updateExisting(data);
-            })
+         // save new items and replace existing ones
+         this.updateExisting(data)
             .then(() => {
                // normalize our data before we return it
                this.normalizeData(data);
@@ -485,22 +456,18 @@ module.exports = class ABModelLocal extends ABModelCore {
 
    /**
     * saveNew()
-    * only save new entries from the provided set of data.
+    * save ONLY new entries from the provided set of data.
+    * efficiently ONLY add new entries to our local data store.
     * @param {array} allData
     * @return {Promise}
     */
    saveNew(allData) {
-      if (allData.data?.length) {
-         console.error("data.data should not be issue here.")
-         allData = allData.data;
-      }
-      if (!Array.isArray(allData)) allData = [allData];
+      allData = this.dataVerify(allData);
 
       var lock = this.lock();
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore start', allData);
             return this.getLocalData();
          })
          .then((allObjects) => {
@@ -522,7 +489,6 @@ module.exports = class ABModelLocal extends ABModelCore {
             return this.saveLocalData(allObjects);
          })
          .then((returnValue) => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore end', allData);
             lock.release();
             return returnValue;
          })
@@ -535,34 +501,28 @@ module.exports = class ABModelLocal extends ABModelCore {
    /**
     * updateExisting()
     * Overwrite any existing entries with the ones being passed in.
+    * Also adding any non-preexisting entries.
     * @param {array} allData
     * @return {Promise}
     */
    updateExisting(allData) {
-      if (allData.data?.length) {
-         console.error("data.data should not be issue here.")
-         allData = allData.data;
-      }
-      if (!Array.isArray(allData)) allData = [allData];
-
       var lock = this.lock();
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore start', allData);
             return this.getLocalData();
          })
          .then((allObjects) => {
+            // we need to compare these entries to our current data
+
             allData.forEach((data) => {
                var UUID = this.object.fieldUUID(data);
 
                // if data doesn't have our UUID we can't track it:
                if (!data[UUID]) return;
 
-               // if entry DOES exist, then overwrite it:
-               if (allObjects[data[UUID]]) {
-                  allObjects[data[UUID]] = data;
-               }
+               // Create entry, overwriting if one happens to exist
+               allObjects[data[UUID]] = data;
             });
 
             return allObjects;
@@ -571,7 +531,6 @@ module.exports = class ABModelLocal extends ABModelCore {
             return this.saveLocalData(allObjects);
          })
          .then((returnValue) => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore end', allData);
             lock.release();
             return returnValue;
          })
@@ -585,41 +544,63 @@ module.exports = class ABModelLocal extends ABModelCore {
     * updateNewer()
     * Overwrite any existing entries with the ones being passed in IF they
     * are newer than what we have.
+    * default to keeping local data
+    * also add any non-preexisting entries.
     * @param {array} allData
     * @return {Promise}
     */
    updateNewer(allData) {
-      if (allData.data?.length) {
-         console.error("data.data should not be issue here.")
-         allData = allData.data;
-      }
-      if (!Array.isArray(allData)) allData = [allData];
+      allData = this.dataVerify(allData);
 
       var lock = this.lock();
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore start', allData);
             return this.getLocalData();
          })
          .then((allObjects) => {
+            const UUID = this.object.fieldUUID(allData[0]);
             allData.forEach((data) => {
-               var UUID = this.object.fieldUUID(data);
-
                // if data doesn't have our UUID we can't track it:
                if (!data[UUID]) return;
 
                // if data doesn't have an updated_at field, we can't sync it
-               if (typeof data.updated_at == "undefined") return;
+               if (typeof data.updated_at == "undefined") {
+                  console.error(
+                     "!!! error trying to store object: data.updated_at is undefined",
+                     data,
+                     this
+                  );
+                  // assume we keep the local copy
+                  return;
+               }
 
-               // if entry DOES exist, then
+               // if entry DOES exist
                if (allObjects[data[UUID]]) {
-                  // if the new data is later than our current Data
-                  var dataDate = new Date(data.updated_at);
-                  var currDate = new Date(allObjects[data[UUID]].updated_at);
-                  if (dataDate > currDate) {
-                     allObjects[data[UUID]] = data;
+                  var newDate = new Date(data.updated_at);
+
+                  let oldDate = allObjects[data[UUID]].updated_at;
+                  if (!oldDate) {
+                     console.error(
+                        "ABModelLocal.js: updateNewer(): missing updated_at:: ",
+                        allObjects[data[UUID]]
+                     );
+                     return;
                   }
+                  // compare dates
+                  if (newDate > oldDate) {
+                     allObjects[data[UUID]] = data;
+                  } else {
+                     // there may be new information: fold it into the existing record
+                     // use lodash merge
+                     allObjects[data[UUID]] = merge(
+                        allObjects[data[UUID]],
+                        data
+                     );
+                  }
+               } else {
+                  // else add it as new record:
+                  allObjects[data[UUID]] = data;
                }
             });
 
@@ -629,7 +610,6 @@ module.exports = class ABModelLocal extends ABModelCore {
             return this.saveLocalData(allObjects);
          })
          .then((returnValue) => {
-            // console.log('--- '+this.refStorage()+'.localStorageStore end', allData);
             lock.release();
             return returnValue;
          })
@@ -637,6 +617,19 @@ module.exports = class ABModelLocal extends ABModelCore {
             console.error("!!! error trying to store object:", err);
             lock.release();
          });
+   }
+
+   dataVerify(allData) {
+      // TODO this should be unnecessary
+      if (allData.data?.length) {
+         console.error("data.data should not be issue here. @achoobert");
+         allData = allData.data;
+      }
+      if (!Array.isArray(allData)) {
+         console.error("Array data should not be issue here. @achoobert");
+         allData = [allData];
+      }
+      return allData;
    }
 
    refStorage() {

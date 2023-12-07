@@ -7,17 +7,17 @@ import account from "../resources/Account.js";
 
 import LoadingPage from "../pages/loadingPage.js";
 import PasswordPage from "../pages/password/passwordPage.js";
-import AppPage from "../pages/app/appPage.js";
+import getAppPage from "../pages/app/appPage.js";
 
 // Initialize the top level pages.
 var pages = {
    loading: LoadingPage,
    password: null,
-   app: null // will contain all Framework7 sub pages
+   app: null, // will contain all Framework7 sub pages
 };
 
 export default {
-   init: () => {
+   init: async (AB) => {
       // Setup the Password Page
       try {
          pages.password = new PasswordPage();
@@ -32,7 +32,7 @@ export default {
 
       // Setup our Application Page
       try {
-         pages.app = new AppPage();
+         pages.app = getAppPage(AB);
       } catch (err) {
          console.log(err);
          $.alert(
@@ -59,7 +59,7 @@ export default {
          pages.app.show();
       });
 
-      return Promise.resolve(); // nothing async, so just return
+      return pages;
    },
    show: (pageKey) => {
       switch (pageKey) {
@@ -85,5 +85,5 @@ export default {
    consoleDebugging: () => {
       window.appPage = pages.app;
       window.appPage.account = account;
-   }
+   },
 };
