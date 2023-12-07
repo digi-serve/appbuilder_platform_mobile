@@ -71,19 +71,20 @@ class NetworkRest extends EventEmitter {
     * @param {obj} params the request parameters that need to be executed on
     *              the AppBuilder Server
     * @param {obj} jobResponse the callback info for handling the response.
+    * @param {default true boolean} queue if true
     *              {
     *                  key:'unique.key',
     *                  context:{ obj data }
     *              }
     * @return {Promise}
     */
-   post(params, jobResponse) {
+   post(params, jobResponse, queue = true) {
       params.type = params.type || "POST";
       return this._request(params, jobResponse).then((response) => {
          if (jobResponse) {
             this.publishResponse(jobResponse, response);
          }
-         if (response.status != "success") {
+         if (response.status != "success" && queue) {
             this.queue(params, jobResponse);
          }
          return response;
@@ -343,6 +344,10 @@ class NetworkRest extends EventEmitter {
     */
    queue(data, jobResponse) {
       var refQueue = this.refQueue();
+      if (data.url.includes("/mobile/register")) {
+         Log.error("Queueing a QR scan doesn't seem to work...", data);
+         return Promise.resolve();
+      }
 
       return new Promise((resolve, reject) => {
          this.queueLock
@@ -370,7 +375,8 @@ class NetworkRest extends EventEmitter {
                analytics.logError(err);
                reject(err);
 
-               this.queueLock.release();
+               // this may be undefined?
+               this.queueLock?.release();
             });
       });
    }
@@ -415,12 +421,17 @@ class NetworkRest extends EventEmitter {
                   } else {
                      var entry = queue.shift();
                      var params = entry.data;
-                     var job = entry.jobResponse;
-                     this._resend(params, job)
-                        .then(() => {
-                           processRequest(cb);
-                        })
-                        .catch(cb);
+                     // temporarily search the queue for mobile/register
+                     // and skip it if found
+                     // TODO remove this when users don't have to scan QR from within app
+                     if (!params.url.includes("/mobile/register")) {
+                        var job = entry.jobResponse;
+                        this._resend(params, job)
+                           .then(() => {
+                              processRequest(cb);
+                           })
+                           .catch(cb);
+                     }
                   }
                };
 
@@ -458,9 +469,8 @@ class NetworkRest extends EventEmitter {
                Log.error("commAPI queueFlush error", err);
                analytics.logError(err);
 
-               this.queueLock.release().then(() => {
-                  reject(err);
-               });
+               this.queueLock?.release();
+               reject(err);
             });
       });
    }

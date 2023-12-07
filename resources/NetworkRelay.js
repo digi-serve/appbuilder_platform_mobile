@@ -140,6 +140,7 @@ class NetworkRelay extends NetworkRest {
   registerAuthToken(preToken) {
     this.prepare();
     let authToken = NetworkRelay.randomBytes(64);
+    // prevent queueing re-attempt, as mobile/register will only work once
     return super
       .post({
         url: "/mobile/register",
@@ -147,7 +148,7 @@ class NetworkRelay extends NetworkRest {
           pre: preToken,
           new: authToken,
         },
-      })
+      }, null, false)
       .then(() => {
         return authToken;
          })

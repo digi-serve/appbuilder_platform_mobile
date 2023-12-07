@@ -53,6 +53,27 @@ export class AppPage extends Page {
          },
          false
       );
+      // handle back button clicks
+      var backPresses = 0;
+      var maxBackPresses = 3;
+      function handleBackButton() {
+         if (backPresses >= maxBackPresses) {
+            window.history.back();
+         } else {
+            window.history.pushState({}, "");
+         }
+      }
+      window.addEventListener("load", function () {
+         window.history.pushState({ noBackExitsApp: true }, "");
+      });
+      window.addEventListener("popstate", function (event) {
+         if (event.state && event.state.noBackExitsApp) {
+            window.history.pushState({ noBackExitsApp: true }, "");
+         } else {
+            backPresses++;
+            handleBackButton();
+         }
+      });
 
       this.storage = storage;
       this.templates = {};
@@ -61,7 +82,19 @@ export class AppPage extends Page {
       this.dataReady = $.Deferred();
       this.routerReady = $.Deferred();
 
-      var updateOnLogin = localStorage.getItem("updateOnLogin");
+      // if this is null, don't crash the entire app:
+      // var updateOnLogin = localStorage.getItem("updateOnLogin");
+      var updateOnLogin = null;
+      try {
+         updateOnLogin = localStorage.getItem("updateOnLogin") ?? true;
+         // if (updateOnLogin == null) {
+         //    localStorage.setItem("updateOnLogin", "true");
+         //    updateOnLogin = true;
+         // }
+      } catch (e) {
+         console.error("WARNING localStorage not available!");
+         updateOnLogin = "true";
+      }
       if (updateOnLogin == "true") {
          this.updateOnLogin = true;
       } else if (updateOnLogin == "false") {
@@ -630,14 +663,23 @@ export class AppPage extends Page {
       this.openRelayLoader("<t>Updating Data</t>");
 
       // Show message if it takes too long
+      var warnUI = setTimeout(() => {
+         this.app.dialog.toast(
+            "<t>Data update is taking a long time...</t>",
+            "<t>Sorry</t>"
+         );
+         // analytics.log("warn (45 secs) during fetchApplicationData()");
+      }, 45000);
+
+      // Show message if it takes too long
       var waitToClose = setTimeout(() => {
          this.closeRelayLoader();
          this.app.dialog.alert(
             "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
             "<t>Sorry</t>"
          );
-         analytics.log("Timeout (45 secs) during fetchApplicationData()");
-      }, 45000);
+         analytics.log("Timeout (90 secs) during fetchApplicationData()");
+      }, 90000);
 
       // track all the inits in progress:
       var allInits = [];
@@ -650,6 +692,7 @@ export class AppPage extends Page {
       // listen for when inits are complete
       return Promise.all(allInits)
          .then(() => {
+            clearTimeout(warnUI);
             clearTimeout(waitToClose);
             this.closeRelayLoader();
 
@@ -659,6 +702,7 @@ export class AppPage extends Page {
          })
          .catch((err) => {
             this.closeRelayLoader();
+            // clearTimeout(warnUI);
             clearTimeout(waitToClose);
             console.log(err.message);
             console.log(err.stack);
