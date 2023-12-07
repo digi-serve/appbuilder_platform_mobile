@@ -10,7 +10,14 @@
 import async from "async";
 import EventEmitter from "eventemitter2";
 import analytics from "./Analytics.js";
-import { version as configXmlVersion } from "../../../../version.js";
+let version;
+try {
+   version = VERSION;
+   /* global VERSION */
+   /* Version from package.json. Set by the DefinePlugin in webpack. */
+} catch (err) {
+   console.warn("VERSION variable not found");
+}
 
 var config = require("../../config/config.js");
 
@@ -127,7 +134,7 @@ class Updater extends EventEmitter {
    getPackageInfo() {
       return new Promise((resolve, reject) => {
          var defaultInfo = {
-            version: configXmlVersion,
+            version,
             description: "",
             label: "",
             deploymentKey: deploymentKeys[platform]
