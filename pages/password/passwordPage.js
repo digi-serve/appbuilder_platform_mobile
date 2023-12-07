@@ -41,10 +41,21 @@ export default class PasswordPage extends Page {
          // Reveal the SETUP screen for first time use,
          if (value != 1) {
             // Detects if device is on iOS
+            const userAgent = window.navigator.userAgent.toLowerCase();
             const isIos = () => {
-               const userAgent = window.navigator.userAgent.toLowerCase();
                return /iphone|ipad|ipod/.test(userAgent);
             };
+            // detect if in chrome
+            if (/crios/.test(userAgent)) {
+               this.$("div.use-chrome-warning").hide();
+               this.$("div.ios-instruct").hide();
+               this.$("div.chrome-install-instructions").show();
+            } else {
+               this.$("div.use-chrome-warning").show();
+               this.$("div.chrome-install-instructions").hide();
+               this.$("div.safari-install-instructions").show();
+            }
+            
             // Detects if device is in standalone mode
             const isInStandaloneMode = () =>
                "standalone" in window.navigator && window.navigator.standalone;
@@ -52,12 +63,14 @@ export default class PasswordPage extends Page {
             if (isIos() && !isInStandaloneMode()) {
                this.$("div.ios-instruct").show();
             } else {
-            this.startChecking();
-            this.$setup.show();
+               this.startChecking();
+               this.$setup.show();
+               // if the user is on iOS and Safari, and it is their first time using the app,
+               // show a message explaining that they should use Chrome.
+               // class: use-chrome-warning
+               
             }
-         }
-         // or the SECURITY CHECK screen after that.
-         else {
+         } else {
             this.$unlock.show();
          }
       });
