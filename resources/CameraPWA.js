@@ -28,7 +28,13 @@ import uuid from "uuid/v1";
 // import { Decoder } from "@nuintun/qrcode";
 import { storage } from "./Storage.js";
 import fileStorage from "./FileStorage.js";
-const ValidImageTypes = ["image/jpg", "image/jpeg", "image/png", "image/gif", "image/bmp"];
+const ValidImageTypes = [
+   "image/jpg",
+   "image/jpeg",
+   "image/png",
+   "image/gif",
+   "image/bmp",
+];
 
 const defaultHeight = 2000;
 const defaultWidth = 2000;
@@ -169,20 +175,21 @@ class CameraPWA extends EventEmitter {
                   return err;
                }
 
-               
                if (sizeInBytes > maxSize) {
                   // ONLY if browser is safari
                   // if (na
-                     // // TODO find a way to compress on iOS
-                     // let err = new Error("Image is too large, please select a smaller image");
-                     // reject(err);
-                     // return err;
+                  // // TODO find a way to compress on iOS
+                  // let err = new Error("Image is too large, please select a smaller image");
+                  // reject(err);
+                  // return err;
                   // } else {
-                     // compress the image before it goes into localStorage
-                     return this.recurseShrink(file).then((compressedFile) => {
+                  // compress the image before it goes into localStorage
+                  return this.recurseShrink(file, null, { timeout: 5000 }).then(
+                     (compressedFile) => {
                         // The next steps in the app HAVE to wait for me to return
                         return fileStorage.put(filename, compressedFile);
-                     });
+                     }
+                  );
                   // }
                } else {
                   // no compression needed
@@ -247,11 +254,16 @@ class CameraPWA extends EventEmitter {
                   //    reject(err);
                   //    return err;
                   // } else {
-                     // compress the image before it goes into localStorage
-                     return this.recurseShrink(file).then((compressedFile) => {
-                        // The next steps in the app HAVE to wait for me to return
-                        return fileStorage.put(filename, compressedFile);
-                     });
+                  // compress the image before it goes into localStorage
+
+                  //run this fucntion
+                  return this.recurseShrink(file, null, {
+                     timeout: 10000,
+                  }).then((compressedFile) => {
+                     // The next steps in the app HAVE to wait for me to return
+                     return fileStorage.put(filename, compressedFile);
+                  });
+                  //but have timeout here, to cancell it and warn user
                   // }
                } else {
                   // no compression needed, iOS and Safari can send it fine
@@ -454,27 +466,47 @@ class CameraPWA extends EventEmitter {
     * @return {Promise<File>}
     *      Resolves with a file containing the compressed image data.
     */
-   async recurseShrink(file, quality) {
-      // maximum size for passage through relay seems to be about 512 Mb
-      let maxSize = 500000;
-      // base64 encoding increases file size
-      let expectedBase64SizeIncrease = file.size * 1.4;
-      quality =
-         quality ||
-         Math.min(
-            Math.max(maxSize / expectedBase64SizeIncrease, 0.000000001),
-            1
-         );
-      const compressedFile = await fileStorage.compress(file, quality);
-      const newSizeInBytes = compressedFile.size;
-      if (newSizeInBytes < maxSize) {
-         return compressedFile;
-      } else {
-         // reduce quality further to force file size down
-         console.error("We're shrinking this again!!!")
-         quality = quality * 0.6;
-         return this.recurseShrink(file, quality);
-      }
+   // TODO I will fix this all perfectly
+   // TODO @guy
+
+   async recurseShrink(file, quality, options = {}) {
+      return await new Promise((resolve, reject) => {
+         let recurseShrinkTimeout = options.timeout
+            ? setTimeout(() => {
+                 reject(
+                    new Error("Timeout compressing image. Try a smaller one?")
+                 );
+                 recurseShrinkTimeout = null;
+              }, options.timeout)
+            : null;
+         const getCompress = async () => {
+            // maximum size for passage through relay seems to be about 512 Mb
+            let maxSize = 500000;
+            // base64 encoding increases file size
+            let expectedBase64SizeIncrease = file.size * 1.4;
+            quality =
+               quality ||
+               Math.min(
+                  Math.max(maxSize / expectedBase64SizeIncrease, 0.000000001),
+                  1
+               );
+            const compressedFile = await fileStorage.compress(file, quality);
+            const newSizeInBytes = compressedFile.size;
+            if (newSizeInBytes < maxSize) {
+               resolve(compressedFile);
+               if (recurseShrinkTimeout == null) return;
+               clearTimeout(recurseShrinkTimeout);
+               recurseShrinkTimeout = null;
+            } else {
+               // reduce quality further to force file size down
+               quality = quality * 0.6;
+               if (recurseShrinkTimeout == null) return;
+               await getCompress(file, quality);
+            }
+         };
+
+         getCompress();
+      });
    }
 
    async base64ByName(name) {
@@ -490,7 +522,9 @@ class CameraPWA extends EventEmitter {
          const timeoutMilliseconds = 10000; // Set your desired timeout in milliseconds (e.g., 10 seconds)
 
          Promise.race([
-            this.convertBlobToBase64(this.recurseShrink(file)),
+            this.convertBlobToBase64(
+               this.recurseShrink(file, null, { timeout: 10000 })
+            ),
             new Promise((_, reject) => {
                setTimeout(() => {
                   reject(
