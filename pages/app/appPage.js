@@ -332,7 +332,7 @@ export class AppPage extends Page {
                   this.app.dialog.alert(
                      "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
                      "<t>No Network Connection</t>"
-                  );
+                  ).open();
                }
             });
             Network.on("online", () => {
@@ -356,7 +356,7 @@ export class AppPage extends Page {
                   this.app.dialog.alert(
                      "<t>Make sure you have scanned the correct QR code for your account. If the problem persists, please contact an admin for help.</t>",
                      "<t>Problem authenticating with server</t>"
-                  );
+                  ).open();
                   analytics.log("Token rejected by server: " + err.code);
                   break;
 
@@ -364,7 +364,7 @@ export class AppPage extends Page {
                   this.app.dialog.alert(
                      "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
                      "<t>Welcome to conneXted!</t>"
-                  );
+                  ).open();
                   analytics.log("App launched with no token");
                   break;
 
@@ -373,7 +373,7 @@ export class AppPage extends Page {
                   this.app.dialog.alert(
                      "<t>There is an unexpected problem with the server at this time.</t>",
                      "<t>Error</t>"
-                  );
+                  ).open();
                   analytics.log("Error during AppPage.prepareData():");
                   analytics.log(err.message);
                   analytics.logError(err);
@@ -664,10 +664,10 @@ export class AppPage extends Page {
 
       // Show message if it takes too long
       var warnUI = setTimeout(() => {
-         this.app.dialog.toast(
+         this.app.toast(
             "<t>Data update is taking a long time...</t>",
             "<t>Sorry</t>"
-         );
+         ).open();
          // analytics.log("warn (45 secs) during fetchApplicationData()");
       }, 45000);
 
@@ -677,7 +677,7 @@ export class AppPage extends Page {
          this.app.dialog.alert(
             "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
             "<t>Sorry</t>"
-         );
+         ).open();
          analytics.log("Timeout (90 secs) during fetchApplicationData()");
       }, 90000);
 
