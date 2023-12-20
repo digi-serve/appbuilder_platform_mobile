@@ -38,6 +38,8 @@ const ValidImageTypes = [
 
 const defaultHeight = 2000;
 const defaultWidth = 2000;
+// maximum size for passage through relay seems to be about 500000 bytes
+const MAX_IMAGE_SIZE = 500000;
 
 class CameraPWA extends EventEmitter {
    constructor() {
@@ -164,8 +166,6 @@ class CameraPWA extends EventEmitter {
                url = URL.createObjectURL(file);
                // determine size of file
                let sizeInBytes = fileEntry.size;
-               // maximum size for passage through relay seems to be about 512 Mb
-               let maxSize = 500000;
 
                // check the format and the size of the image
                // if it is not a jpeg or png reject the promise
@@ -175,7 +175,7 @@ class CameraPWA extends EventEmitter {
                   return err;
                }
 
-               if (sizeInBytes > maxSize) {
+               if (sizeInBytes > MAX_IMAGE_SIZE) {
                   // ONLY if browser is safari
                   // if (na
                   // // TODO find a way to compress on iOS
@@ -243,9 +243,7 @@ class CameraPWA extends EventEmitter {
 
                // determine size of file
                let sizeInBytes = fileEntry.size;
-               // maximum size for passage through relay seems to be about 512 Mb
-               let maxSize = 500000;
-               if (sizeInBytes > maxSize) {
+               if (sizeInBytes > MAX_IMAGE_SIZE) {
                   // check if we are in iOS or Safari
                   // if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
                   //    // tell the user to upload a smaller image
@@ -466,46 +464,63 @@ class CameraPWA extends EventEmitter {
     * @return {Promise<File>}
     *      Resolves with a file containing the compressed image data.
     */
-   // TODO I will fix this all perfectly
-   // TODO @guy
-
    async recurseShrink(file, quality, options = {}) {
-      return await new Promise((resolve, reject) => {
-         let recurseShrinkTimeout = options.timeout
-            ? setTimeout(() => {
-                 reject(
-                    new Error("Timeout compressing image. Try a smaller one?")
-                 );
-                 recurseShrinkTimeout = null;
-              }, options.timeout)
-            : null;
-         const getCompress = async () => {
-            // maximum size for passage through relay seems to be about 512 Mb
-            let maxSize = 500000;
-            // base64 encoding increases file size
-            let expectedBase64SizeIncrease = file.size * 1.4;
-            quality =
-               quality ||
-               Math.min(
-                  Math.max(maxSize / expectedBase64SizeIncrease, 0.000000001),
-                  1
-               );
-            const compressedFile = await fileStorage.compress(file, quality);
-            const newSizeInBytes = compressedFile.size;
-            if (newSizeInBytes < maxSize) {
-               resolve(compressedFile);
-               if (recurseShrinkTimeout == null) return;
-               clearTimeout(recurseShrinkTimeout);
-               recurseShrinkTimeout = null;
-            } else {
-               // reduce quality further to force file size down
-               quality = quality * 0.6;
-               if (recurseShrinkTimeout == null) return;
-               await getCompress(file, quality);
+      let recurseShrinkTimeout;
+      const GAIN_FATOR = 0.1;
+      quality = 1;
+      let qualityValue = quality ?? 1;
+      let qualityGain = (() => {
+         const decimalNum = qualityValue.toString().split(".")[1] || "";
+         let decimalPlaces = 0;
+         for (let i = 0; i < decimalNum.length; i++)
+            if (parseInt(decimalNum[i]) > 0) {
+               decimalPlaces = i + 1;
+               break;
             }
+         return 1 / Math.pow(10, decimalPlaces);
+      })();
+      let qualityFactor = 0.1 * qualityGain;
+      const modFactor = qualityGain / qualityFactor;
+      let compressionTimes = 0;
+      const compressFile = async (file) => {
+         let compressedFile = file;
+         if (recurseShrinkTimeout === null) return compressedFile;
+         qualityValue = qualityValue - qualityFactor;
+         if (compressionTimes % modFactor === 0 || qualityValue <= 0) {
+            qualityGain = qualityGain * GAIN_FATOR;
+            qualityFactor = qualityFactor * qualityGain;
+            qualityValue = qualityGain;
+         }
+         compressedFile = await fileStorage.compress(file, {
+            quality: qualityValue,
+         });
+         compressionTimes++;
+         if (compressedFile.size > MAX_IMAGE_SIZE)
+            return await compressFile(file);
+         return compressedFile;
+      };
+      return await new Promise((resolve, reject) => {
+         options.timeout = 1000000000;
+         if (options.timeout != null)
+            recurseShrinkTimeout = setTimeout(() => {
+               reject(
+                  new Error("Timeout compressing image. Try a smaller one?")
+               );
+               recurseShrinkTimeout = null;
+            }, options.timeout);
+         const processCompression = async () => {
+            let compressedFile = await fileStorage.compress(file, {
+               convertSize: MAX_IMAGE_SIZE,
+            });
+            compressionTimes++;
+            if (compressedFile.size > MAX_IMAGE_SIZE)
+               compressedFile = await compressFile(compressedFile);
+            resolve(compressedFile);
+            if (recurseShrinkTimeout == null) return;
+            clearTimeout(recurseShrinkTimeout);
+            recurseShrinkTimeout = null;
          };
-
-         getCompress();
+         processCompression();
       });
    }
 
@@ -514,9 +529,7 @@ class CameraPWA extends EventEmitter {
       const sizeInBytes = file.size;
 
       // Determine if compression is needed
-      // maximum size for passage through relay seems to be about 500000 bytes
-      let maxSize = 500000;
-      if (sizeInBytes > maxSize) {
+      if (sizeInBytes > MAX_IMAGE_SIZE) {
          // ensure file is compressed to less than 500000 bytes
          //return this.convertBlobToBase64(this.recurseShrink(file));
          const timeoutMilliseconds = 10000; // Set your desired timeout in milliseconds (e.g., 10 seconds)
