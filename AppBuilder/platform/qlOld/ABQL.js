@@ -143,6 +143,20 @@ module.exports = class ABQL {
    }
 
    /**
+    * reload
+    * reload the data for this QL object. This will be called on C/U/D
+    * @return {Promise}
+    *        resolve() : {array} of data
+    */
+   reload() {
+      return new Promise((resolve, reject) => {
+         this.data = this.datacollection.getAllRecords();
+         resolve(this.data);
+      });
+   }
+
+
+   /**
     * value
     * return the current value of this QL object.
     * this should either be the value of our .data element, or if not given,
@@ -150,10 +164,11 @@ module.exports = class ABQL {
     * @return {multi} depending on the type of data we are representing.
     */
    value() {
-      if (this.data && this.data.length) {
-         return this.data;
-      }
-      this.data = this.datacollection.getAllRecords();
-      return this.data;
+      console.error("ABQL.value(): deprecated.");
+   //    if (this.data && this.data.length) {
+   //       return this.data;
+   //    }
+   //    this.data = this.datacollection.getAllRecords();
+   //    return this.data;
    }
 };

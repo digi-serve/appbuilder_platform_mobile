@@ -268,7 +268,7 @@ class NetworkRest extends EventEmitter {
                      let error = new Error(
                         "Network error: adding to queue for later retry."
                      );
-                     reject(error);
+                     resolve({ status: "queued" })
                   } else {
                      let error = new Error(
                         "NetworkRest._request() error with .ajax() command:"

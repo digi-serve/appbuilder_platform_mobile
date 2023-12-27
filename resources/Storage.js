@@ -419,7 +419,7 @@ class Storage extends EventEmitter {
 
    /** 
     * Delete the specified record from storage.
-    * 
+    * Note that the 'record' is the whole object stored under the key.
     * @param {string} key
     * @return {Promise}
     */

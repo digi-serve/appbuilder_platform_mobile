@@ -137,6 +137,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   if (!data.id) {
                      data.id = data[PK];
                   }
+                  if (this.isLockable()) {data['lock'] = false;}
 
                   // include it in our list:
                   this.__dataCollection.add(data);
@@ -156,6 +157,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             // if entry IS currently in datacollection
             if (this.__dataCollection.exists(ID)) {
                // update our copy
+               if (this.isLockable()) {
+                  data["lock"] = false;
+               }
                this.__dataCollection.updateItem(ID, data);
 
                // alert anyone attached to us that we have UPDATEd
@@ -192,6 +196,16 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    isServerPreferred() {
       return this.settings.syncType == "1" || this.settings.syncType == 1;
       // NOTE: syncType = "2" is client preferred.
+   }
+
+   /**
+    * isLockable()
+    * return true if this data has special handling for locking.
+    * If this is true, we need to set every incoming data entry with a false .lock
+    * @return {bool}
+    */
+   isLockable() {
+      return this.settings.lockable || 0;
    }
 
    /**
@@ -508,6 +522,16 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       return Account.username;
    }
 
+   /**
+    * this code implements a mechanism to delay the execution of the loadData() function. 
+    * If there is no pending data load, it schedules the loadData() function to be executed 
+    * after a delay of 1000 milliseconds (1 second). If there is already a pending data load,
+    * it cancels the previous timeout and immediately calls 
+    * the loadDataDelayed() function instead.
+    * 
+    * This is likely because the function is a heavy operation and 
+    * this often gets called multiple times in a row.
+    */
    loadDataDelayed() {
       if (!this._pendingLoadData) {
          this._pendingLoadData = setTimeout(() => {
