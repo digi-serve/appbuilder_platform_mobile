@@ -160,10 +160,10 @@ class FileStorage extends EventEmitter {
     * Compress a file using the browser's built-in compression.
     * * @param {Blob} file
     */
-   async compress(file, quality) {
+   async compress(file, options) {
       return new Promise((resolve, reject) => {
          new Compressor(file, {
-            quality,
+            ...options,
             // The compression process is asynchronous,
             // which means you have to access the `result` in the `success` hook function.
             success(compressedFile) {
