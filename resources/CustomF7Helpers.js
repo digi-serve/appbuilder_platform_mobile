@@ -165,6 +165,23 @@ Template7.registerHelper("translate", (appID, obj, item) => {
    return translated;
 });
 
+// for displaying an icon if field is locked
+Template7.registerHelper("lockIcon", (field) => {
+   // check all fields and return 0 if undefined
+   if (field === true) {
+      return "<i class='fa fa-cloud-upload-alt blink'></i>";
+   }
+   return;
+});
+
+// For disabling field if locked
+Template7.registerHelper("lockDisable", (field) => {
+   if (field === true) {
+      return "disabled";
+   }
+   return;
+});
+
 // create a helper in template7 so we can properly display numbers with commas
 Template7.registerHelper("commas", (parent, field) => {
    // check all fields and return 0 if undefined
