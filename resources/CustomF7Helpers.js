@@ -171,7 +171,7 @@ Template7.registerHelper("lockIcon", (field) => {
    if (field === true) {
       return "<i class='fa fa-cloud-upload-alt blink'></i>";
    }
-   return;
+   return "";
 });
 
 // For disabling field if locked
@@ -179,34 +179,33 @@ Template7.registerHelper("lockDisable", (field) => {
    if (field === true) {
       return "disabled";
    }
-   return;
+   return "";
 });
 
-// create a helper in template7 so we can properly display numbers with commas
-Template7.registerHelper("commas", (parent, field) => {
+function extractNumber(parent, field) {
    // check all fields and return 0 if undefined
    if (!parent || (!field && typeof parent != "number")) {
       console.error("commas helper: parent or field is undefined!");
       return "0";
    }
-   var number = field ? parent[field] : parent;
+   // check whether field can be used as an object key
+   let validField = typeof parent[field] != "undefined";
+   var number = validField ? parent[field] : parent;
    if (number === undefined || number === null) {
       return "0";
    }
+   return number;
+}
+
+// create a helper in template7 so we can properly display numbers with commas
+Template7.registerHelper("commas", (parent, field) => {
+   var number = extractNumber(parent, field);
    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 });
 
 // set number to absolute value before displaying
-Template7.registerHelper("commasAbs", (parent, field) => {
-   // check all fields and return 0 if undefined
-   if (!parent || (!field && typeof parent != "number")) {
-      console.error("commas helper: parent or field is undefined!");
-      return "0";
-   }
-   var number = field ? parent[field] : parent;
-   if (number === undefined || number === null) {
-      return "0";
-   }
+Template7.registerHelper("commasAbs", (parent, field = false) => {
+   var number = extractNumber(parent, field);
    let absoluteNum = Math.abs(Number(number));
    return absoluteNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 });

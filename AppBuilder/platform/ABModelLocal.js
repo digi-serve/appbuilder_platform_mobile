@@ -116,19 +116,27 @@ module.exports = class ABModelLocal extends ABModelCore {
       return storage.clear(this.refStorage());
    }
 
+
+   /**
+    * fetchAndClear()
+    * return all the local entries for this model's object.
+    * remove the local encrypted data for this object.
+    * @return {Promise}
+    *		resolved: with a hash of the stored data:
+    *			{ uuid: {obj1}, uuid2:{obj2} }
+    */
+   fetchAndClear() {
+      return storage.fetchAndClear(this.refStorage());
+   }
+
    localStorageDestroy(id) {
       var UUID = this.object.fieldUUID();
       var lock = this.lock();
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageDestroy start', allData);
-            return this.getLocalData();
-         })
-         .then(() => {
             // ! Make sure we don't have zombie records
-            // ? Is there a more efficient way to do this?
-            return this.clearLocalData();
+            return this.fetchAndClear();
          })
          .then((allObjects) => {
             // TODO use this.object.fieldUUID() to get the field name of the UUID

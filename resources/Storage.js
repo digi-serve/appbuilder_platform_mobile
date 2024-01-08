@@ -416,6 +416,19 @@ class Storage extends EventEmitter {
       });
    }
 
+   /**
+    * gets the data from localstorage, then wipes that record on localstorage. Then returns the data
+    *
+    * @param {string} key
+    * @return {object}
+    */
+   fetchAndClear(key, options = {}) {
+      return this.get(key, options).then((parsedData) => {
+         return this.clear(key).then(() => {
+            return parsedData;
+         });
+      });
+   }
 
    /** 
     * Delete the specified record from storage.
