@@ -8,42 +8,6 @@
 var ABModelCore = require("../core/ABModelCore");
 var ABModelLocal = require("./ABModelLocal");
 var ABModelRelay = require("./ABModelRelay");
-
-// /**
-//  * @method triggerEvent
-//  * Publish a event when data in the model is changed
-//  *
-//  * @param {string} action - create, update, delete
-//  * @param {ABObject} object
-//  * @param {*} data
-//  */
-// function triggerEvent(action, object, data) {
-
-// 	// Trigger a event to data collections of application and the live display pages
-// 	AD.comm.hub.publish('ab.datacollection.' + action, {
-// 		objectId: object.id,
-// 		data: data
-// 	});
-
-// }
-
-// // Start listening for server events for object updates and call triggerEvent as the callback
-// io.socket.on("ab.datacollection.create", function (msg) {
-//   triggerEvent("create", {id:msg.objectId}, msg.data);
-// });
-
-// io.socket.on("ab.datacollection.delete", function (msg) {
-//   triggerEvent("delete", {id:msg.objectId}, msg.id);
-// });
-
-// io.socket.on("ab.datacollection.stale", function (msg) {
-//   triggerEvent("stale", {id:msg.objectId}, msg.data);
-// });
-
-// io.socket.on("ab.datacollection.update", function (msg) {
-//   triggerEvent("update", {id:msg.objectId}, msg.data);
-// });
-
 module.exports = class ABModel extends ABModelCore {
    local() {
       var newModel = new ABModelLocal(this.object);
@@ -68,8 +32,11 @@ module.exports = class ABModel extends ABModelCore {
    /**
     * @method create
     * update model values on the server.
+    * @param {obj} values  the values to create.
+    * @param {{}} [options={}] additional options to pass to the create process.
+    * ex: lock: {boolean}  option to have local version of the record self-report as locked
     */
-   create(values) {
+   create(values, options = {}) {
       this.prepareMultilingualData(values);
 
       // make sure any values we create have a UUID field set:
@@ -82,6 +49,11 @@ module.exports = class ABModel extends ABModelCore {
                // get localModel
                // localModel.create(values)
                return this.local().create(values);
+               let localRecord = values;
+               if (options?.lock) {
+                  localRecord["lock"] = options.lock;
+               }
+               return this.local().create(localRecord);
             })
             .then(() => {
                this.object.emit("CREATE", values);
@@ -213,7 +185,7 @@ module.exports = class ABModel extends ABModelCore {
     * @method update
     * update model values on the server.
     */
-   update(id, values) {
+   update(id, values, options = {}) {
       this.prepareMultilingualData(values);
 
       // values.updated_at = this.object.application.updatedAt();
@@ -221,6 +193,10 @@ module.exports = class ABModel extends ABModelCore {
       // remove empty properties
       for (var key in values) {
          if (values[key] == null) delete values[key];
+      }
+      // lock if option passed
+      if (options?.lock) {
+         values["lock"] = options.lock;
       }
 
       return (

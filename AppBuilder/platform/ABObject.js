@@ -20,6 +20,15 @@ module.exports = class ABObject extends ABObjectCore {
             console.log("-----------");
             console.log(":: ABObject.Relay.on:" + ABObjectCore.contextKey());
             console.log(":: context:", context);
+
+            if (
+               typeof data == "string" &&
+               /\[[Oo]bject,? [Oo]bject\]/.test(data)
+            ) {
+               let error = new Error(`ABObject(): bad data,  '${this.name}'`);
+               // send to sails log:
+               console.log(error);
+            }
             if (this.name) {
                console.log(":: name:", this.name);
             }
@@ -27,11 +36,6 @@ module.exports = class ABObject extends ABObjectCore {
                console.error({ "Error getting data: ": data.name });
             }
             console.log(":: data:", data);
-            if (data === "[object Object]"){
-               // we need to figure out the context of this
-               console.dir("we are getting bad data from the server??? context: ", context);
-               console.error(context.error.message)
-            }
 
             context.verb = context.verb || "unknown";
             switch (context.verb) {
@@ -43,7 +47,7 @@ module.exports = class ABObject extends ABObjectCore {
                   // if data does not already exist locally create it
                   this.model()
                      .local()
-                     .syncLocalMaster(data)
+                     .syncRemoteMaster(data)
                      .then(() => {
                         // alert any DataCollections that are using this
                         // object that there might be new data for them to
@@ -76,7 +80,7 @@ module.exports = class ABObject extends ABObjectCore {
                   }
 
                   if (data.status && data.status == "success") {
-                     data = data.data;
+                     data = data.data || data;
                   }
                   if (!data) return;
 
@@ -271,17 +275,17 @@ module.exports = class ABObject extends ABObjectCore {
       return `/app_builder/model/${this.id}/count`;
    }
 
+   /**
+    * @method remoteData
+    * return the url parameters to use for a .create() request
+    * @param context {json} 
+    * @return data {json} the values to create
+    */
    remoteData(context, data) {
       if (context.error) {
          // Question: so how do we handle error responses?
          console.error(
-            "ABObject[" +
-               this.name +
-               "]:remoteData(): an error was received when processing a job. verb[" +
-               context.verb +
-               "]",
-            context,
-            data
+            `ABObject[${this.name}]:remoteData(): an error was received when processing a job. verb[${context.verb}]`
          );
          this.emit("error.remote", { context: context, data: data });
 

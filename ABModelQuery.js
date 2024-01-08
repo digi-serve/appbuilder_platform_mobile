@@ -51,7 +51,7 @@ module.exports = class ABModelQuery extends ABModel {
     */
    update(id, values) {
       var error = new Error(
-         "ABObjectQuery.ABModelQuery.update() should not be called."
+         "ABObjectQuery.ABModelQuery.update() should not be called. Query objects should be read-only."
       );
       return Promise.reject(error);
    }
