@@ -188,7 +188,7 @@ class CameraPWA extends EventEmitter {
                      (compressedFile) => {
                         // The next steps in the app HAVE to wait for me to return
                         return fileStorage.put(filename, compressedFile);
-                     }
+                     },
                   );
                   // }
                } else {
@@ -348,66 +348,66 @@ class CameraPWA extends EventEmitter {
       console.error("imageCleanUp() what does it even do?");
       return Promise.reject(new Error("Deprecated?"));
 
-      return new Promise((resolve, reject) => {
-         // make sure _testDirectoryEntry is created before trying to use:
-         if (!this.directoryEntry) {
-            this.init().then(() => {
-               this.imageCleanUp()
-                  .then((data) => {
-                     resolve(data);
-                  })
-                  .catch(reject);
-            });
-            return;
-         }
+      // return new Promise((resolve, reject) => {
+      //    // make sure _testDirectoryEntry is created before trying to use:
+      //    if (!this.directoryEntry) {
+      //       this.init().then(() => {
+      //          this.imageCleanUp()
+      //             .then((data) => {
+      //                resolve(data);
+      //             })
+      //             .catch(reject);
+      //       });
+      //       return;
+      //    }
 
-         // Get a directory reader
-         var directoryReader = this.directoryEntry.createReader();
-         // Get a list of all the entries in the directory
-         directoryReader.readEntries(
-            (entries) => {
-               var currentDate = new Date();
-               var currentTime = currentDate.getTime();
-               entries.forEach((item, i) => {
-                  if (item.isFile && item.name.indexOf("receipt-") > -1) {
-                     item.getMetadata(
-                        (file) => {
-                           var timeDiff = Math.abs(
-                              currentTime - file.modificationTime.getTime()
-                           );
-                           var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                           if (diff > 14) {
-                              item.remove(
-                                 function () {
-                                    console.log("File removed");
-                                    if (item.name.indexOf("receipt-") > -1) {
-                                       storage.set(
-                                          "Receipt Image-" +
-                                             item.name
-                                                .replace("receipt-", "")
-                                                .replace(".jpg", ""),
-                                          null
-                                       );
-                                    }
-                                 },
-                                 function () {
-                                    console.log("Error while removing file");
-                                 }
-                              );
-                           }
-                        },
-                        (error) => {
-                           reject(error);
-                        }
-                     );
-                  }
-               });
-            },
-            (error) => {
-               reject("Failed during operations: " + error.code);
-            }
-         );
-      });
+      //    // Get a directory reader
+      //    var directoryReader = this.directoryEntry.createReader();
+      //    // Get a list of all the entries in the directory
+      //    directoryReader.readEntries(
+      //       (entries) => {
+      //          var currentDate = new Date();
+      //          var currentTime = currentDate.getTime();
+      //          entries.forEach((item, i) => {
+      //             if (item.isFile && item.name.indexOf("receipt-") > -1) {
+      //                item.getMetadata(
+      //                   (file) => {
+      //                      var timeDiff = Math.abs(
+      //                         currentTime - file.modificationTime.getTime()
+      //                      );
+      //                      var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      //                      if (diff > 14) {
+      //                         item.remove(
+      //                            function () {
+      //                               console.log("File removed");
+      //                               if (item.name.indexOf("receipt-") > -1) {
+      //                                  storage.set(
+      //                                     "Receipt Image-" +
+      //                                        item.name
+      //                                           .replace("receipt-", "")
+      //                                           .replace(".jpg", ""),
+      //                                     null
+      //                                  );
+      //                               }
+      //                            },
+      //                            function () {
+      //                               console.log("Error while removing file");
+      //                            }
+      //                         );
+      //                      }
+      //                   },
+      //                   (error) => {
+      //                      reject(error);
+      //                   }
+      //                );
+      //             }
+      //          });
+      //       },
+      //       (error) => {
+      //          reject("Failed during operations: " + error.code);
+      //       }
+      //    );
+      // });
    }
 
    /**
@@ -467,7 +467,6 @@ class CameraPWA extends EventEmitter {
    async recurseShrink(file, quality, options = {}) {
       let recurseShrinkTimeout;
       const GAIN_FATOR = 0.1;
-      quality = 1;
       let qualityValue = quality ?? 1;
       let qualityGain = (() => {
          const decimalNum = qualityValue.toString().split(".")[1] || "";
@@ -500,11 +499,10 @@ class CameraPWA extends EventEmitter {
          return compressedFile;
       };
       return await new Promise((resolve, reject) => {
-         options.timeout = 1000000000;
          if (options.timeout != null)
             recurseShrinkTimeout = setTimeout(() => {
                reject(
-                  new Error("Timeout compressing image. Try a smaller one?")
+                  new Error("Timeout compressing image. Try a smaller one?"),
                );
                recurseShrinkTimeout = null;
             }, options.timeout);
@@ -536,14 +534,14 @@ class CameraPWA extends EventEmitter {
 
          Promise.race([
             this.convertBlobToBase64(
-               this.recurseShrink(file, null, { timeout: 10000 })
+               this.recurseShrink(file, null, { timeout: 10000 }),
             ),
             new Promise((_, reject) => {
                setTimeout(() => {
                   reject(
                      new Error(
-                        "Compressing unsuccessful, please try a smaller image"
-                     )
+                        "Compressing unsuccessful, please try a smaller image",
+                     ),
                   );
                }, timeoutMilliseconds);
             }),
