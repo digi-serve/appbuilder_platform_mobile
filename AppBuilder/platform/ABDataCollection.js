@@ -508,6 +508,16 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       return Account.username;
    }
 
+   /**
+    * this code implements a mechanism to delay the execution of the loadData() function. 
+    * If there is no pending data load, it schedules the loadData() function to be executed 
+    * after a delay of 1000 milliseconds (1 second). If there is already a pending data load,
+    * it cancels the previous timeout and immediately calls 
+    * the loadDataDelayed() function instead.
+    * 
+    * This is likely because the function is a heavy operation and 
+    * this often gets called multiple times in a row.
+    */
    loadDataDelayed() {
       if (!this._pendingLoadData) {
          this._pendingLoadData = setTimeout(() => {

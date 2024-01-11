@@ -8,42 +8,6 @@
 var ABModelCore = require("../core/ABModelCore");
 var ABModelLocal = require("./ABModelLocal");
 var ABModelRelay = require("./ABModelRelay");
-
-// /**
-//  * @method triggerEvent
-//  * Publish a event when data in the model is changed
-//  *
-//  * @param {string} action - create, update, delete
-//  * @param {ABObject} object
-//  * @param {*} data
-//  */
-// function triggerEvent(action, object, data) {
-
-// 	// Trigger a event to data collections of application and the live display pages
-// 	AD.comm.hub.publish('ab.datacollection.' + action, {
-// 		objectId: object.id,
-// 		data: data
-// 	});
-
-// }
-
-// // Start listening for server events for object updates and call triggerEvent as the callback
-// io.socket.on("ab.datacollection.create", function (msg) {
-//   triggerEvent("create", {id:msg.objectId}, msg.data);
-// });
-
-// io.socket.on("ab.datacollection.delete", function (msg) {
-//   triggerEvent("delete", {id:msg.objectId}, msg.id);
-// });
-
-// io.socket.on("ab.datacollection.stale", function (msg) {
-//   triggerEvent("stale", {id:msg.objectId}, msg.data);
-// });
-
-// io.socket.on("ab.datacollection.update", function (msg) {
-//   triggerEvent("update", {id:msg.objectId}, msg.data);
-// });
-
 module.exports = class ABModel extends ABModelCore {
    local() {
       var newModel = new ABModelLocal(this.object);
@@ -68,6 +32,8 @@ module.exports = class ABModel extends ABModelCore {
    /**
     * @method create
     * update model values on the server.
+    * @param {obj} values  the values to create.
+    * 
     */
    create(values) {
       this.prepareMultilingualData(values);
@@ -81,6 +47,7 @@ module.exports = class ABModel extends ABModelCore {
             .then(() => {
                // get localModel
                // localModel.create(values)
+               // let localRecord = values;
                return this.local().create(values);
             })
             .then(() => {

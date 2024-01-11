@@ -98,56 +98,35 @@ module.exports = class ABModelLocal extends ABModelCore {
       });
    }
 
+   /**
+    * saveLocalData()
+    *
+    * @param {hash} allObjects
+    * @return {Promise}
+    */
    saveLocalData(allObjects) {
       return storage.set(this.refStorage(), allObjects);
    }
+   /**
+    * clearLocalData()
+    * remove the local encrypted data for this object.
+    * @return {Promise}
+    */
+   clearLocalData() {
+      return storage.clear(this.refStorage());
+   }
 
-   localStorageCreate(data) {
-      // this performs the same as saveNew, but for a single record: so send to saveNew()
-      this.saveNew([data]);
-      // var UUID = this.object.fieldUUID(data);
 
-      // var lock = this.lock();
-      // return lock
-      //    .acquire()
-      //    .then(() => {
-      //       return this.getLocalData();
-      //    })
-      //    .then((allObjects) => {
-      //       // if current data item is not in allObjects, add it:
-      //       if (!allObjects[data[UUID]]) {
-      //          allObjects[data[UUID]] = data;
-      //       }
-
-      //       return allObjects;
-      //    })
-      //    .then((allObjects) => {
-      //       // make sure our copy of the data has all the fields in
-      //       // the incoming data:
-
-      //       var ours = allObjects[data[UUID]];
-      //       for (var d in data) {
-      //          // Question: do we store __relation  fields?
-      //          // if (d.indexOf('__relation') == -1) {
-
-      //          if (!ours[d]) {
-      //             ours[d] = data[d];
-      //          }
-      //          // }
-      //       }
-
-      //       return allObjects;
-      //    })
-      //    .then((allObjects) => {
-      //       return this.saveLocalData(allObjects);
-      //    })
-      //    .then((returnValue) => {
-      //       lock.release();
-      //       return returnValue || data;
-      //    })
-      //    .catch((/* err */) => {
-      //       lock.release();
-      //    });
+   /**
+    * fetchAndClear()
+    * return all the local entries for this model's object.
+    * remove the local encrypted data for this object.
+    * @return {Promise}
+    *		resolved: with a hash of the stored data:
+    *			{ uuid: {obj1}, uuid2:{obj2} }
+    */
+   fetchAndClear() {
+      return storage.fetchAndClear(this.refStorage());
    }
 
    localStorageDestroy(id) {
@@ -156,8 +135,8 @@ module.exports = class ABModelLocal extends ABModelCore {
       return lock
          .acquire()
          .then(() => {
-            // console.log('--- '+this.refStorage()+'.localStorageDestroy start', allData);
-            return this.getLocalData();
+            // ! Make sure we don't have zombie records
+            return this.fetchAndClear();
          })
          .then((allObjects) => {
             // TODO use this.object.fieldUUID() to get the field name of the UUID
@@ -166,7 +145,7 @@ module.exports = class ABModelLocal extends ABModelCore {
                // if we can quickly locate the entry, remove it:
                if (allObjects[id]) {
                   console.log(
-                     "ABModelLocal.js: localStorageDestroy(): removing entry::",
+                     "ABModelLocal.js: localStorageDestroy(): quickly removing entry::",
                      id,
                      allObjects[id]
                   );
@@ -230,6 +209,14 @@ module.exports = class ABModelLocal extends ABModelCore {
       // we can't resolve this entry if it doesn't have our UUID
       if (!data[UUID]) return Promise.resolve();
 
+
+      // if we marked this object as 'toBeConfirmed' 
+      // usually in some app.js
+      // then set the awaitingServerConfirmation flag
+      if (this.object["toBeConfirmed"]) {
+         data["awaitingServerConfirmation"] = true;
+      }
+
       var lock = this.lock();
       return lock
          .acquire()
@@ -253,6 +240,9 @@ module.exports = class ABModelLocal extends ABModelCore {
                for (var d in data) {
                   foundEntry[d] = data[d];
                }
+            } else {
+               // else add it as new record:
+               allObjects[data[UUID]] = data;
             }
 
             return allObjects;
@@ -272,7 +262,7 @@ module.exports = class ABModelLocal extends ABModelCore {
 
    /**
     * @method create
-    * update model values on the server.
+    * create a new record on our local data store.
     */
    create(values) {
       this.prepareMultilingualData(values);
@@ -280,6 +270,13 @@ module.exports = class ABModelLocal extends ABModelCore {
       // make sure any values we create have a UUID field set:
       var UUID = this.object.fieldUUID(values);
       if (!values[UUID]) values[UUID] = this.AB.uuid();
+
+      // if we marked this object as 'toBeConfirmed' 
+      // usually in some app.js
+      // then set the awaitingServerConfirmation flag
+      if (this.object["toBeConfirmed"]) {
+         values["awaitingServerConfirmation"] = true;
+      }
 
       // ensure values date_updated is set
       values["updated_at"] = new Date();
@@ -358,6 +355,14 @@ module.exports = class ABModelLocal extends ABModelCore {
       // ensure values date_updated is set
       values["updated_at"] = new Date();
 
+
+      // if we marked this object as 'toBeConfirmed' 
+      // usually in some app.js
+      // then set the awaitingServerConfirmation flag
+      if (this.object["toBeConfirmed"]) {
+         values["awaitingServerConfirmation"] = true;
+      }
+
       return this.localStorageUpdate(values).then((/* data */) => {
          this.normalizeData(values);
       });
@@ -411,6 +416,8 @@ module.exports = class ABModelLocal extends ABModelCore {
     *		returns a normalized set of data for this object
     */
    syncLocalMaster(data) {
+      data = this.dataVerify(data);
+      data = this.serverConfirmation(data);
       return new Promise((resolve, reject) => {
          // we are being given data from the server
          // but our local data could be more relevant
@@ -433,6 +440,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     * process a set of incoming data (from the server) where
     * the data we received should have priority over any local
     * data.
+    * This is called when the server responds to a local create
     *
     * @param {array} data
     * @return {Promise}
@@ -440,6 +448,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    syncRemoteMaster(data) {
       data = this.dataVerify(data);
+      data = this.serverConfirmation(data);
       return new Promise((resolve, reject) => {
          // this means that we should use whatever the remote gave us:
          // save new items and replace existing ones
@@ -628,6 +637,27 @@ module.exports = class ABModelLocal extends ABModelCore {
       if (!Array.isArray(allData)) {
          console.error("Array data should not be issue here. @achoobert");
          allData = [allData];
+      }
+      return allData;
+   }
+
+   /**
+    * We are being given data from the server
+    * therefore our local data does not have to be locked anymore
+    * Note that the lock is set in ABModel.js
+    * @param {array} allData
+    */
+   serverConfirmation(allData) {
+      // TODO is it possible to limit this to only the data we need?
+      // synctype of some sort?
+      console.error("unlocking allData", this.object["toBeConfirmed"])//, this.settings.lockable);
+      if (Array.isArray(allData) && this.object["toBeConfirmed"]) {
+         // set 'awaitingServerConfirmation' to false
+         allData.forEach((data) => {
+            data["awaitingServerConfirmation"] = false;
+         });
+      } else {
+         console.error("Array data should not be issue here.");
       }
       return allData;
    }
