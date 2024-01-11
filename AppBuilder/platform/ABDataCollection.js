@@ -137,7 +137,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   if (!data.id) {
                      data.id = data[PK];
                   }
-                  if (this.isLockable()) {data['lock'] = false;}
 
                   // include it in our list:
                   this.__dataCollection.add(data);
@@ -157,9 +156,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             // if entry IS currently in datacollection
             if (this.__dataCollection.exists(ID)) {
                // update our copy
-               if (this.isLockable()) {
-                  data["lock"] = false;
-               }
                this.__dataCollection.updateItem(ID, data);
 
                // alert anyone attached to us that we have UPDATEd
@@ -196,16 +192,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    isServerPreferred() {
       return this.settings.syncType == "1" || this.settings.syncType == 1;
       // NOTE: syncType = "2" is client preferred.
-   }
-
-   /**
-    * isLockable()
-    * return true if this data has special handling for locking.
-    * If this is true, we need to set every incoming data entry with a false .lock
-    * @return {bool}
-    */
-   isLockable() {
-      return this.settings.lockable || 0;
    }
 
    /**

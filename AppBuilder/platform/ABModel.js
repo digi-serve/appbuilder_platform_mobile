@@ -33,10 +33,9 @@ module.exports = class ABModel extends ABModelCore {
     * @method create
     * update model values on the server.
     * @param {obj} values  the values to create.
-    * @param {{}} [options={}] additional options to pass to the create process.
-    * ex: lock: {boolean}  option to have local version of the record self-report as locked
+    * 
     */
-   create(values, options = {}) {
+   create(values) {
       this.prepareMultilingualData(values);
 
       // make sure any values we create have a UUID field set:
@@ -48,12 +47,8 @@ module.exports = class ABModel extends ABModelCore {
             .then(() => {
                // get localModel
                // localModel.create(values)
+               // let localRecord = values;
                return this.local().create(values);
-               let localRecord = values;
-               if (options?.lock) {
-                  localRecord["lock"] = options.lock;
-               }
-               return this.local().create(localRecord);
             })
             .then(() => {
                this.object.emit("CREATE", values);
@@ -185,7 +180,7 @@ module.exports = class ABModel extends ABModelCore {
     * @method update
     * update model values on the server.
     */
-   update(id, values, options = {}) {
+   update(id, values) {
       this.prepareMultilingualData(values);
 
       // values.updated_at = this.object.application.updatedAt();
@@ -193,10 +188,6 @@ module.exports = class ABModel extends ABModelCore {
       // remove empty properties
       for (var key in values) {
          if (values[key] == null) delete values[key];
-      }
-      // lock if option passed
-      if (options?.lock) {
-         values["lock"] = options.lock;
       }
 
       return (

@@ -664,7 +664,7 @@ export class AppPage extends Page {
 
       // Show message if it takes too long
       var warnUI = setTimeout(() => {
-         this.app.toast(
+         self.$app.toast(
             "<t>Data update is taking a long time...</t>",
             "<t>Sorry</t>"
          ).open();

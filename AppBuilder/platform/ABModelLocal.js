@@ -209,6 +209,14 @@ module.exports = class ABModelLocal extends ABModelCore {
       // we can't resolve this entry if it doesn't have our UUID
       if (!data[UUID]) return Promise.resolve();
 
+
+      // if we marked this object as 'toBeConfirmed' 
+      // usually in some app.js
+      // then set the awaitingServerConfirmation flag
+      if (this.object["toBeConfirmed"]) {
+         data["awaitingServerConfirmation"] = true;
+      }
+
       var lock = this.lock();
       return lock
          .acquire()
@@ -254,7 +262,7 @@ module.exports = class ABModelLocal extends ABModelCore {
 
    /**
     * @method create
-    * update model values on the server.
+    * create a new record on our local data store.
     */
    create(values) {
       this.prepareMultilingualData(values);
@@ -262,6 +270,13 @@ module.exports = class ABModelLocal extends ABModelCore {
       // make sure any values we create have a UUID field set:
       var UUID = this.object.fieldUUID(values);
       if (!values[UUID]) values[UUID] = this.AB.uuid();
+
+      // if we marked this object as 'toBeConfirmed' 
+      // usually in some app.js
+      // then set the awaitingServerConfirmation flag
+      if (this.object["toBeConfirmed"]) {
+         values["awaitingServerConfirmation"] = true;
+      }
 
       // ensure values date_updated is set
       values["updated_at"] = new Date();
@@ -340,6 +355,14 @@ module.exports = class ABModelLocal extends ABModelCore {
       // ensure values date_updated is set
       values["updated_at"] = new Date();
 
+
+      // if we marked this object as 'toBeConfirmed' 
+      // usually in some app.js
+      // then set the awaitingServerConfirmation flag
+      if (this.object["toBeConfirmed"]) {
+         values["awaitingServerConfirmation"] = true;
+      }
+
       return this.localStorageUpdate(values).then((/* data */) => {
          this.normalizeData(values);
       });
@@ -394,7 +417,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    syncLocalMaster(data) {
       data = this.dataVerify(data);
-      data = this.unlock(data);
+      data = this.serverConfirmation(data);
       return new Promise((resolve, reject) => {
          // we are being given data from the server
          // but our local data could be more relevant
@@ -425,7 +448,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     */
    syncRemoteMaster(data) {
       data = this.dataVerify(data);
-      data = this.unlock(data);
+      data = this.serverConfirmation(data);
       return new Promise((resolve, reject) => {
          // this means that we should use whatever the remote gave us:
          // save new items and replace existing ones
@@ -624,13 +647,14 @@ module.exports = class ABModelLocal extends ABModelCore {
     * Note that the lock is set in ABModel.js
     * @param {array} allData
     */
-   unlock(allData) {
+   serverConfirmation(allData) {
       // TODO is it possible to limit this to only the data we need?
       // synctype of some sort?
-      if (Array.isArray(allData)) {
-         // set 'lock' to false
+      console.error("unlocking allData", this.object["toBeConfirmed"])//, this.settings.lockable);
+      if (Array.isArray(allData) && this.object["toBeConfirmed"]) {
+         // set 'awaitingServerConfirmation' to false
          allData.forEach((data) => {
-            data["lock"] = false;
+            data["awaitingServerConfirmation"] = false;
          });
       } else {
          console.error("Array data should not be issue here.");
