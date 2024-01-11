@@ -631,11 +631,11 @@ module.exports = class ABModelLocal extends ABModelCore {
    dataVerify(allData) {
       // TODO this should be unnecessary
       if (allData.data?.length) {
-         console.error("data.data should not be issue here. @achoobert");
+         // console.error("data.data should not be issue here. @achoobert");
          allData = allData.data;
       }
       if (!Array.isArray(allData)) {
-         console.error("Array data should not be issue here. @achoobert");
+         // console.error("Array data should not be issue here. @achoobert");
          allData = [allData];
       }
       return allData;
@@ -648,16 +648,17 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @param {array} allData
     */
    serverConfirmation(allData) {
-      // TODO is it possible to limit this to only the data we need?
-      // synctype of some sort?
-      console.error("unlocking allData", this.object["toBeConfirmed"])//, this.settings.lockable);
-      if (Array.isArray(allData) && this.object["toBeConfirmed"]) {
-         // set 'awaitingServerConfirmation' to false
-         allData.forEach((data) => {
-            data["awaitingServerConfirmation"] = false;
-         });
-      } else {
-         console.error("Array data should not be issue here.");
+      if (this.object["toBeConfirmed"]) {
+         // limit this to only the objects that await confirmation
+         if (Array.isArray(allData)) {
+            // set 'awaitingServerConfirmation' to false
+            allData.forEach((data) => {
+               data["awaitingServerConfirmation"] = false;
+            });
+         } else {
+            // console.error("Array data should not be issue here.", allData);
+            allData["awaitingServerConfirmation"] = false;
+         }
       }
       return allData;
    }
