@@ -248,7 +248,7 @@ class Analytics extends EventEmitter {
       console.log(message);
 
       this.ready.then(() => {
-         if (this.sentry) {
+         if (this.sentry && process.env.NODE_ENV == "production") {
             this.sentry.captureMessage(message);
          }
       });
