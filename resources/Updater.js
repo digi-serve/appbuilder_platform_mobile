@@ -128,6 +128,14 @@ class Updater extends EventEmitter {
       );
    }
 
+   updateNow() {
+      navigator.serviceWorker.getRegistration().then((registration) => {
+         if (registration) {
+           registration.update();
+         }
+       });
+   }
+
    /**
     * @return {Promise}
     */
