@@ -79,6 +79,7 @@ export class AppPage extends Page {
       this.templates = {};
       this.components = {};
       this.applications = ABApplicationList.map((App) => new App(AB));
+      this.dataObjectList = [];
       this.dataReady = $.Deferred();
       this.routerReady = $.Deferred();
 
@@ -489,6 +490,11 @@ export class AppPage extends Page {
       };
       this.applications.forEach((app) => {
          mainViewData.routes = mainViewData.routes.concat(app.routes);
+         app.datacollections.forEach((dc) => {
+            if (! this.dataObjectList.find((d) => d.id == dc.id) ){
+               this.dataObjectList.push(dc);
+            }
+         });
       });
       this.appView = this.app.views.create("#main-view", mainViewData);
       appFeedback.init(this.appView.router);
@@ -584,7 +590,9 @@ export class AppPage extends Page {
     * @param {string} [title]
     */
    openRelayLoader(title = null) {
-      this.relayJobsTotal = 0;
+      // use dataObjectList to get the total number of data objects that will be relayed
+      this.relayJobsTotal = this.dataObjectList.length;
+      this.relayJobsTotal = this.relayJobsTotal || 0;
       this.relayJobsDone = 0;
 
       Promise.resolve()
@@ -608,10 +616,13 @@ export class AppPage extends Page {
             .append($relayLoader);
 
          // Create the observer as an arrow function so `this` can be referenced
-         this._relayObserver = (status) => {
+         this._relayObserver = (message) => {
+            let status = message.verb
             if (status == "added") {
                this.relayJobsTotal += 1;
             } else if (status == "done") {
+               this.relayJobsDone += 1;
+            }else if (status == "uninitialized") {
                this.relayJobsDone += 1;
             }
             var percentage = Math.round(
@@ -631,7 +642,8 @@ export class AppPage extends Page {
       this.relayLoaderDialog.open();
       this.app.progressbar.set("#relay-loader .progressbar", 0, 0);
 
-      Network.on("job.*", this._relayObserver);
+      this._relayObserver
+      Network.on("*", this._relayObserver);
    }
 
    /**
@@ -760,6 +772,74 @@ export class AppPage extends Page {
          .catch((err) => {
             this.closeRelayLoader();
             console.log("::: forceApplicationReset(): error");
+            analytics.logError(err);
+         });
+   }
+
+   /**
+    * Reinitialize local data for the AB Applications.
+    * This is manually called by the user from the Settings page.
+    * usually because there is a problem with the local data.
+    *
+    * @return {Promise}
+    */
+   forceLocalReset() {
+         this.openRelayLoader("<t>Resetting applications</t>");
+         this.pendingApplicationReset = true;
+         this.appResetOK = true;
+
+         
+         // TODO: Implement code to clear local code and get new code from the server
+         // ex: the platform code, the ABApplication code, and the ABObject code
+         // 
+         
+         // TODO: Implement any additional logic or actions required after clearing and getting new code
+      
+      
+      // Reset the cached application data
+      console.log("::: forceLocalReset(): Relay.init().");
+      return Network.init()
+         .then(() => {
+            var allClears = [];
+            var allResets = [];
+
+            // tell all apps to .init() again
+            this.applications.forEach((abApp) => {
+               if (abApp.clearSystemData) {
+                  allClears.push(abApp.clearSystemData());
+               }
+               allResets.push(abApp.reset());
+            });
+
+            // tell all AB apps to .init() again:
+            // this.applications.forEach((abApp) => {
+            //     allInits.push(abApp.reset());
+            // });
+            console.log(
+               "::: importSettings(): App.reset() x" + allResets.length
+            );
+            return Promise.all(allClears).then(() => {
+               return Promise.all(allResets);
+            });
+         })
+         .then(() => {
+            this.pendingApplicationReset = false;
+            this.closeRelayLoader();
+            if (this.appResetOK) {
+               analytics.event("forceLocalReset Finished");
+               console.log("::: forceLocalReset Finished :::");
+               this.app.panel.open("left");
+               this.emit("resetComplete");
+            }
+         })
+         .then(() => {
+            // wipe the cache and hard reload
+            window.location.reload(true);
+            // this.reload();
+         })
+         .catch((err) => {
+            this.closeRelayLoader();
+            console.log("::: forceLocalReset(): error");
             analytics.logError(err);
          });
    }
