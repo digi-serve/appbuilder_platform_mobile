@@ -40,7 +40,7 @@ class Analytics extends EventEmitter {
          try {
             console.log("Sentry.io plugin required, now init");
             sentry.init({
-               dsn: process?.env?.SENTRY_DEV_DSN || config.sentryio.dsn, // "https://9df6fd4623934fadb4a9ee6bb6ec887f@sentry.io/1186956",
+               dsn: config.sentryio.dsn, // "https://9df6fd4623934fadb4a9ee6bb6ec887f@sentry.io/1186956",
                debug: true,
                release: version,
             });
