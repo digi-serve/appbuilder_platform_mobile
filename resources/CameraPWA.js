@@ -155,13 +155,14 @@ class CameraPWA extends EventEmitter {
     */
    getCameraPhoto(width = defaultWidth, height = defaultHeight) {
       return new Promise((resolve, reject) => {
+         const fileUUID = uuid();
          let filename = null;
          let fileEntry = null;
          let url = null;
 
          this._getPicture("camera")
             .then((file) => {
-               filename = uuid() + "_" + file.name;
+               filename = `${fileUUID}_${file.name}`;
                fileEntry = file;
                url = URL.createObjectURL(file);
                // determine size of file
@@ -198,6 +199,7 @@ class CameraPWA extends EventEmitter {
             })
             .then(() => {
                resolve({
+                  uuid: fileUUID,
                   filename,
                   fileEntry,
                   url,
@@ -231,13 +233,14 @@ class CameraPWA extends EventEmitter {
     */
    getLibraryPhoto(width = defaultWidth, height = defaultHeight) {
       return new Promise((resolve, reject) => {
+         const fileUUID = uuid();
          let filename = null;
          let fileEntry = null;
          let url = null;
 
          this._getPicture("library")
             .then((file) => {
-               filename = uuid() + "_" + file.name;
+               filename = `${fileUUID}_${file.name}`;
                fileEntry = file;
                url = URL.createObjectURL(file);
 
@@ -270,6 +273,7 @@ class CameraPWA extends EventEmitter {
             })
             .then(() => {
                resolve({
+                  uuid: fileUUID,
                   filename,
                   fileEntry,
                   url,
