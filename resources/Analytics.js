@@ -54,7 +54,7 @@ class Analytics extends EventEmitter {
       }
 
       // Countly for everything else
-      if (Countly) {
+      if (Countly && process.env.NODE_ENV == "production") {
          Countly.q = Countly.q || [];
          // Track sessions automatically (recommended)
          Countly.q.push(["track_sessions"]);
@@ -130,7 +130,7 @@ class Analytics extends EventEmitter {
     * @param {string} pageName
     */
    pageView(pageName) {
-      if (Countly) {
+      if (Countly && process.env.NODE_ENV == "production") {
          Countly.q.push(["track_pageview", pageName]);
       }
 
@@ -226,8 +226,11 @@ class Analytics extends EventEmitter {
       }
 
       this.ready.then(() => {
-         if (this.sentry) {
+         if (this.sentry && process.env.NODE_ENV == "production") {
             this.sentry.captureException(err);
+         } else {
+            // ?? 
+            console.error(err);
          }
 
          // For Countly
