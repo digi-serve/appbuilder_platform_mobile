@@ -129,11 +129,22 @@ class Updater extends EventEmitter {
    }
 
    updateNow() {
-      navigator.serviceWorker.getRegistration().then((registration) => {
-         if (registration) {
-           registration.update();
-         }
-       });
+      // navigator.serviceWorker.getRegistration().then((registration) => {
+      // if (registration) {
+      // codePush is no longer available in the global scope
+      // so we need to use the plugin directly
+      if ('serviceWorker' in navigator) {
+         navigator.serviceWorker.getRegistrations()
+           .then(registrations => {
+             registrations.forEach(registration => {
+               console.log(registration);
+               registration.update();
+             });
+           })
+           .catch(error => {
+             console.error('Error getting service worker registrations:', error);
+           });
+       }
    }
 
    /**
