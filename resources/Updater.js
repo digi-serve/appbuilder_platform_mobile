@@ -135,16 +135,16 @@ class Updater extends EventEmitter {
       // so we need to use the plugin directly
       if ('serviceWorker' in navigator) {
          navigator.serviceWorker.getRegistrations()
-           .then(registrations => {
-             registrations.forEach(registration => {
-               console.log(registration);
+            .then(registrations => {
+            registrations.forEach(registration => {
+               console.log("Updater.updateNow: navigator.serviceWorker.getRegistration deleting this registration:", registration)
                registration.update();
-             });
+            });
            })
            .catch(error => {
              console.error('Error getting service worker registrations:', error);
            });
-       }
+      }
    }
 
    /**

@@ -185,7 +185,7 @@ Template7.registerHelper("lockDisable", (field) => {
 function extractNumber(parent, field) {
    // check all fields and return 0 if undefined
    if (!parent || (!field && typeof parent != "number")) {
-      console.error("commas helper: parent or field is undefined!");
+      console.warn("commas helper: parent or field is undefined!");
       return "0";
    }
    // check whether field can be used as an object key
