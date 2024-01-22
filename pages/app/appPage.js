@@ -611,6 +611,8 @@ export class AppPage extends Page {
 
          // Put the Relay Loader inside the dialog
          var $relayLoader = $("#relay-loader"); // see templates/app.js
+         // set relay-loader to display: block
+         $relayLoader.css("display", "block");
          $(this.relayLoaderDialog.el)
             .find(".dialog-inner")
             .append($relayLoader);
@@ -650,6 +652,8 @@ export class AppPage extends Page {
     * Remove the relay progress dialog
     */
    closeRelayLoader() {
+      // re-hide relay-loader
+      $("#relay-loader").css("display", "none");
       if (this.relayLoaderDialog) {
          this.relayLoaderDialog.close();
       } else {
@@ -657,7 +661,7 @@ export class AppPage extends Page {
             "closeRelayLoader() called, but no .relayLoaderDialog  found."
          );
       }
-      Network.off("job.*", this._relayObserver);
+      Network.off("*", this._relayObserver);
    }
 
    /**
