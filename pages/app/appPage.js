@@ -585,6 +585,57 @@ export class AppPage extends Page {
    }
 
    /**
+    * Attach a progress bar to the target element.
+    *
+    */
+   buildRelayProgressBar(target = null) {
+      //progressBar
+      // use dataObjectList to get the total number of data objects that will be relayed
+      this.relayJobsTotal = this?.dataObjectList?.length || 0;
+      this.relayJobsDone = 0;
+
+      Promise.resolve()
+         .then(() => {
+            return Network.getTokens();
+         })
+         .then((tokens = {}) => {
+            this.relayJobsTotal = Object.keys(tokens).length;
+         });
+
+
+      // Put the Relay Loader inside the dialog
+      var $progressbar = $(`#${target}`); // see templates/app.js
+      // set progress-bar to display: block
+      $progressbar.css("display", "block");
+
+      // Create the observer as an arrow function so `this` can be referenced
+      this._relayObserver = (message) => {
+         let status = message.verb
+         if (status == "added") {
+            this.relayJobsTotal += 1;
+         } else if (status == "done") {
+            this.relayJobsDone += 1;
+         }else if (status == "uninitialized") {
+            this.relayJobsDone += 1;
+         }
+         var percentage = Math.round(
+            (this.relayJobsDone / this.relayJobsTotal) * 100 || 0
+         );
+         this.app.progressbar.set(
+            `#${target} .progressbar`,
+            percentage,
+            100
+         );
+      };
+      
+
+      this.app.progressbar.set(`#${target} .progressbar`, 0, 0);
+
+      this._relayObserver
+      Network.on("*", this._relayObserver);
+      return $progressbar;
+   }
+   /**
     * Display the relay progress dialog.
     *
     * @param {string} [title]
@@ -609,43 +660,18 @@ export class AppPage extends Page {
             closeByBackdropClick: false,
          });
 
-         // Put the Relay Loader inside the dialog
-         var $relayLoader = $("#relay-loader"); // see templates/app.js
-         // set relay-loader to display: block
-         $relayLoader.css("display", "block");
+         // $(this.relayLoaderDialog.el)
+         //    .find(".dialog-inner")
+         //    .append($("#relay-loader"));
          $(this.relayLoaderDialog.el)
             .find(".dialog-inner")
-            .append($relayLoader);
-
-         // Create the observer as an arrow function so `this` can be referenced
-         this._relayObserver = (message) => {
-            let status = message.verb
-            if (status == "added") {
-               this.relayJobsTotal += 1;
-            } else if (status == "done") {
-               this.relayJobsDone += 1;
-            }else if (status == "uninitialized") {
-               this.relayJobsDone += 1;
-            }
-            var percentage = Math.round(
-               (this.relayJobsDone / this.relayJobsTotal) * 100 || 0
-            );
-            this.app.progressbar.set(
-               "#relay-loader .progressbar",
-               percentage,
-               100
-            );
-         };
+            .append(this.buildRelayProgressBar("relay-loader"));
       }
 
       if (title) {
          this.relayLoaderDialog.setTitle(title);
       }
       this.relayLoaderDialog.open();
-      this.app.progressbar.set("#relay-loader .progressbar", 0, 0);
-
-      this._relayObserver
-      Network.on("*", this._relayObserver);
    }
 
    /**
@@ -680,7 +706,7 @@ export class AppPage extends Page {
 
       // Show message if it takes too long
       var warnUI = setTimeout(() => {
-         self.$app.toast(
+         this.app.toast(
             "<t>Data update is taking a long time...</t>",
             "<t>Sorry</t>"
          ).open();

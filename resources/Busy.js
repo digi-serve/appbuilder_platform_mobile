@@ -30,12 +30,12 @@ class Busy extends EventEmitter {
             // Force kill the preloader
             this.app.dialog.close();
             // tell user we are still working in the background
-            self.appPage.app.toast
-            .create({
-                  text: `<center><t data-cy="wip" >working in the background...</t></center>`,
-               position: "center",
-            })
-            .open();
+            this.app.toast
+               .create({
+                     text: `<center><t data-cy="wip" >working in the background...</t></center>`,
+                  position: "center",
+               })
+               .open();
          }
       }, 20000);
    }
