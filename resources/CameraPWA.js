@@ -153,68 +153,35 @@ class CameraPWA extends EventEmitter {
     *       url: <string> // only valid for current session
     *    }
     */
-   getCameraPhoto(width = defaultWidth, height = defaultHeight) {
-      return new Promise((resolve, reject) => {
+   async getCameraPhoto(
+      width = defaultWidth,
+      height = defaultHeight,
+      timeout = 5000,
+   ) {
+      try {
          const fileUUID = uuid();
-         let filename = null;
-         let fileEntry = null;
-         let url = null;
+         const file = await this._getPicture("library");
 
-         this._getPicture("camera")
-            .then((file) => {
-               filename = `${fileUUID}_${file.name}`;
-               fileEntry = file;
-               url = URL.createObjectURL(file);
-               // determine size of file
-               let sizeInBytes = fileEntry.size;
+         // check the format and the size of the image
+         // if it is not a jpeg or png reject the promise
+         if (!ValidImageTypes.includes(file["type"]))
+            throw new Error("Image is not a valid type");
 
-               // check the format and the size of the image
-               // if it is not a jpeg or png reject the promise
-               if (!ValidImageTypes.includes(file["type"])) {
-                  let err = new Error("Image is not a valid type");
-                  reject(err);
-                  return err;
-               }
-
-               if (sizeInBytes > MAX_IMAGE_SIZE) {
-                  // ONLY if browser is safari
-                  // if (na
-                  // // TODO find a way to compress on iOS
-                  // let err = new Error("Image is too large, please select a smaller image");
-                  // reject(err);
-                  // return err;
-                  // } else {
-                  // compress the image before it goes into localStorage
-                  return this.recurseShrink(file, null, { timeout: 5000 }).then(
-                     (compressedFile) => {
-                        // The next steps in the app HAVE to wait for me to return
-                        return fileStorage.put(filename, compressedFile);
-                     },
-                  );
-                  // }
-               } else {
-                  // no compression needed
-                  return fileStorage.put(filename, file);
-               }
-            })
-            .then(() => {
-               resolve({
-                  uuid: fileUUID,
-                  filename,
-                  fileEntry,
-                  url,
-               });
-            })
-            .catch((err) => {
-               if (err.message == "Canceled") {
-                  // User canceled the photo. Not a real error.
-                  reject(err);
-               } else {
-                  Log("CameraPWA:getCameraPhoto():Error", err);
-                  reject(err);
-               }
-            });
-      });
+         const compressFile = await this.recurseShrink(file, null, {
+            timeout,
+         });
+         return {
+            uuid: fileUUID,
+            filename: `${fileUUID}_${compressFile.name}`,
+            fileEntry: compressFile,
+            url: URL.createObjectURL(compressFile),
+         };
+      } catch (err) {
+         // User canceled the photo. Not a real error.
+         if (err.message !== "Canceled")
+            Log("CameraPWA:getCameraPhoto():Error", err);
+         throw err;
+      }
    }
 
    /**
@@ -231,64 +198,32 @@ class CameraPWA extends EventEmitter {
     *       url: <string> // only valid for current session
     *    }
     */
-   getLibraryPhoto(width = defaultWidth, height = defaultHeight) {
-      return new Promise((resolve, reject) => {
+   async getLibraryPhoto(
+      width = defaultWidth,
+      height = defaultHeight,
+      timeout = 10000,
+   ) {
+      try {
          const fileUUID = uuid();
-         let filename = null;
-         let fileEntry = null;
-         let url = null;
-
-         this._getPicture("library")
-            .then((file) => {
-               filename = `${fileUUID}_${file.name}`;
-               fileEntry = file;
-               url = URL.createObjectURL(file);
-
-               // determine size of file
-               let sizeInBytes = fileEntry.size;
-               if (sizeInBytes > MAX_IMAGE_SIZE) {
-                  // check if we are in iOS or Safari
-                  // if (navigator.userAgent.match(/(iPad|iPhone|iPod)/g || [])) {
-                  //    // tell the user to upload a smaller image
-                  //    // TODO find a way to compress on iOS
-                  //    let err = new Error("Image is too large, please select a smaller image");
-                  //    reject(err);
-                  //    return err;
-                  // } else {
-                  // compress the image before it goes into localStorage
-
-                  //run this fucntion
-                  return this.recurseShrink(file, null, {
-                     timeout: 10000,
-                  }).then((compressedFile) => {
-                     // The next steps in the app HAVE to wait for me to return
-                     return fileStorage.put(filename, compressedFile);
-                  });
-                  //but have timeout here, to cancell it and warn user
-                  // }
-               } else {
-                  // no compression needed, iOS and Safari can send it fine
-                  return fileStorage.put(filename, file);
-               }
-            })
-            .then(() => {
-               resolve({
-                  uuid: fileUUID,
-                  filename,
-                  fileEntry,
-                  url,
-               });
-            })
-            .catch((err) => {
-               if (err.message == "Canceled") {
-                  // User canceled the photo. Not a real error.
-                  reject(err);
-               } else {
-                  Log("CameraPWA:getCameraPhoto():Error", err);
-                  reject(err);
-               }
-            });
-      });
+         const file = await this.recurseShrink(
+            await this._getPicture("library"),
+            null,
+            {
+               timeout,
+            },
+         );
+         return {
+            uuid: fileUUID,
+            filename: `${fileUUID}_${file.name}`,
+            fileEntry: file,
+            url: URL.createObjectURL(file),
+         };
+      } catch (err) {
+         // User canceled the photo. Not a real error.
+         if (err.message !== "Canceled")
+            Log("CameraPWA:getCameraPhoto():Error", err);
+         throw err;
+      }
    }
 
    ////////
@@ -469,6 +404,7 @@ class CameraPWA extends EventEmitter {
     *      Resolves with a file containing the compressed image data.
     */
    async recurseShrink(file, quality, options = {}) {
+      if (file.size < MAX_IMAGE_SIZE) return file;
       let recurseShrinkTimeout;
       const GAIN_FATOR = 0.1;
       let qualityValue = quality ?? 1;
