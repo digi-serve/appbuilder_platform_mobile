@@ -229,39 +229,6 @@ class CameraPWA extends EventEmitter {
    ////////
    // Photo file management
    ////////
-
-   /**
-    * Copies an existing image into the temp directory and delivers the
-    * URL for it.
-    *
-    * This is no longer necessary under PWA.
-    *
-    * @param {string|File} imageFile
-    *      Either a string filename, or a File object for this image
-    *      file.
-    * @return {Promise}
-    *      Resolves with the URL to the temp image.
-    */
-   tempUrl(imageFile) {
-      console.warn("camera.tempURL() is no longer needed.");
-      return Promise.resolve()
-         .then(() => {
-            if (imageFile instanceof File) {
-               return imageFile;
-            } else if (typeof imageFile == "string") {
-               return this.loadPhotoByName(imageFile).then((image) => {
-                  return image.fileEntry;
-               });
-            } else {
-               throw new TypeError();
-            }
-         })
-         .then((fileEntry) => {
-            let url = URL.createObjectURL(fileEntry);
-            return url;
-         });
-   }
-
    /**
     * Remove a photo by its filename.
     *
@@ -462,12 +429,9 @@ class CameraPWA extends EventEmitter {
       });
    }
 
-   async base64ByName(name) {
-      const file = await fileStorage.get(name);
-      const sizeInBytes = file.size;
-
+   async base64ByName(file) {
       // Determine if compression is needed
-      if (sizeInBytes > MAX_IMAGE_SIZE) {
+      if (file.size > MAX_IMAGE_SIZE) {
          // ensure file is compressed to less than 500000 bytes
          //return this.convertBlobToBase64(this.recurseShrink(file));
          const timeoutMilliseconds = 10000; // Set your desired timeout in milliseconds (e.g., 10 seconds)
