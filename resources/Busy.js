@@ -23,7 +23,7 @@ class Busy extends EventEmitter {
       this.app = app;
    }
 
-   show(text = "Saving") {
+   show(text = "Saving", timeout = 20000) {
       if (!this.app) {
          console.error(
             "use of busy.show() before busy.setApp() is initialized."
@@ -35,10 +35,11 @@ class Busy extends EventEmitter {
          this.busyInProgress = true;
          var xlatedText = t(text);
          this.app.dialog.preloader(xlatedText);
+         if (timeout === 0) return;
          setTimeout(() => {
             // Force kill the preloader
             this.app.dialog.close();
-         }, 20000);
+         }, timeout);
       }
    }
 
