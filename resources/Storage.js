@@ -267,32 +267,17 @@ class Storage extends EventEmitter {
       var isEncrypted = 0;
       // Serialize
       if (options.serialize) {
-         try {
-            value = JSON.stringify(value);
-         } catch (exception) {
-            var cleanObj = (obj, level = 1) => {
-               if (!obj) return;
-               Object.keys(obj).forEach((k) => {
-                  if (k.indexOf("__relation") > -1) {
-                     if (level == 1) {
-                        if (Array.isArray(obj[k])) {
-                           obj[k].forEach((o) => {
-                              cleanObj(o, level + 1);
-                           });
-                        } else {
-                           cleanObj(obj[k], level + 1);
-                        }
-                     } else {
-                        delete obj[k];
-                     }
-                  }
-               });
-            };
-            Object.keys(value).forEach((k) => {
-               cleanObj(value[k]);
-            });
-            value = JSON.stringify(value);
-         }
+         const circularItems = []
+         value = JSON.stringify(value, (key, value) => {
+            if (typeof value === "object" && value !== null) {
+               // Duplicate reference found, discard key
+               if (circularItems.includes(value)) return;
+
+               // Store value in our collection
+               circularItems.push(value);
+            }
+            return value;
+         })
       }
 
       // Encrypt

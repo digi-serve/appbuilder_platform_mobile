@@ -1,11 +1,10 @@
 import EventEmitter from 'eventemitter2';
-import uuid from 'uuid/v1';
-import { storage, Storage } from './Storage.js';
 import analytics from './Analytics.js';
 import Log from './Log.js';
 import Compressor from "compressorjs";
 
 const storeName = "file_data";
+const DEFAULT_SLICESIZE = 512;
 
 /**
  * Uses an IndexedDB backend to store file blobs. Encryption is not currently
@@ -96,16 +95,16 @@ class FileStorage extends EventEmitter {
    /**
     * Save a file under a given name.
     *
-    * @param {string} name
-    * @param {Blob} data
+    * @param {string} key
+    * @param {Blob} value
     * @return {Promise}
     */
-   put(name, file) {
+   put(key, value) {
       return new Promise((resolve, reject) => {
          var transaction = this.db.transaction(storeName, "readwrite");
          transaction.oncomplete = (event) => {
-            if (file.size) {
-               this._updateTotalSize(file.size);
+            if (value.size) {
+               this._updateTotalSize(value.size);
             }
             resolve();
          }
@@ -115,7 +114,7 @@ class FileStorage extends EventEmitter {
          }
 
          var store = transaction.objectStore(storeName);
-         var req = store.put(file, name);
+         var req = store.put(value, key);
       });
    }
 
@@ -123,17 +122,17 @@ class FileStorage extends EventEmitter {
    /**
     * Retrieve a stored file.
     *
-    * @param {string} name
+    * @param {string} key
     * @return {Promise}
     *    Resolves with {File|Blob}
     */
-   get(name) {
+   get(key) {
       return new Promise((resolve, reject) => {
          // Sometimes the DB may not be initialized in time
          if (!this.db) {
             console.warn("FileStorage DB not available yet. Retrying...");
             setTimeout(() => {
-               this.get(name)
+               this.get(key)
                   .then(resolve)
                   .catch(reject);
             }, 50);
@@ -147,7 +146,7 @@ class FileStorage extends EventEmitter {
             }
 
             var store = transaction.objectStore(storeName);
-            var req = store.get(name);
+            var req = store.get(key);
             req.onsuccess = (event) => {
                let file = req.result;
                resolve(file);
@@ -189,38 +188,79 @@ class FileStorage extends EventEmitter {
    }
    
 
+   /**
+    * Convert base64 data to a File object.
+    *
+    * @param {string} filename
+    * @param {string} base64Data
+    * @param {Object} options
+    *    endings - {string} How to interpret newline characters (\n) within the contents,
+    *       if the data is text.
+    *    lastModified - {number} A number representing the number of milliseconds
+    *       between the Unix time epoch and when the file was last modified.
+    *    sliceSize - {number} SliceSize to process the byteCharacters
+    *    type - {string} the content type of the file i.e (image/jpeg - image/png - text/plain)
+    * @return {File}
+    */
+   convertBase64DataToFile(filename, base64Data, options = {}) {
+      /**
+       * Convert a base64 string in a Blob according to the data.
+       * @see http://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
+       */
+      const sliceSize = options.sliceSize || DEFAULT_SLICESIZE;
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
+      for (
+         let offset = 0;
+         offset < byteCharacters.length;
+         offset += sliceSize
+      ) {
+         const slice = byteCharacters.slice(offset, offset + sliceSize);
+         const byteNumbers = new Array(slice.length);
+         for (let i = 0; i < slice.length; i++)
+            byteNumbers[i] = slice.charCodeAt(i);
+         byteArrays.push(new Uint8Array(byteNumbers));
+      }
+
+      // Convert a Blob object to a File object.
+      const copiedOptions = structuredClone(options);
+      delete copiedOptions.sliceSize;
+      return new File([new Blob(byteArrays)], filename, copiedOptions);
+   }
 
    /**
-    * Retrieve the URL of a stored file.
+    * Convert a File object to a base64 string.
     *
-    * To prevent memory leaks, you can call URL.revokeObjectURL() on the URL
-    * after you are done with it.
-    *
-    * @param {string} name
+    * @param {File} file
+    *      Blob to convert
     * @return {Promise}
-    *    Resolves with {string}
+    *      Resolves with {string}
     */
-   getURL(name) {
-      return this.get(name)
-         .then((file) => {
-            return URL.createObjectURL(file);
-         })
+   convertFileToBase64Data(file) {
+      return new Promise((resolve) => {
+         const reader = new FileReader();
+         reader.onloadend = function () {
+            const base64 = reader.result.split(",")[1]; // Remove data URL prefix
+            resolve(base64);
+         };
+         reader.readAsDataURL(file);
+      });
    }
 
 
    /**
     * Delete a stored file.
     *
-    * @param {string} name
+    * @param {string} key
     * @return {Promise}
     */
-   delete(name) {
+   delete(key) {
       return new Promise((resolve, reject) => {
          // Retrieve the stored file first
-         this.get(name)
+         this.get(key)
             .then((file) => {
                if (!file) {
-                  console.warn("Attempt to delete non-existent file: ", name);
+                  console.warn("Attempt to delete non-existent file: ", key);
                   resolve();
                   return;
                }
@@ -233,7 +273,7 @@ class FileStorage extends EventEmitter {
                   reject(event.error);
                }
                var store = transaction.objectStore(storeName);
-               var req = store.delete(name);
+               var req = store.delete(key);
                req.onsuccess = (event) => {
                   this._updateTotalSize(-fileSize);
                   resolve();
