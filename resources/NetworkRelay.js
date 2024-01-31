@@ -394,7 +394,7 @@ class NetworkRelay extends NetworkRest {
    encrypt(data) {
       var encoded = "";
 
-      if (data) {
+      if (data && this.aesKey) {
          // var startTime = new Date().getTime();
          var plaintext = JSON.stringify(data);
 

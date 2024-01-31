@@ -42,7 +42,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       Network.on(ABDataCollectionCore.contextKey(), (context, data) => {
          // is this update for me?
          if (context.id == this.id) {
-            //console.log("-----------");
             // console.log(
             //    ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
             // );

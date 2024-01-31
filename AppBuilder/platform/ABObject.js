@@ -16,26 +16,31 @@ module.exports = class ABObject extends ABObjectCore {
       Network.on(ABObjectCore.contextKey(), (context, data) => {
          // is this update for me?
          if (context.id == this.id) {
-            console.log();
-            console.log("-----------");
-            console.log(":: ABObject.Relay.on:" + ABObjectCore.contextKey());
-            console.log(":: context:", context);
+            // console.log(":: ABObject.Relay.on:" + ABObjectCore.contextKey());
+            // console.log(":: context:", context);
 
             if (
-               typeof data == "string" &&
-               /\[[Oo]bject,? [Oo]bject\]/.test(data)
+               (typeof data == "string" &&
+               /\[[Oo]bject,? [Oo]bject\]/.test(data)) ||
+               data.error
             ) {
                let error = new Error(`ABObject(): bad data,  '${this.name}'`);
                // send to sails log:
-               console.log(error);
+               Analytics.logError(error);
             }
             if (this.name) {
-               console.log(":: name:", this.name);
+               console.log(":: name:", this.name, {
+                  ":: context:": context,
+                  ":: data:": data,
+               });
+            } else {
+               console.log(":: context", context, {
+                  ":: data": data,
+               });
             }
             if (data.error || data.name === "StatusCodeError") {
                console.error({ "Error getting data: ": data.name });
             }
-            console.log(":: data:", data);
 
             context.verb = context.verb || "unknown";
             switch (context.verb) {

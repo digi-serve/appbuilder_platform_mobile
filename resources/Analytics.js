@@ -36,7 +36,7 @@ class Analytics extends EventEmitter {
    init() {
       // this.sentry = this.sentry || Sentry || null;
       // Sentry.io for crash reporting
-      if (sentry) {
+      if (sentry && process.env.NODE_ENV == "production") {
          try {
             console.log("Sentry.io plugin required, now init");
             sentry.init({

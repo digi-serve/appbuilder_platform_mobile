@@ -23,7 +23,25 @@ class Busy extends EventEmitter {
       this.app = app;
    }
 
-   show(text = "Saving", timeout = 20000) {
+   setAntiFrustratedUserTimeout(timeout = 20000) {
+      if (timeout === 0) return;
+      // check if we are still busy after 20 seconds
+      setTimeout(() => {
+         if (this.busyInProgress) {
+            // Force kill the preloader
+            this.app.dialog.close();
+            // tell user we are still working in the background
+            this.app.toast
+               .create({
+                     text: `<center><t data-cy="wip" >working in the background...</t></center>`,
+                  position: "center",
+               })
+               .open();
+         }
+      }, timeout);
+   }
+
+   show(text = "Saving", timeout) {
       if (!this.app) {
          console.error(
             "use of busy.show() before busy.setApp() is initialized."
@@ -35,11 +53,18 @@ class Busy extends EventEmitter {
          this.busyInProgress = true;
          var xlatedText = t(text);
          this.app.dialog.preloader(xlatedText);
-         if (timeout === 0) return;
-         setTimeout(() => {
-            // Force kill the preloader
-            this.app.dialog.close();
-         }, timeout);
+         this.setAntiFrustratedUserTimeout(timeout);
+         // setTimeout(() => {
+         //    // Force kill the preloader
+         //    this.app.dialog.close();
+         //    // tell user we are still working in the background
+         //    self.appPage.app.toast
+         //    .create({
+         //          text: `<center><t data-cy="wip" >working in the background...</t></center>`,
+         //       position: "center",
+         //    })
+         //    .open();
+         // }, 20000);
       }
    }
 
@@ -54,7 +79,7 @@ class Busy extends EventEmitter {
       if (this.busyInProgress) {
          this.busyInProgress = false;
       }
-         this.app.dialog.close();
+      this.app.dialog.close();
    }
 }
 
