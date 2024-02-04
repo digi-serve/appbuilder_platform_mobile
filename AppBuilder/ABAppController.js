@@ -7,8 +7,6 @@
  * Is an EventEmitter.
  */
 "use strict";
-
-// import ABApplicationConfig from "../../ABApplicationConfig";
 import EventEmitter2 from "eventemitter2";
 
 import account from "../resources/Account.js";
@@ -233,7 +231,7 @@ export default class ABAppController extends EventEmitter2 {
    listItems(objKey, fieldKey, langCode = "en") {
       var results = [];
 
-      var object = this.object(objKey);
+      var object = this.AB.objectByID(objKey);
       if (!object) return results;
 
       var field = object.fields((f) => {

@@ -8,7 +8,6 @@
  * This platform ABMLClass will define 2 methods that allow for the translation
  * untranslation of this data.
  */
-// var ABDefinition = require("./ABDefinition");
 const ABMLClassCore = require("../core/ABMLClassCore");
 
 const { translate } = require("../../resources/Translate");
