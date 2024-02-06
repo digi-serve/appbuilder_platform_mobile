@@ -26,7 +26,12 @@ module.exports = class ABObject extends ABObjectCore {
             ) {
                let error = new Error(`ABObject(): bad data,  '${this.name}'`);
                // send to sails log:
-               Analytics.logError(error);
+               console.error(error);
+               Analytics?.logError(error);
+               // send another request to the server to get the data
+               this.model().remote().findAll();
+               // return so we stop trying to process an error as if there's data in it...
+               return;
             }
             if (this.name) {
                console.log(":: name:", this.name, {
