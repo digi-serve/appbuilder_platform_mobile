@@ -7,9 +7,7 @@
  */
 
 // const { values } = require("lodash");
-var ABModelCore = require("../core/ABModelCore");
-
-var Network = require("../../resources/Network").default;
+const ABModelCore = require("../core/ABModelCore");
 
 module.exports = class ABModelRelay extends ABModelCore {
    /**
@@ -28,7 +26,7 @@ module.exports = class ABModelRelay extends ABModelCore {
          var params = this.urlParamsCreate(values);
          var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
          responseContext.context.verb = "create";
-         return Network.post(params, responseContext).then(() => {
+         return this.AB.network.post(params, responseContext).then(() => {
             // a relay doesn't return the data right away so:
             return [];
          });
@@ -54,7 +52,7 @@ module.exports = class ABModelRelay extends ABModelCore {
             // and the ABObject will know to use that if it is available.
             responseContext.context.pk = id;
 
-            return Network["delete"](params, responseContext).then(() => {
+            return this.AB.network["delete"](params, responseContext).then(() => {
                // a relay doesn't return the data right away so:
                return [];
             });
@@ -101,7 +99,7 @@ module.exports = class ABModelRelay extends ABModelCore {
          var params = this.urlParamsFind(cond);
          var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
          responseContext.context.verb = responseContext.context.verb || "find";
-         return Network.get(params, responseContext).then(() => {
+         return this.AB.network.get(params, responseContext).then(() => {
             // a relay doesn't return the data right away so:
             return [];
          });
@@ -128,7 +126,7 @@ module.exports = class ABModelRelay extends ABModelCore {
          responseContext.context.jobID = this.AB.uuid();
          this.object.latestUpdates = this.object.latestUpdates || {};
          this.object.latestUpdates[id] = responseContext.context.jobID;
-         return Network.put(params, responseContext).then(() => {
+         return this.AB.Network.put(params, responseContext).then(() => {
             // a relay doesn't return the data right away so:
             return [];
          });

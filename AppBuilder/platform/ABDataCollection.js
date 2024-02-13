@@ -5,14 +5,7 @@
  *
  */
 
-var ABDataCollectionCore = require("../core/ABDataCollectionCore");
-
-// var ABQL = require("./ql/ABQL");
-
-var Account = require("../../resources/Account").default;
-var Analytics = require("../../resources/Analytics").default;
-var Network = require("../../resources/Network").default;
-var storage = require("../../resources/Storage").storage;
+const ABDataCollectionCore = require("../core/ABDataCollectionCore");
 
 module.exports = class ABDataCollection extends ABDataCollectionCore {
    constructor(...args) {
@@ -39,7 +32,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this.__dataCollection = this._dataCollectionNew();
 
       // Setup a listener for this DC to catch updates from the relay
-      Network.on(ABDataCollectionCore.contextKey(), (context, data) => {
+      this.AB.network.on(ABDataCollectionCore.contextKey(), (context, data) => {
          // is this update for me?
          if (context.id == this.id) {
             // console.log(
@@ -59,7 +52,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   `Server sent bad data, try tweaking this datacollection: '${objName}'`
                );
                // send to sails log:
-               Analytics.logError(error);
+               this.AB.analytics.logError(error);
             }
             if (this.name) {
                console.log(":: name:", this.name, {
@@ -119,7 +112,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   this.emit("data", normalizedData);
                });
          }
-      }); // end Network.on()
+      });
 
       //// TODO: test out these OBJ.on() propagations:
       var OBJ = this.datasource;
@@ -277,6 +270,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          //
          //  save these to disk
          //
+         const storage = this.AB.storage
          var lock = storage.Lock(this.refStorage());
          return lock
             .acquire()
@@ -342,7 +336,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                "ABViewDataCollection:platformInit(): unknown datasource"
             );
             dsError.context = { settings: this.settings };
-            Analytics.logError(dsError);
+            this.AB.analytics.logError(dsError);
 
             // but continue on just in case this is a dangling DC
             // that isn't actually being used.
@@ -355,6 +349,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             .platformInit()
             .then((objectData) => {
                // once that is done, make sure we can track our DC info
+               const storage = this.AB.storage;
                var lock = storage.Lock(this.refStorage());
                return lock
                   .acquire()
@@ -416,6 +411,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             .platformReset()
             .then(() => {
                // once that is done, make sure we can clear our DC info
+               const storage = this.AB.storage;
                var lock = storage.Lock(this.refStorage());
                return lock
                   .acquire()
@@ -454,6 +450,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             this.bootState = "initialized";
          }
          // once that is done, make sure we can track our DC info
+         const storage = this.AB.storage;
          var lock = storage.Lock(this.refStorage());
          return lock
             .acquire()
@@ -504,7 +501,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     */
    currentUserUsername() {
       console.error("Who is calling .currentUserUsername()?");
-      return Account.username;
+      return this.AB.account.username;
    }
 
    /**

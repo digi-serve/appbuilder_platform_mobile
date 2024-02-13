@@ -5,15 +5,14 @@
  *
  */
 
-var ABObjectCore = require("../core/ABObjectCore");
-var Network = require("../../resources/Network").default;
+const ABObjectCore = require("../core/ABObjectCore");
 
 module.exports = class ABObject extends ABObjectCore {
    constructor(...args) {
       super(...args);
 
       // Setup a listener for this Object to catch updates from the relay
-      Network.on(ABObjectCore.contextKey(), (context, data) => {
+      this.AB.network.on(ABObjectCore.contextKey(), (context, data) => {
          // is this update for me?
          if (context.id == this.id) {
             // console.log(":: ABObject.Relay.on:" + ABObjectCore.contextKey());

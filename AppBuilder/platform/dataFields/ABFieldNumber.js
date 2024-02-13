@@ -5,6 +5,5 @@
  *
  */
 
-var ABFieldNumberCore = require("../../core/dataFields/ABFieldNumberCore");
-
+const ABFieldNumberCore = require("../../core/dataFields/ABFieldNumberCore");
 module.exports = class ABFieldNumber extends ABFieldNumberCore {};

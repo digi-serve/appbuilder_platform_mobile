@@ -7,13 +7,7 @@
  * Is an EventEmitter.
  */
 "use strict";
-
-// import ABApplicationConfig from "../../ABApplicationConfig";
 import EventEmitter2 from "eventemitter2";
-
-import account from "../resources/Account.js";
-
-import { /* Storage, */ storage } from "../resources/Storage.js";
 
 export default class ABAppController extends EventEmitter2 {
    /**
@@ -92,7 +86,7 @@ export default class ABAppController extends EventEmitter2 {
             .then(() => {
                // make sure our site user data has been properly
                // loaded. (1st load this needs to come from server call)
-               return account.initUserData();
+               return this.AB.account.initUserData();
             })
             .then(() => {
                this.status = "loading";
@@ -233,7 +227,7 @@ export default class ABAppController extends EventEmitter2 {
    listItems(objKey, fieldKey, langCode = "en") {
       var results = [];
 
-      var object = this.object(objKey);
+      var object = this.AB.objectByID(objKey);
       if (!object) return results;
 
       var field = object.fields((f) => {
@@ -616,7 +610,7 @@ export default class ABAppController extends EventEmitter2 {
     * @return {Promise}
     */
    reset() {
-      return storage
+      return this.AB.storage
          .set(this.refStatusKey(), null)
          .then(() => {
             // make sure each of our Datacollections have resset their
@@ -636,11 +630,11 @@ export default class ABAppController extends EventEmitter2 {
    }
 
    loadState() {
-      return storage.get(`${this.id}-STATE`);
+      return this.AB.storage.get(`${this.id}-STATE`);
    }
 
    saveState(myState) {
-      return storage.set(`${this.id}-STATE`, myState);
+      return this.AB.storage.set(`${this.id}-STATE`, myState);
    }
    /**
     * valueLoad()

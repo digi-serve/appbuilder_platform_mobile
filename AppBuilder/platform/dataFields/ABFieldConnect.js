@@ -5,6 +5,5 @@
  *
  */
 
-var ABFieldConnectCore = require("../../core/dataFields/ABFieldConnectCore");
-
+const ABFieldConnectCore = require("../../core/dataFields/ABFieldConnectCore");
 module.exports = class ABFieldConnect extends ABFieldConnectCore {};
