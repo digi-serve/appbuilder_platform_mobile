@@ -133,6 +133,20 @@ class Updater extends EventEmitter {
       // if (registration) {
       // codePush is no longer available in the global scope
       // so we need to use the plugin directly
+      function clearServiceWorkerCaches() {
+         return window.caches.keys().then(function(cacheNames) {
+            return Promise.all(
+               cacheNames.map(function(cacheName) {
+                  return window.caches.delete(cacheName);
+               })
+            );
+         });
+      }
+      clearServiceWorkerCaches().then(function() {
+         console.log('Service worker caches cleared successfully.');
+      }).catch(function(error) {
+         console.error('Error clearing service worker caches:', error);
+      });
       if ('serviceWorker' in navigator) {
          navigator.serviceWorker.getRegistrations()
             .then(registrations => {
@@ -140,10 +154,10 @@ class Updater extends EventEmitter {
                console.log("Updater.updateNow: navigator.serviceWorker.getRegistration deleting this registration:", registration)
                registration.update();
             });
-           })
-           .catch(error => {
-             console.error('Error getting service worker registrations:', error);
-           });
+         })
+         .catch(error => {
+            console.error('Error getting service worker registrations:', error);
+         });
       }
    }
 

@@ -706,10 +706,11 @@ export class AppPage extends Page {
 
       // Show message if it takes too long
       var warnUI = setTimeout(() => {
-         this.app.toast(
-            "<t>Data update is taking a long time...</t>",
-            "<t>Sorry</t>"
-         ).open();
+         this?.app?.toast
+            .create({
+               text: `<center><t data-cy="updateWarn" >Sorry, Data update is taking a long time...</t></center>`,
+            position: "center",
+         })?.open();
          // analytics.log("warn (45 secs) during fetchApplicationData()");
       }, 45000);
 
