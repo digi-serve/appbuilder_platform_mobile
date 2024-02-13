@@ -11,6 +11,27 @@ const ABModelCore = require("../core/ABModelCore");
 
 module.exports = class ABModelRelay extends ABModelCore {
    /**
+    * @method processRequest
+    * process remote request.
+    * @param {string} method the http request method (get, post, put or delete).
+    * @param {obj} params  request parameters.
+    * @param {obj} responseContext  context parameters.
+    * @return {Promise}
+    */
+   processRequest(method, params, responseContext) {
+      const newResponseContext = Object.assign({}, responseContext);
+      return new Promise((resolve, reject) => {
+         newResponseContext.context.callback = async (err, result) => {
+            if (err != null) reject(new Error(err.message));
+            resolve(result);
+         };
+         (async () => {
+            await this.AB.network[method](params, newResponseContext);
+         })();
+      });
+   }
+
+   /**
     * @method create
     * update model values on the server.
     */
@@ -18,19 +39,15 @@ module.exports = class ABModelRelay extends ABModelCore {
       this.prepareMultilingualData(values);
 
       // make sure any values we create have a UUID field set:
-      var UUID = this.object.fieldUUID(values);
+      const UUID = this.object.fieldUUID(values);
       if (!values[UUID]) values[UUID] = this.AB.uuid();
-
-      return Promise.resolve().then(() => {
-         // fire off a Relay Request to create this on the server too:
-         var params = this.urlParamsCreate(values);
-         var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
-         responseContext.context.verb = "create";
-         return this.AB.network.post(params, responseContext).then(() => {
-            // a relay doesn't return the data right away so:
-            return [];
-         });
-      });
+      // fire off a Relay Request to create this on the server too:
+      this.responseContext.context.verb = "create";
+      return this.processRequest(
+         "post",
+         this.urlParamsCreate(values),
+         this.responseContext,
+      );
    }
 
    /**
@@ -40,32 +57,18 @@ module.exports = class ABModelRelay extends ABModelCore {
     * @return {Promise}
     */
    delete(id) {
-      return Promise.resolve().then(() => {
-         if (id) {
-            // fire off a Relay Request to delete this on the server too:
-            var params = this.urlParamsDelete(id);
-            var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
-            responseContext.context.verb = "delete";
+      // fire off a Relay Request to delete this on the server too:
+      this.responseContext.context.verb = "delete";
 
-            // The data returned from a .delete operation doesn't contain the .id
-            // for the item being deleted.  So store it as part of the context
-            // and the ABObject will know to use that if it is available.
-            responseContext.context.pk = id;
-
-            return this.AB.network["delete"](params, responseContext).then(() => {
-               // a relay doesn't return the data right away so:
-               return [];
-            });
-         } else {
-            console.warn(
-               "::: ABModelRelay.delete(): attempting to delete without a valid id:",
-               id
-            );
-            return Promise.resolve().then(() => {
-               return [];
-            });
-         }
-      });
+      // The data returned from a .delete operation doesn't contain the .id
+      // for the item being deleted.  So store it as part of the context
+      // and the ABObject will know to use that if it is available.
+      this.responseContext.context.pk = id;
+      return this.processRequest(
+         "delete",
+         this.urlParamsDelete(id),
+         this.responseContext,
+      );
    }
 
    /**
@@ -86,24 +89,23 @@ module.exports = class ABModelRelay extends ABModelCore {
       // Those settings should be in AB.Policy.*
       // (however Policies aren't implemented at the moment so...)
 
-      return Promise.resolve().then(() => {
-         // if we are supposed to be working with remote data:
-         // var serviceType = AB.Policy.[someParam]
-         // var params = this.urlParamsFind(cond);
-         // return AB.Comm[serviceType].get(params, {contextParam})
+      // if we are supposed to be working with remote data:
+      // var serviceType = AB.Policy.[someParam]
+      // var params = this.urlParamsFind(cond);
+      // return AB.Comm[serviceType].get(params, {contextParam})
 
-         // else
-         //	return [];
+      // else
+      //	return [];
 
-         // for now:
-         var params = this.urlParamsFind(cond);
-         var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
-         responseContext.context.verb = responseContext.context.verb || "find";
-         return this.AB.network.get(params, responseContext).then(() => {
-            // a relay doesn't return the data right away so:
-            return [];
-         });
-      });
+      // for now:
+      const responseContext = this.responseContext;
+      responseContext.context.verb =
+         responseContext.context.verb || "find";
+      return this.processRequest(
+         "get",
+         this.urlParamsFind(cond),
+         responseContext,
+      );
    }
 
    /**
@@ -114,22 +116,15 @@ module.exports = class ABModelRelay extends ABModelCore {
       this.prepareMultilingualData(values);
 
       // remove empty properties
-      for (var key in values) {
-         if (values[key] == null) delete values[key];
-      }
+      for (const key in values) if (values[key] == null) delete values[key];
 
-      return Promise.resolve().then(() => {
-         // fire off a Relay Request to update this on the server too:
-         var params = this.urlParamsUpdate(id, values);
-         var responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
-         responseContext.context.verb = "update";
-         responseContext.context.jobID = this.AB.uuid();
-         this.object.latestUpdates = this.object.latestUpdates || {};
-         this.object.latestUpdates[id] = responseContext.context.jobID;
-         return this.AB.Network.put(params, responseContext).then(() => {
-            // a relay doesn't return the data right away so:
-            return [];
-         });
-      });
+      // fire off a Relay Request to update this on the server too:
+      const params = this.urlParamsUpdate(id, values);
+      const responseContext = this.responseContext; // this.object.application.cloneDeep(this.responseContext);
+      responseContext.context.verb = "update";
+      responseContext.context.jobID = this.AB.uuid();
+      this.object.latestUpdates = this.object.latestUpdates || {};
+      this.object.latestUpdates[id] = responseContext.context.jobID;
+      return this.processRequest("put", params, responseContext);
    }
 };

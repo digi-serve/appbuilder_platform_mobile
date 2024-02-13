@@ -111,31 +111,29 @@ export default class ABFactory extends ABFactoryCore {
 
       // Setup a listener for this Object to catch updates from the relay
       this.network.on("object", async (context, data) => {
-         if (context.error != null) context.callback?.(context.error);
+         if (context.error != null) {
+            context.callback?.(context.error);
+            this.AB.analytics.logError(error);
+            return;
+         }
          const obj = this.datacollections(
             (datacollection) => datacollection.datasource.id === context.id,
          )[0]?.datasource;
-         if (obj == null) return;
-         if (
-            (typeof data == "string" &&
-               /\[[Oo]bject,? [Oo]bject\]/.test(data)) ||
-            data.error
-         )
-            this.analytics.logError(
-               new Error(`ABObject(): bad data,  '${obj.name}'`),
-            );
-         if (obj.name)
+         if (obj == null) {
+            context.callback?.(new Error(data));
+            this.AB.analytics.logError(data);
+            return;
+         }
+         if (obj.name != null) {
             console.log(":: name:", obj.name, {
                ":: context:": context,
                ":: data:": data,
             });
-         else
+         } else {
             console.log(":: context", context, {
                ":: data": data,
             });
-         if (data.error || data.name === "StatusCodeError")
-            console.error({ "Error getting data: ": data.name });
-         let modifiedData = Object.assign({ id: obj.id, uuid: obj.id }, data);
+         }
          switch (context.verb) {
             case "create":
                // we are being alerted of a NEW object instance.
@@ -143,18 +141,12 @@ export default class ABFactory extends ABFactoryCore {
                // or the server might initiate a push of new data.
 
                // if data does not already exist locally create it
-               await obj
-                  .model()
-                  .local()
-                  .syncRemoteMaster(modifiedData)
-                  .then(() => {
-                     // alert any DataCollections that are using this
-                     // object that there might be new data for them to
-                     // use.
-                     obj.emit("CREATE", modifiedData);
-                  });
+               await obj.model().local().syncRemoteMaster(data);
+               // alert any DataCollections that are using this
+               // object that there might be new data for them to
+               // use.
+               obj.emit("CREATE", data);
                break;
-
             case "update":
                // we are being alerted of UPDATED data from the server.
 
@@ -167,48 +159,43 @@ export default class ABFactory extends ABFactoryCore {
                if (context.jobID) {
                   // Where is `latestUpdates` set?
                   // @see ABModelRelay.js maybe?
-                  if (!obj.latestUpdates) {
+                  if (obj.latestUpdates == null) {
+                     context.callback?.(new Error(data));
+                     this.AB.analytics.logError(data);
                      return;
                   }
                   // if this is the last update we sent for this object
-                  else if (
-                     context.jobID !== obj.latestUpdates[modifiedData.uuid]
-                  ) {
+                  else if (context.jobID !== obj.latestUpdates[data.uuid]) {
+                     context.callback?.(new Error(data));
+                     this.AB.analytics.logError(data);
                      return;
-                  } else {
-                     delete obj.latestUpdates[modifiedData.uuid];
-                  }
+                  } else delete obj.latestUpdates[data.uuid];
                }
 
-               if (modifiedData.status && modifiedData.status == "success")
-                  modifiedData = modifiedData.data || modifiedData;
-               if (modifiedData == null) return;
+               if (data.status && data.status == "success") {
+                  data = data.data || data;
+               }
+               if (data == null) {
+                  context.callback?.(new Error(data));
+                  this.AB.analytics.logError(data);
+               }
+               const modelLocal = obj.model().local();
 
                // if data does not already exist locally ignore it
-               await obj
-                  .model()
-                  .local()
-                  .doesExist(modifiedData)
-                  .then((exists) => {
-                     if (exists) {
-                        return (
-                           obj
-                              .model()
-                              .local()
-                              // .syncLocalMaster(data) // ! changing this to remoteMaster
-                              // ! the whole point of the UPDATE is to push an overruling change
-                              .syncRemoteMaster(modifiedData)
-                              .then(() => {
-                                 // alert any DataCollections that are using this
-                                 // object that there might be new data for them to
-                                 // use.
-                                 obj.emit("UPDATE", modifiedData);
-                              })
-                        );
-                     }
-                  });
-               break;
+               if (await modelLocal.doesExist(data)) {
+                  await obj
+                     .model()
+                     .local()
+                     // .syncLocalMaster(data) // ! changing this to remoteMaster
+                     // ! the whole point of the UPDATE is to push an overruling change
+                     .syncRemoteMaster(data);
 
+                  // alert any DataCollections that are using this
+                  // object that there might be new data for them to
+                  // use.
+                  obj.emit("UPDATE", data);
+               }
+               break;
             case "delete":
                // we are being alerted of DELETED data from the server.
 
@@ -218,105 +205,98 @@ export default class ABFactory extends ABFactoryCore {
                //     numRows: #
                // }
 
-               if (modifiedData.numRows && modifiedData.numRows > 0) {
-                  // this was a successful delete,
-                  // alert our Datacollections:
+               // this was a successful delete,
+               // alert our Datacollections:
+               if (data.numRows && data.numRows > 0)
                   obj.emit("DELETE", context.pk);
-               }
 
                /*
                      // if data already exists locally, we delete it
                      this.model().local().doesExist(data)
                      .then((exists)=>{
-                         if (exists) {
+                           if (exists) {
 
 
-                             // if the context provides the .pk value,
-                             // use that to perform the local delete:
-                             var id = data[context.pk];
-                             if (!id) {
+                              // if the context provides the .pk value,
+                              // use that to perform the local delete:
+                              var id = data[context.pk];
+                              if (!id) {
 
                                  // otherwise attempt to gather it from the
                                  // data itself:
                                  var UUID = this.fieldUUID(data);
                                  id = data[UUID];
-                             }
-                             
-                             if (id) {
+                              }
+                              
+                              if (id) {
                                  this.model().local().localStorageDestroy(id)
                                  .then(()=>{
-                                     // alert any DataCollections that are using this 
-                                     // object that they should remove this entry:
-                                     this.emit("DELETE", data);
+                                       // alert any DataCollections that are using this 
+                                       // object that they should remove this entry:
+                                       this.emit("DELETE", data);
                                  })
-                             } else {
+                              } else {
                                  console.error("ABObject.Relay.on: Delete: could not determine .id", { context:context, UUID:UUID, data:data })
-                             }
-                         }
+                              }
+                           }
                      })
                      */
                break;
-
             default:
-               // console.error(
-               //     "ABObject.Relay.on:  unknown context.verb",
-               //     context,
-               //     data
-               // );
-
                // TODO: Legacy: remove this once Events and Profile are upgraded.
-               obj.emit("data", modifiedData);
+               obj.emit("data", data);
                break;
          }
-         const callbackResult = context.callback?.(null, modifiedData);
+         const callbackResult = context.callback?.(null, data);
          if (callbackResult instanceof Promise) await callbackResult;
       });
 
       // Setup a listener for this DC to catch updates from the relay
       this.network.on("datacollection", async (context, data) => {
-         if (context.error != null) context.callback?.(context.error);
+         if (context.error != null) {
+            context.callback?.(context.error);
+            this.AB.analytics.logError(context.error);
+            return;
+         }
          const dc = this.datacollections(
             (datacollection) => datacollection.id === context.id,
          )[0];
-         if (dc.name === "User Person") debugger;
          if (dc == null) return;
-         if (data.error)
-            console.error(Object.assign({}, data, { objectName: dc.name }));
-         if (typeof data == "string" && /\[[Oo]bject,? [Oo]bject\]/.test(data))
-            this.analytics.logError(
-               new Error(
-                  `Server sent bad data, try tweaking this datacollection: '${dc.name}'`,
-               ),
-            );
-         if (dc.name)
+         if (dc.name) {
             console.log(":: name:", dc.name, {
                ":: context:": context,
                ":: data:": data,
             });
-         else
+         } else {
             console.log(":: context", context, {
                ":: data": data,
             });
-         let modifiedData = Object.assign({ id: dc.datasource.id, uuid: dc.datasource.id }, data);
-         // will be a Promise based on which of the next steps
-         // should be executed.
+         }
+
+         // if context is from a "uninitialized" state
+         //    OR this datacollection is a Server Centric set of data:
+         //    OR this is a Query based datacollection
+         const isServerPreferred = dc.isServerPreferred();
          const normalizedData =
-            context.verb == "uninitialized" ||
-            dc.isServerPreferred() ||
+            context.verb === "uninitialized" ||
+            isServerPreferred ||
             dc.settings.isQuery
-               ? await dc.model.local().syncRemoteMaster(modifiedData)
-               : await dc.model.local().syncLocalMaster(modifiedData);
-         if (dc.isServerPreferred()) await dc.reduceCondition(normalizedData);
-         await dc.processIncomingData(normalizedData);
+               ? await dc.datasource.model().local().syncRemoteMaster(data)
+               : await dc.datasource.model().local().syncLocalMaster(data);
+         if (isServerPreferred) dc.reduceCondition(normalizedData);
+         dc.processIncomingData(normalizedData);
          if (context.verb !== "uninitialized") dc.emit("REFRESH");
+
          // signal our remote data has arrived.
          dc.emit("init.remote", {});
+
          // TODO: Legacy: remove this once Events and HRIS are upgraded
          dc.emit("data", normalizedData);
-         const callbackResult = context.callback?.(null, modifiedData);
+         const callbackResult = context.callback?.(null, data);
          if (callbackResult instanceof Promise) await callbackResult;
       });
    }
+
    cloneDeep(...args) {
       return cloneDeep(...args);
    }
