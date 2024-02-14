@@ -171,13 +171,12 @@ export default class ABFactory extends ABFactoryCore {
                      return;
                   } else delete obj.latestUpdates[data.uuid];
                }
-
-               if (data.status && data.status == "success") {
-                  data = data.data || data;
-               }
                if (data == null) {
                   context.callback?.(new Error(data));
                   this.AB.analytics.logError(data);
+               }
+               if (data.status && data.status == "success") {
+                  data = data.data || data;
                }
                const modelLocal = obj.model().local();
 
