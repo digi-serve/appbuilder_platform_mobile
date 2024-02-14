@@ -2,7 +2,6 @@
  * initDefaultPages.js
  * Setup the main application Pages
  */
-import analytics from "../resources/Analytics.js";
 import account from "../resources/Account.js";
 
 import LoadingPage from "../pages/loadingPage.js";
@@ -27,7 +26,7 @@ export default {
             (err.message || "") + "<br />" + (err.stack || ""),
             "Error starting password page"
          );
-         analytics.logError(err);
+         AB.analytics.logError(err);
       }
 
       // Setup our Application Page
@@ -39,7 +38,7 @@ export default {
             (err.message || "") + "<br />" + (err.stack || ""),
             "Error starting app page"
          );
-         analytics.logError(err);
+         AB.analytics.logError(err);
       }
 
       pages.password.on("loading", () => {

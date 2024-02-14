@@ -5,10 +5,15 @@
  *
  */
 
-var ABModelCore = require("../core/ABModelCore");
-var ABModelLocal = require("./ABModelLocal");
-var ABModelRelay = require("./ABModelRelay");
+const ABModelCore = require("../core/ABModelCore");
+const ABModelLocal = require("./ABModelLocal");
+const ABModelRelay = require("./ABModelRelay");
 module.exports = class ABModel extends ABModelCore {
+   /**
+    * @method local
+    * get a ABModelLocal instance.
+    * @return {ABModelLocal}
+    */
    local() {
       var newModel = new ABModelLocal(this.object);
       newModel.contextKey(this.responseContext.key);
@@ -16,6 +21,11 @@ module.exports = class ABModel extends ABModelCore {
       return newModel;
    }
 
+   /**
+    * @method relay
+    * get a ABModelRelay instance.
+    * @return {ABModelRelay}
+    */
    relay() {
       var newModel = new ABModelRelay(this.object);
       newModel.contextKey(this.responseContext.key);
@@ -23,6 +33,11 @@ module.exports = class ABModel extends ABModelCore {
       return newModel;
    }
 
+   /**
+    * @method remote
+    * get a ABModelRelay instance.
+    * @return {ABModelRelay}
+    */
    remote() {
       // TODO: look at project settings and determine which
       // type of remote link we will use:
@@ -35,12 +50,12 @@ module.exports = class ABModel extends ABModelCore {
     * @param {obj} values  the values to create.
     * 
     */
-   create(values) {
+   async create(values) {
       this.prepareMultilingualData(values);
 
       // make sure any values we create have a UUID field set:
-      var UUID = this.object.fieldUUID(values);
-      if (!values[UUID]) values[UUID] = this.AB.uuid();
+      const UUID = this.object.fieldUUID(values);
+      if (values[UUID] == null) values[UUID] = this.AB.uuid();
 
       return (
          Promise.resolve()
@@ -96,7 +111,7 @@ module.exports = class ABModel extends ABModelCore {
     * @param {string} uuid  the .uuid of the instance to remove.
     * @return {Promise}
     */
-   delete(id) {
+   async delete(id) {
       return Promise.resolve()
          .then(() => {
             // delete from our local storage
@@ -115,7 +130,7 @@ module.exports = class ABModel extends ABModelCore {
     * @method findAll
     * performs a data find with the provided condition.
     */
-   findAll(cond) {
+   async findAll(cond) {
       console.error("why are we getting here?");
 
       cond = cond || {};
@@ -180,7 +195,7 @@ module.exports = class ABModel extends ABModelCore {
     * @method update
     * update model values on the server.
     */
-   update(id, values) {
+   async update(id, values) {
       this.prepareMultilingualData(values);
 
       // values.updated_at = this.object.application.updatedAt();

@@ -5,10 +5,8 @@
  *
  */
 
-var ABModelCore = require("../core/ABModelCore");
-var storage = require("../../resources/Storage").storage;
-
-var merge = require("lodash/merge");
+const ABModelCore = require("../core/ABModelCore");
+const merge = require("lodash/merge");
 
 module.exports = class ABModelLocal extends ABModelCore {
    /**
@@ -22,6 +20,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    platformInit() {
+      const storage = this.AB.storage;
       return new Promise((resolve, reject) => {
          var lock = this.lock();
          lock
@@ -64,7 +63,7 @@ module.exports = class ABModelLocal extends ABModelCore {
             .acquire()
             .then(() => {
                // if nothing returned, initialize to an empty data set
-               return storage.set(this.refStorage(), null);
+               return this.AB.storage.set(this.refStorage(), null);
             })
             .then(() => {
                lock.release();
@@ -78,7 +77,7 @@ module.exports = class ABModelLocal extends ABModelCore {
    }
 
    lock() {
-      return storage.Lock(this.refStorage());
+      return this.AB.storage.Lock(this.refStorage());
    }
 
    /**
@@ -92,7 +91,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     *			{ uuid: {obj1}, uuid2:{obj2} }
     */
    getLocalData() {
-      return storage.get(this.refStorage()).then((allObjects) => {
+      return this.AB.storage.get(this.refStorage()).then((allObjects) => {
          allObjects = allObjects || {};
          return allObjects;
       });
@@ -105,7 +104,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    saveLocalData(allObjects) {
-      return storage.set(this.refStorage(), allObjects);
+      return this.AB.storage.set(this.refStorage(), allObjects);
    }
    /**
     * clearLocalData()
@@ -113,7 +112,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     * @return {Promise}
     */
    clearLocalData() {
-      return storage.clear(this.refStorage());
+      return this.AB.storage.clear(this.refStorage());
    }
 
 
@@ -126,7 +125,7 @@ module.exports = class ABModelLocal extends ABModelCore {
     *			{ uuid: {obj1}, uuid2:{obj2} }
     */
    fetchAndClear() {
-      return storage.fetchAndClear(this.refStorage());
+      return this.AB.storage.fetchAndClear(this.refStorage());
    }
 
    localStorageDestroy(id) {

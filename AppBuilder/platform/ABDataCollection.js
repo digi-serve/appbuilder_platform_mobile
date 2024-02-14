@@ -5,14 +5,7 @@
  *
  */
 
-var ABDataCollectionCore = require("../core/ABDataCollectionCore");
-
-// var ABQL = require("./ql/ABQL");
-
-var Account = require("../../resources/Account").default;
-var Analytics = require("../../resources/Analytics").default;
-var Network = require("../../resources/Network").default;
-var storage = require("../../resources/Storage").storage;
+const ABDataCollectionCore = require("../core/ABDataCollectionCore");
 
 module.exports = class ABDataCollection extends ABDataCollectionCore {
    constructor(...args) {
@@ -37,89 +30,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       // this ABViewDataCollection.
 
       this.__dataCollection = this._dataCollectionNew();
-
-      // Setup a listener for this DC to catch updates from the relay
-      Network.on(ABDataCollectionCore.contextKey(), (context, data) => {
-         // is this update for me?
-         if (context.id == this.id) {
-            // console.log(
-            //    ":: ABApplication.Relay.on:" + ABDataCollectionCore.contextKey()
-            // );
-            if (data.error) {
-               // data was returned, with error message
-               data["objectName"] = this.name;
-               console.error(data);
-            }
-            if (
-               typeof data == "string" &&
-               /\[[Oo]bject,? [Oo]bject\]/.test(data)
-            ) {
-               let objName = this.name;
-               let error = new Error(
-                  `Server sent bad data, try tweaking this datacollection: '${objName}'`
-               );
-               // send to sails log:
-               Analytics.logError(error);
-            }
-            if (this.name) {
-               console.log(":: name:", this.name, {
-                  ":: context:": context,
-                  ":: data:": data,
-               });
-            } else {
-               console.log(":: context", context, {
-                  ":: data": data,
-               });
-            }
-            var firstStep;
-            // will be a Promise based on which of the next steps
-            // should be executed.
-
-            // if context is from a "uninitialized" state
-            //    OR this datacollection is a Server Centric set of data:
-            //    OR this is a Query based datacollection
-            if (
-               context.verb == "uninitialized" ||
-               this.isServerPreferred() ||
-               this.settings.isQuery
-            ) {
-               // we need to just accept all the data that came in.
-               firstStep = this.datasource
-                  .model()
-                  .local()
-                  .syncRemoteMaster(data);
-            } else {
-               // this is a refresh, with local data that is Preferred:
-               firstStep = this.datasource
-                  .model()
-                  .local()
-                  .syncLocalMaster(data);
-            }
-
-            firstStep
-               .then((normalizedData) => {
-                  if (this.isServerPreferred()) {
-                     this.reduceCondition(normalizedData);
-                  }
-                  return normalizedData;
-               })
-               .then((normalizedData) => {
-                  this.processIncomingData(normalizedData);
-                  return normalizedData;
-               })
-               .then((normalizedData) => {
-                  if (context.verb != "uninitialized") {
-                     this.emit("REFRESH");
-                  }
-
-                  // signal our remote data has arrived.
-                  this.emit("init.remote", {});
-
-                  // TODO: Legacy: remove this once Events and HRIS are upgraded
-                  this.emit("data", normalizedData);
-               });
-         }
-      }); // end Network.on()
 
       //// TODO: test out these OBJ.on() propagations:
       var OBJ = this.datasource;
@@ -277,6 +187,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          //
          //  save these to disk
          //
+         const storage = this.AB.storage;
          var lock = storage.Lock(this.refStorage());
          return lock
             .acquire()
@@ -342,7 +253,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                "ABViewDataCollection:platformInit(): unknown datasource"
             );
             dsError.context = { settings: this.settings };
-            Analytics.logError(dsError);
+            this.AB.analytics.logError(dsError);
 
             // but continue on just in case this is a dangling DC
             // that isn't actually being used.
@@ -355,6 +266,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             .platformInit()
             .then((objectData) => {
                // once that is done, make sure we can track our DC info
+               const storage = this.AB.storage;
                var lock = storage.Lock(this.refStorage());
                return lock
                   .acquire()
@@ -416,6 +328,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             .platformReset()
             .then(() => {
                // once that is done, make sure we can clear our DC info
+               const storage = this.AB.storage;
                var lock = storage.Lock(this.refStorage());
                return lock
                   .acquire()
@@ -454,6 +367,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             this.bootState = "initialized";
          }
          // once that is done, make sure we can track our DC info
+         const storage = this.AB.storage;
          var lock = storage.Lock(this.refStorage());
          return lock
             .acquire()
@@ -504,7 +418,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     */
    currentUserUsername() {
       console.error("Who is calling .currentUserUsername()?");
-      return Account.username;
+      return this.AB.account.username;
    }
 
    /**

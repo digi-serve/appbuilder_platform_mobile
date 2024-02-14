@@ -10,8 +10,6 @@
  */
 const ABMLClassCore = require("../core/ABMLClassCore");
 
-const { translate } = require("../../resources/Translate");
-
 module.exports = class ABMLClass extends ABMLClassCore {
    /**
     * @method translate()
@@ -51,6 +49,6 @@ module.exports = class ABMLClass extends ABMLClassCore {
     * @return {string}
     */
    languageDefault() {
-      return translate.langCode || "en";
+      return this.AB.translate.langCode || "en";
    }
 };
