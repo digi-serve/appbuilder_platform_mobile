@@ -25,6 +25,9 @@ Template7.registerHelper("print", (parent, object, alternateObject) => {
    if (!parent) {
       return "";
    }
+   if(Array.isArray(parent)){
+      parent = parent[0];
+   }
    var result = parent[object] ? parent[object] : parent[alternateObject];
    return typeof result != "undefined" ? result : "";
 });
@@ -38,8 +41,21 @@ Template7.registerHelper("printHTML", (parent, object, alternateObject) => {
    if (!parent) {
       return "";
    }
+   if(Array.isArray(parent)){
+      parent = parent[0];
+   }
+
    var result = parent[object] ? parent[object] : parent[alternateObject];
    return typeof result != "undefined" ? result.replace(/ /g, "_") : "";
+});
+
+Template7.registerHelper("printLabel", (input) => {
+   let result = "no data";
+   if ( typeof input == "string" && input.length > 0) {
+      // if object is not defined, assume parent is the object itself
+      result = input;
+   }
+   return result;
 });
 
 // Helper to format date string into usable date Information
@@ -183,6 +199,9 @@ Template7.registerHelper("lockDisable", (field) => {
 });
 
 function extractNumber(parent, field) {
+   if(Array.isArray(parent)){
+      parent = parent[0];
+   }
    // check all fields and return 0 if undefined
    if (!parent || (!field && typeof parent != "number")) {
       console.warn("commas helper: parent or field is undefined!");
