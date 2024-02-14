@@ -248,8 +248,7 @@ class Analytics extends EventEmitter {
     * @param {String} message
     */
    log(message) {
-      console.log(message);
-
+      
       this.ready.then(() => {
          if (this.sentry && process.env.NODE_ENV == "production") {
             this.sentry.captureMessage(message);
