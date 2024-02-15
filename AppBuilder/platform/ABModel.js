@@ -219,7 +219,7 @@ module.exports = class ABModel extends ABModelCore {
                            entry[v] = values[v];
                         }
                         dc.__dataCollection.updateItem(id, entry);
-                        console.log(`DC[${dc.name}] -> entry`, entry);
+                        // console.log(`DC[${dc.name}] -> entry`, entry);
                      }
                      dc.loadDataDelayed();
                   }

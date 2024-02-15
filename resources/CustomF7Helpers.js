@@ -49,6 +49,10 @@ Template7.registerHelper("printHTML", (parent, object, alternateObject) => {
    return typeof result != "undefined" ? result.replace(/ /g, "_") : "";
 });
 
+/** global Template7 
+ * Helper to display text for UI where we need to display SOMETHING if the value is empty
+ * @param {string} input
+ */
 Template7.registerHelper("printLabel", (input) => {
    let result = "no data";
    if ( typeof input == "string" && input.length > 0) {
