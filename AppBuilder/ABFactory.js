@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import ABFactoryCore from "./core/ABFactoryCore";
 import analytics from "../resources/Analytics.js";
 import account from "../resources/Account.js";
+import busy from "../resources/Busy.js";
+import camera from "../resources/Camera.js";
 import network from "../resources/Network.js";
 import { storage } from "../resources/Storage.js";
 import { translate } from "../resources/Translate.js";
@@ -12,8 +14,10 @@ import { translate } from "../resources/Translate.js";
 export default class ABFactory extends ABFactoryCore {
    constructor(...args) {
       super(...args);
-      this.analytics = analytics;
       this.account = account;
+      this.analytics = analytics;
+      this.busy = busy;
+      this.camera = camera;
       this.network = network;
       this.storage = storage;
       this.translate = translate;
@@ -113,7 +117,7 @@ export default class ABFactory extends ABFactoryCore {
       this.network.on("object", async (context, data) => {
          if (context.error != null) {
             context.callback?.(context.error);
-            this.AB.analytics.logError(error);
+            this.analytics.logError(error);
             return;
          }
          const obj = this.datacollections(
@@ -121,7 +125,7 @@ export default class ABFactory extends ABFactoryCore {
          )[0]?.datasource;
          if (obj == null) {
             context.callback?.(new Error(data));
-            this.AB.analytics.logError(data);
+            this.analytics.logError(data);
             return;
          }
          if (obj.name != null) {
@@ -161,19 +165,19 @@ export default class ABFactory extends ABFactoryCore {
                   // @see ABModelRelay.js maybe?
                   if (obj.latestUpdates == null) {
                      context.callback?.(new Error(data));
-                     this.AB.analytics.logError(data);
+                     this.analytics.logError(data);
                      return;
                   }
                   // if this is the last update we sent for this object
                   else if (context.jobID !== obj.latestUpdates[data.uuid]) {
                      context.callback?.(new Error(data));
-                     this.AB.analytics.logError(data);
+                     this.analytics.logError(data);
                      return;
                   } else delete obj.latestUpdates[data.uuid];
                }
                if (data == null) {
                   context.callback?.(new Error(data));
-                  this.AB.analytics.logError(data);
+                  this.analytics.logError(data);
                }
                if (data.status && data.status == "success") {
                   data = data.data || data;
@@ -254,7 +258,7 @@ export default class ABFactory extends ABFactoryCore {
       this.network.on("datacollection", async (context, data) => {
          if (context.error != null) {
             context.callback?.(context.error);
-            this.AB.analytics.logError(context.error);
+            this.analytics.logError(context.error);
             return;
          }
          const dc = this.datacollections(
