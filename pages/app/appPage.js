@@ -753,6 +753,26 @@ export class AppPage extends Page {
             throw err;
          });
    }
+   /**
+    * @method fetchRecordData()
+    * perform a specific remote data update before moving on.
+    * a data collection
+    *
+    * @param {string} app
+    * @param {string} datacollection
+    * @param {Object} [options]
+    */
+   fetchRecordData(app, datacollection, options = {}) {
+      let modApp = this.applications.find((a) => {
+         return a.ID == app
+      });
+      let targetDC = modApp.datacollections.find((a) => {
+         return a.name == datacollection
+         // TODO is this the right way to find the datacollection?
+      });
+      console.assert(targetDC, "appPage.fetchRecordData() could not find the datacollection");
+      return targetDC.reloadData()
+   }
 
    /**
     * Reinitialize the AB Applications.

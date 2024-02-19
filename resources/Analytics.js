@@ -52,29 +52,47 @@ class Analytics extends EventEmitter {
             this.sentry = sentry;
          }
       }
+      const isIos = () => {
+         return /iphone|ipad|ipod/.test(userAgent);
+      };
+      // detect if in chrome
+      var chromeFlag = "non-ios";
+      if (/crios/.test(userAgent)) {
+         // set a logging flag for crios
+         chromeFlag = "crios";
+      } else {
+         // Set a non-crios flag
+         chromeFlag = "notcrios";
+      }
       function getMemoryUsage() {
          const memoryInfo = performance.memory || {};
          return memoryInfo.usedJSHeapSize; // Memory used by JavaScript in bytes
       }
       function sendMessage(message) {
-         console.error("Analytics memory useage alert",message);
-         window.postMessage({ type: 'memoryAlert', message }, '*');
+         // console.error("Analytics memory useage alert",message);
+         // window.postMessage({ type: 'memoryAlert', message }, '*');
+         analytics.logError(message);
       }
-            const memoryThreshold = 50000000; // ios threshold in bytes
-            const monitoringInterval = 5000; // Example interval in milliseconds
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const memoryThreshold = 450000000; // ios threshold in bytes
+      const memoryPanic = 500000000; // ios threshold in bytes
+      const monitoringInterval = 5000; // Example interval in milliseconds
 
-            function monitorMemoryUsage() {
-               const memoryUsage = getMemoryUsage();
+      function monitorMemoryUsage() {
+         const memoryUsage = getMemoryUsage();
 
-               if (memoryUsage > memoryThreshold) {
-                  const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes`;
-                  sendMessage(alertMessage);
-               }
-            }
-            // Set up the monitoring interval
-            setInterval(monitorMemoryUsage, monitoringInterval);
+         if (memoryUsage > memoryPanic) {
+            const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env`;
+            sendMessage(alertMessage);
+         } else if (memoryUsage > memoryThreshold) {
+            const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env`;
+            sendMessage(alertMessage);
+         }
+      }
+      // Set up the monitoring interval
+      setInterval(monitorMemoryUsage, monitoringInterval);
 
-            getMemoryUsage()
+      getMemoryUsage()
 
       // Countly for everything else
       if (Countly && process.env.NODE_ENV == "production") {
