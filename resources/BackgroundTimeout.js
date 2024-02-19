@@ -38,6 +38,8 @@ export default function BackgroundTimeout(minutesToWait = 9) {
                         .getElementById("lockFade")
                         .classList.add("lockFadeIn");
                      setTimeout(function() {
+                        // TODO temporary logging of all site reloads
+                        console.error("Reloading app due to inactivity: BackgroundTimeout.js");
                         window.location.reload();
                      }, 600);
                   }, 50);

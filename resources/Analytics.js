@@ -18,7 +18,7 @@ try {
    console.warn("VERSION variable not found");
 }
 
-console.log("Sentry.io plugin begin require/init");
+// console.log("Sentry.io plugin begin require/init");
 var sentry = require("@sentry/browser");
 var Countly = require("countly-sdk-web");
 
@@ -38,20 +38,43 @@ class Analytics extends EventEmitter {
       // Sentry.io for crash reporting
       if (sentry && process.env.NODE_ENV == "production") {
          try {
-            console.log("Sentry.io plugin required, now init");
+            // console.log("Sentry.io plugin required, now init");
             sentry.init({
                dsn: config.sentryio.dsn, // "https://9df6fd4623934fadb4a9ee6bb6ec887f@sentry.io/1186956",
                debug: true,
                release: version,
             });
-            console.log("Sentry.io plugin initilized");
+            // console.log("Sentry.io plugin initilized");
             this.sentry = sentry;
          } catch (err) {
             // Sentry.io plugin not installed
-            console.log("Sentry.io plugin not installed");
+            console.warn("Sentry.io plugin not installed");
             this.sentry = sentry;
          }
       }
+      function getMemoryUsage() {
+         const memoryInfo = performance.memory || {};
+         return memoryInfo.usedJSHeapSize; // Memory used by JavaScript in bytes
+      }
+      function sendMessage(message) {
+         console.error("Analytics memory useage alert",message);
+         window.postMessage({ type: 'memoryAlert', message }, '*');
+      }
+            const memoryThreshold = 50000000; // ios threshold in bytes
+            const monitoringInterval = 5000; // Example interval in milliseconds
+
+            function monitorMemoryUsage() {
+               const memoryUsage = getMemoryUsage();
+
+               if (memoryUsage > memoryThreshold) {
+                  const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes`;
+                  sendMessage(alertMessage);
+               }
+            }
+            // Set up the monitoring interval
+            setInterval(monitorMemoryUsage, monitoringInterval);
+
+            getMemoryUsage()
 
       // Countly for everything else
       if (Countly && process.env.NODE_ENV == "production") {
@@ -70,7 +93,7 @@ class Analytics extends EventEmitter {
                debug: true,
             });
             // Countly.start();
-            console.log("analytics init()");
+            // console.log("analytics init()");
             this.ready.resolve();
          } catch (err) {
             console.error("Analytics init error", err);
@@ -248,8 +271,7 @@ class Analytics extends EventEmitter {
     * @param {String} message
     */
    log(message) {
-      console.log(message);
-
+      
       this.ready.then(() => {
          if (this.sentry && process.env.NODE_ENV == "production") {
             this.sentry.captureMessage(message);
