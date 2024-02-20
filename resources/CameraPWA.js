@@ -171,7 +171,16 @@ class CameraPWA extends EventEmitter {
          if (options.timeout != null)
             recurseShrinkTimeout = setTimeout(() => {
                reject(
-                  new Error("Timeout compressing image. Try a smaller one?"),
+                  // Give sentry more information to work with
+                  new Error({message: "Timeout compressing image. Try a smaller one?",
+                     type: file.type,
+                     size: file.size,
+                     timeout: options.timeout,
+                     qualityValue,
+                     qualityGain,
+                     qualityFactor,
+                     compressionTimes,
+                  }),
                );
                recurseShrinkTimeout = null;
             }, options.timeout);
