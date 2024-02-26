@@ -102,7 +102,7 @@ class CameraPWA extends EventEmitter {
                // If cancel happened with no 'change' event we will catch it here
                if (isCameraActive) {
                   isCameraActive = false;
-                  reject(new Error("Canceled"));
+                  reject("Canceled");
                }
             }, 600);
          });
@@ -119,7 +119,7 @@ class CameraPWA extends EventEmitter {
     */
    _checkFileType(type) {
       if (!this.validImageTypes.includes(type))
-         throw new Error("This file type is invalid.");
+         throw new Error(`This file type is invalid: ${type}`);
    }
 
    /**
@@ -171,16 +171,7 @@ class CameraPWA extends EventEmitter {
          if (options.timeout != null)
             recurseShrinkTimeout = setTimeout(() => {
                reject(
-                  // Give sentry more information to work with
-                  new Error({message: "Timeout compressing image. Try a smaller one?",
-                     type: file.type,
-                     size: file.size,
-                     timeout: options.timeout,
-                     qualityValue,
-                     qualityGain,
-                     qualityFactor,
-                     compressionTimes,
-                  }),
+                  new Error(`Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:${options.timeout} qualityValue:${qualityValue} gain:${qualityGain} factor:${qualityFactor} times:${compressionTimes}`),
                );
                recurseShrinkTimeout = null;
             }, options.timeout);
