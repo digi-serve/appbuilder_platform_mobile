@@ -129,7 +129,7 @@ module.exports = class ABObject extends ABObjectCore {
       if (context.error) {
          // Question: so how do we handle error responses?
          console.error(
-            `ABObject[${this.name}]:remoteData(): an error was received when processing a job. verb[${context.verb}]`
+            `ABObject[${this.name}]:remoteData(): an error was received when processing a job. verb[${context?.verb}]`
          );
          this.emit("error.remote", { context: context, data: data });
 
@@ -138,7 +138,8 @@ module.exports = class ABObject extends ABObjectCore {
          ////        [errors] = { message:'error message', name:'fieldName', params:{type:'string'}}
       } else {
          // now figure out which update fn to call:
-         switch (context.verb) {
+         console.assert(context, "ABObject.remoteData(): context is required, but not provided.");
+         switch (context?.verb) {
             case "find":
                this.remoteFind(data);
                break;

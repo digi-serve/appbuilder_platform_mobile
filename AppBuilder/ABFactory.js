@@ -138,6 +138,7 @@ export default class ABFactory extends ABFactoryCore {
                ":: data": data,
             });
          }
+         console.assert(context, "ABFactory::network.object: context is null!!");
          switch (context.verb) {
             case "create":
                // we are being alerted of a NEW object instance.
@@ -281,7 +282,7 @@ export default class ABFactory extends ABFactoryCore {
          //    OR this is a Query based datacollection
          const isServerPreferred = dc.isServerPreferred();
          const normalizedData =
-            context.verb === "uninitialized" ||
+            context?.verb === "uninitialized" ||
             isServerPreferred ||
             dc.settings.isQuery
                ? await dc.datasource.model().local().syncRemoteMaster(data)
