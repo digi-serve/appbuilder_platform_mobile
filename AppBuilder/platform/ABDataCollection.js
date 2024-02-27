@@ -32,35 +32,32 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this.__dataCollection = this._dataCollectionNew();
 
       //// TODO: test out these OBJ.on() propagations:
-      var OBJ = this.datasource;
-      if (OBJ) {
+      const OBJ = this.datasource;
+      if (OBJ != null) {
          OBJ.on("CREATE", (data) => {
+            const copiedData = structuredClone(data);
             // if valid for this DC
-            if (this.__filterDatasource.isValid(data)) {
+            if (this.__filterDatasource.isValid(copiedData)) {
                // find which field is the PK
-               var PK = this.datasource.fieldUUID(data);
+               const PK = this.datasource.fieldUUID(copiedData);
 
                // if entry NOT currently in datacollection
-               if (!this.__dataCollection.exists(data[PK])) {
+               if (!this.__dataCollection.exists(copiedData[PK])) {
                   // webix datacollections need an .id field
-                  if (!data.id) {
-                     data.id = data[PK];
-                  }
+                  if (copiedData.id == null) copiedData.id = copiedData[PK];
 
                   // include it in our list:
-                  this.__dataCollection.add(data);
+                  this.__dataCollection.add(copiedData);
 
                   // alert anyone attached to us that we have CREATEd
                   // data.
-                  this.emit("CREATE", data);
+                  this.emit("CREATE", copiedData);
                }
             }
          });
 
          OBJ.on("UPDATE", (data) => {
-            // find which field is the PK
-            var PK = this.datasource.fieldUUID(data);
-            var ID = data[PK];
+            const ID = data[this.datasource.fieldUUID(data)];
 
             // if entry IS currently in datacollection
             if (this.__dataCollection.exists(ID)) {
@@ -80,7 +77,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                this.__dataCollection.remove(ID);
 
                // if I'm maintaining a set of reducedConditions:
-               var remainingEntries = this.QL().value();
+               const remainingEntries = this.getAllRecords();
                this.reduceCondition(remainingEntries);
 
                // alert anyone attached to us that we have DELETEd
@@ -99,7 +96,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {bool}
     */
    isServerPreferred() {
-      return this.settings.syncType == "1" || this.settings.syncType == 1;
+      return this.settings.syncType == "1";
       // NOTE: syncType = "2" is client preferred.
    }
 
@@ -113,7 +110,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    init() {
       // prevent initialize many times
       if (this.initialized) return;
-
       super.init();
 
       // __dataCollection must implement these methods:
@@ -166,47 +162,31 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @param {array} values ABObject values that represent the data for this query.
     * @return {Promise} resolved when conditions are stored
     */
-   reduceCondition(values) {
-      new Promise((resolve /*, reject */) => {
-         var pk = this.datasource.PK();
-         if (!Array.isArray(values)) values = [values];
-         var listIDs = values.map((v) => {
+   async reduceCondition(values) {
+      const pk = this.datasource.PK();
+      if (!Array.isArray(values)) values = [values];
+      this._reducedConditions = {
+         pk: pk,
+         values: values.map((v) => {
             return v[pk];
-         });
-         this._reducedConditions = {
-            pk: pk,
-            values: listIDs,
-         };
+         }),
+      };
+      if (this.__filterDatasource)
+         this.__filterDatasource.setReducedConditions(this._reducedConditions);
 
-         if (this.__filterDatasource) {
-            this.__filterDatasource.setReducedConditions(
-               this._reducedConditions
-            );
-         }
+      //
+      //  save these to disk
+      //
+      const storage = this.AB.storage;
+      const lock = storage.Lock(this.refStorage());
+      await lock.acquire();
+      const data = (await storage.get(this.refStorage())) || {};
 
-         //
-         //  save these to disk
-         //
-         const storage = this.AB.storage;
-         var lock = storage.Lock(this.refStorage());
-         return lock
-            .acquire()
-            .then(() => {
-               return storage.get(this.refStorage()).then((data) => {
-                  // shouldn't have uninitialized data at this point,
-                  // but just in case:
-                  data = data || {};
-
-                  data.reducedConditions = this._reducedConditions;
-
-                  return storage.set(this.refStorage(), data);
-               });
-            })
-            .then(() => {
-               lock.release();
-               resolve();
-            });
-      });
+      // shouldn't have uninitialized data at this point,
+      // but just in case:
+      data.reducedConditions = this._reducedConditions;
+      await storage.set(this.refStorage(), data);
+      lock.release();
    }
 
    /**
@@ -218,20 +198,18 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     */
    addReducedConditionEntry(entry) {
       // insert ID into our current list of reducedConditions
-      var pk = this.datasource.PK();
-      var ID = entry[pk];
-      this._reducedConditions.values.push(ID);
+      const pk = this.datasource.PK();
+      this._reducedConditions.values.push(entry[pk]);
 
       // create a new set of values we can send to .reduceCondition()
       // to properly update the filter and data storage.
-      var mockValues = [];
-      this._reducedConditions.values.forEach((val) => {
-         var obj = {};
-         obj[pk] = val;
-         mockValues.push(obj);
-      });
-
-      return this.reduceCondition(mockValues);
+      return this.reduceCondition(
+         this._reducedConditions.values.map((value) => {
+            const obj = {};
+            obj[pk] = value;
+            return obj;
+         }),
+      );
    }
 
    /**
@@ -242,74 +220,53 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * object.model().local()
     * @return {Promise}
     */
-   platformInit() {
-      return new Promise((resolve, reject) => {
-         // Make sure our ABObject is properly setup on the platform
-         var ds = this.datasource;
-         if (!ds) {
-            // if we couldn't find the reference to our datasource
-            // someone should know about this!
-            var dsError = new Error(
-               "ABViewDataCollection:platformInit(): unknown datasource"
+   async platformInit() {
+      // Make sure our ABObject is properly setup on the platform
+      const ds = this.datasource;
+      if (ds == null) {
+         // if we couldn't find the reference to our datasource
+         // someone should know about this!
+         const dsError = new Error(
+            "ABViewDataCollection:platformInit(): unknown datasource",
+         );
+         dsError.context = { settings: this.settings };
+         this.AB.analytics.logError(dsError);
+
+         // but continue on just in case this is a dangling DC
+         // that isn't actually being used.
+         return;
+      }
+
+      // once that is done, make sure we can track our DC info
+      const storage = this.AB.storage;
+      const lock = storage.Lock(this.refStorage());
+      await lock.acquire();
+      const data = await storage.get(this.refStorage());
+
+      // if we already have our storage set:
+      if (data != null) {
+         this.bootState = data.bootState;
+         this._reducedConditions = data.reducedConditions;
+
+         // save our info:
+         if (this._reducedConditions && this.__filterDatasource)
+            this.__filterDatasource.setReducedConditions(
+               this._reducedConditions,
             );
-            dsError.context = { settings: this.settings };
-            this.AB.analytics.logError(dsError);
+      } else {
+         // this must be our 1st time through.
+         // our bootState should be "uninitialized" until
+         // we get our 1st response from the Server:
+         this.bootState = "uninitialized";
+         this._reducedConditions = null;
 
-            // but continue on just in case this is a dangling DC
-            // that isn't actually being used.
-            resolve();
-            return;
-         }
-
-         ds.model()
-            .local()
-            .platformInit()
-            .then((objectData) => {
-               // once that is done, make sure we can track our DC info
-               const storage = this.AB.storage;
-               var lock = storage.Lock(this.refStorage());
-               return lock
-                  .acquire()
-                  .then(() => {
-                     return storage.get(this.refStorage()).then((data) => {
-                        // if we already have our storage set:
-                        if (data) {
-                           this.bootState = data.bootState;
-                           this._reducedConditions = data.reducedConditions;
-
-                           // save our info:
-                           if (this._reducedConditions) {
-                              if (this.__filterDatasource) {
-                                 this.__filterDatasource.setReducedConditions(
-                                    this._reducedConditions
-                                 );
-                              }
-                           }
-                           return;
-                        } else {
-                           // this must be our 1st time through.
-                           // our bootState should be "uninitialized" until
-                           // we get our 1st response from the Server:
-                           this.bootState = "uninitialized";
-                           this._reducedConditions = null;
-
-                           // save our info:
-                           return storage.set(this.refStorage(), {
-                              bootState: this.bootState,
-                              reducedConditions: this._reducedConditions,
-                           });
-                        }
-                     });
-                  })
-                  .then(() => {
-                     lock.release();
-                  });
-            })
-            .then(() => {
-               resolve();
-            })
-            .catch(reject);
-      });
+         // save our info:
+         await storage.set(this.refStorage(), {
+            bootState: this.bootState,
+            reducedConditions: this._reducedConditions,
+         });
+      }
+      lock.release();
    }
 
    /**
@@ -319,33 +276,18 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * state.
     * @return {Promise}
     */
-   platformReset() {
-      return new Promise((resolve, reject) => {
-         // Make sure our ABObject is properly setup on the platform
-         this.datasource
-            .model()
-            .local()
-            .platformReset()
-            .then(() => {
-               // once that is done, make sure we can clear our DC info
-               const storage = this.AB.storage;
-               var lock = storage.Lock(this.refStorage());
-               return lock
-                  .acquire()
-                  .then(() => {
-                     return storage.set(this.refStorage(), null);
-                  })
-                  .then(() => {
-                     lock.release();
-                  });
-            })
-            .then(() => {
-               // now clear all our live values:
-               this.clearAll();
-               resolve();
-            })
-            .catch(reject);
-      });
+   async platformReset() {
+      await this.datasource.model().local().platformReset();
+
+      // once that is done, make sure we can clear our DC info
+      const storage = this.AB.storage;
+      const lock = storage.Lock(this.refStorage());
+      await lock.acquire();
+      await storage.set(this.refStorage(), null);
+      lock.release();
+
+      // now clear all our live values:
+      this.clearAll();
    }
 
    /**
@@ -360,30 +302,20 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     *          data:[ {ABObjectData}, {ABObjectData}, ...]
     *        }
     */
-   processIncomingData(dataNew) {
-      return super.processIncomingData(dataNew).then(() => {
-         // make sure we update our bootState!
-         if (this.bootState == "uninitialized") {
-            this.bootState = "initialized";
-         }
-         // once that is done, make sure we can track our DC info
-         const storage = this.AB.storage;
-         var lock = storage.Lock(this.refStorage());
-         return lock
-            .acquire()
-            .then(() => {
-               return storage.get(this.refStorage()).then((data) => {
-                  data = data || {};
+   async processIncomingData(dataNew) {
+      await super.processIncomingData(dataNew);
 
-                  data.bootState = this.bootState;
+      // make sure we update our bootState!
+      if (this.bootState == "uninitialized") this.bootState = "initialized";
 
-                  return storage.set(this.refStorage(), data);
-               });
-            })
-            .then(() => {
-               lock.release();
-            });
-      });
+      // once that is done, make sure we can track our DC info
+      const storage = this.AB.storage;
+      const lock = storage.Lock(this.refStorage());
+      await lock.acquire();
+      const data = storage.get(this.refStorage()) || {};
+      data.bootState = this.bootState;
+      await storage.set(this.refStorage(), data);
+      lock.release();
    }
 
    /**
@@ -402,11 +334,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * this alerts us of a change in our data that came from a remote
     * source: socket update, Relay response, etc...
     */
-   remoteUpdate(data) {
-      super.remoteUpdate(data).then(() => {
-         // make sure local storage has these values in it:
-         return this.datasource.model().local().localStorageStore(data);
-      });
+   async remoteUpdate(data) {
+      await super.remoteUpdate(data);
+
+      // make sure local storage has these values in it:
+      await this.datasource.model().local().localStorageStore(data);
    }
 
    /**
@@ -422,19 +354,19 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    }
 
    /**
-    * this code implements a mechanism to delay the execution of the loadData() function. 
-    * If there is no pending data load, it schedules the loadData() function to be executed 
+    * this code implements a mechanism to delay the execution of the loadData() function.
+    * If there is no pending data load, it schedules the loadData() function to be executed
     * after a delay of 1000 milliseconds (1 second). If there is already a pending data load,
-    * it cancels the previous timeout and immediately calls 
+    * it cancels the previous timeout and immediately calls
     * the loadDataDelayed() function instead.
-    * 
-    * This is likely because the function is a heavy operation and 
+    *
+    * This is likely because the function is a heavy operation and
     * this often gets called multiple times in a row.
     */
    loadDataDelayed() {
       if (!this._pendingLoadData) {
-         this._pendingLoadData = setTimeout(() => {
-            this.loadData();
+         this._pendingLoadData = setTimeout(async () => {
+            await this.loadData();
             delete this._pendingLoadData;
          }, 1000);
       } else {
@@ -445,9 +377,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    }
 
    getFirstRecord() {
-      const id = this.__dataCollection.getFirstId();
-      return this.__dataCollection.getItem(id);
+      return this.__dataCollection.getItem(this.__dataCollection.getFirstId());
    }
+
    getAllRecords() {
       // This appears to work well.
       return this.__dataCollection.find({});
@@ -466,12 +398,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    _dataCollectionNew(data) {
       // get a webix data collection
       /* global webix */
-      let dc = new webix.DataCollection({
+      const dc = new webix.DataCollection({
          data: data || [],
       });
-
       this._extendCollection(dc);
-
       return dc;
    }
 
@@ -479,7 +409,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       // Apply this data collection to support multi-selection
       // https://docs.webix.com/api__refs__selectionmodel.html
       webix.extend(dataStore, webix.SelectionModel);
-
       dataStore.___AD = dataStore.___AD || {};
 
       // Implement .onDataRequest for paging loading
@@ -487,23 +416,22 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          if (!dataStore.___AD.onDataRequestEvent) {
             dataStore.___AD.onDataRequestEvent = dataStore.attachEvent(
                "onDataRequest",
-               (start, count) => {
+               async (start, count) => {
                   if (start < 0) start = 0;
 
                   // load more data to the data collection
-                  this.loadData(start, count);
+                  await this.loadData(start, count);
 
                   return false; // <-- prevent the default "onDataRequest"
-               }
+               },
             );
          }
-
          if (!dataStore.___AD.onAfterLoadEvent) {
             dataStore.___AD.onAfterLoadEvent = dataStore.attachEvent(
                "onAfterLoad",
                () => {
                   this.emit("loadData", {});
-               }
+               },
             );
          }
       }
@@ -530,87 +458,31 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    /// These changes will eventually make it into the ABDataCollectionCore
    /// once the web and server side platforms are updated to be able to handle
    /// modelLocal, modelRemote operations.
-
-   platformFind(model, cond) {
-      model = model || this.datasource.model();
-
-      if (this.bootState == "initialized") {
-         // We have already initialized our data, so that means
-         // we have local data that we can work with right now.
-
-         // NOTE: we will get all the local data for our Object
-         // and let our filterComponent tell us if it should be
-         // included:
-         var modelLocal = model.local();
-         return modelLocal
-            .findAll(cond)
-            .then((entries) => {
-               var validEntries = [];
-               entries.forEach((entry) => {
-                  // add it to our list if it passes our filter:
-                  if (this.__filterDatasource.isValid(entry)) {
-                     validEntries.push(entry);
-                  }
-               });
-
-               // load our valid entries:
-               // ! This call prevents this from returning found data @achoobert
-               // ? Why would this ever be nessicary?
-               this.processIncomingData(validEntries);
-
-               // we can start working on this data now
-               // NOTE: resolve() should be done in .processIncomingData() now
-               // resolve(validEntries);
-            })
-            .then((validEntries) => {
-               // ? is it really nessicary to call the remote here? @achoobert
-               // However, this local data might be out of date
-               // with the server.  So let's spawn a remote
-               // lookup in the background:
-
-               var modelRemote = model.remote();
-
-               // reset the context on the Model so any data updates get sent to this
-               // DataCollection
-               // NOTE: we only do this on loadData(), other operations should be
-               // received by the related Objects.
-               modelRemote.contextKey(ABDataCollectionCore.contextKey());
-               modelRemote.contextValues({
-                  id: this.id,
-                  verb: "refresh",
-               });
-
-               // id: the datacollection.id
-               // verb: tells our ABRelay.listener why this remote lookup was called.
-
-               // initiate the request:
-               modelRemote.findAll(cond);
-
-               // return valid entries:
-               return validEntries;
-            });
-      } else {
-         //  We have not been initialized yet, so we need to
-         //  request our data from the remote source()
-         var modelRemote = model.remote();
-
-         // reset the context on the Model so any data updates get sent to this
-         // DataCollection
-         // NOTE: we only do this on loadData(), other operations should be
-         // received by the related Objects.
-         modelRemote.contextKey(ABDataCollectionCore.contextKey());
-         modelRemote.contextValues({
-            id: this.id,
-            verb: "uninitialized",
-         });
-         // id: the datacollection.id
-         // verb: tells our ABRelay.listener why this remote lookup was called.
-
-         // initiate the request:
-         return modelRemote.findAll(cond);
-         // note:  our ABRelay.listener will take incoming data and call:
-         // this.processIncomingData()
+   /// This will be called when we enter the app (after calling dc.loadData()).
+   /// It will initialize the DC if the bootState is not 'initialized'.
+   /// If it is, it will refresh instead.
+   async platformFind(model, cond) {
+      const myModel = model || this.datasource.model();
+      const modelRemote = myModel.remote();
+      const contextValues = {
+         id: this.id,
+         verb: "refresh",
+      };
+      // ??
+      if (this.bootState !== "initialized") {
+         // refresh
+         contextValues.verb = "uninitialized";
+         // ?? uninitialized
+         await this.processIncomingData(
+            (await myModel.local().findAll(cond)).filter((entry) =>
+               // add it to our list if it passes our filter:
+               this.__filterDatasource.isValid(entry),
+            ),
+         );
       }
+      modelRemote.contextKey(ABDataCollectionCore.contextKey());
+      modelRemote.contextValues(contextValues);
+      return await modelRemote.findAll(cond);
    }
 
    // this.QL().value() is the same as this.getAllRecords(). Unnecessary if we aren't actually using QL to do anything.
@@ -618,14 +490,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    // Mock QL so that the current calls still work.
    QL() {
       console.warn(
-         `Depreciating ABDatacollection.QL(). Try ABDatacollection.getAllRecords() instead?`
+         `Depreciating ABDatacollection.QL(). Try ABDatacollection.getAllRecords() instead?`,
       );
       return {
          value: (...args) => {
             if (args.length > 0)
                console.warn(
                   `ABDatacollection.QL().value() called with args`,
-                  args
+                  args,
                );
             return this.getAllRecords();
          },

@@ -287,7 +287,7 @@ export default class ABFactory extends ABFactoryCore {
                ? await dc.datasource.model().local().syncRemoteMaster(data)
                : await dc.datasource.model().local().syncLocalMaster(data);
          if (isServerPreferred) dc.reduceCondition(normalizedData);
-         dc.processIncomingData(normalizedData);
+         await dc.processIncomingData(normalizedData);
          if (context.verb !== "uninitialized") dc.emit("REFRESH");
 
          // signal our remote data has arrived.
