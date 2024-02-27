@@ -458,7 +458,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    /// These changes will eventually make it into the ABDataCollectionCore
    /// once the web and server side platforms are updated to be able to handle
    /// modelLocal, modelRemote operations.
-
+   /// This will be called when we enter the app (after calling dc.loadData()).
+   /// It will initialize the DC if the bootState is not 'initialized'.
+   /// If it is, it will refresh instead.
    async platformFind(model, cond) {
       const myModel = model || this.datasource.model();
       const modelRemote = myModel.remote();
@@ -466,8 +468,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          id: this.id,
          verb: "refresh",
       };
+      // ??
       if (this.bootState !== "initialized") {
+         // refresh
          contextValues.verb = "uninitialized";
+         // ?? uninitialized
          await this.processIncomingData(
             (await myModel.local().findAll(cond)).filter((entry) =>
                // add it to our list if it passes our filter:
