@@ -23,9 +23,13 @@ var config = require("../../config/config.js");
 
 const deploymentKeys = config.codepush.keys;
 
-var platform = "ios";
-if (String(navigator.userAgent).match("Android")) {
+var platform = "??";
+if (/Android/i.test(navigator.userAgent)) {
    platform = "android";
+} else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+   platform = "ios";
+} else {
+   platform = "unknown";
 }
 
 class Updater extends EventEmitter {
