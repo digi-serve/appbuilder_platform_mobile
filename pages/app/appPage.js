@@ -724,16 +724,8 @@ export class AppPage extends Page {
          analytics.log("Timeout (90 secs) during fetchApplicationData()");
       }, 90000);
 
-      // track all the inits in progress:
-      var allInits = [];
-
-      // tell all apps to .init() again
-      this.applications.forEach((abApp) => {
-         allInits.push(abApp.initRemote(/* this */));
-      });
-
       // listen for when inits are complete
-      return Promise.all(allInits)
+      return Promise.all([])
          .then(() => {
             clearTimeout(warnUI);
             clearTimeout(waitToClose);
