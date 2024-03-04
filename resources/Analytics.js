@@ -258,6 +258,7 @@ class Analytics extends EventEmitter {
     *      }
     */
    logError(err) {
+      err = err || {};
       var name = err.name || "Error";
       var data = {
          message: err.message || err._message || err,
