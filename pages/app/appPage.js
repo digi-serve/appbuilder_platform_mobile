@@ -366,7 +366,8 @@ export class AppPage extends Page {
                      "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
                      "<t>Welcome to conneXted!</t>"
                   ).open();
-                  analytics.log("App launched with no token");
+                  // if we are in chrome, maybe we report no token. Else is expected behavior
+                  // analytics.log("App launched with no token");
                   break;
 
                default:
@@ -610,22 +611,27 @@ export class AppPage extends Page {
 
       // Create the observer as an arrow function so `this` can be referenced
       this._relayObserver = (message) => {
-         let status = message.verb
-         if (status == "added") {
-            this.relayJobsTotal += 1;
-         } else if (status == "done") {
-            this.relayJobsDone += 1;
-         }else if (status == "uninitialized") {
-            this.relayJobsDone += 1;
+         let status = message?.verb
+         if(status){
+            if (status == "added") {
+               this.relayJobsTotal += 1;
+            } else if (status == "done") {
+               this.relayJobsDone += 1;
+            }else if (status == "uninitialized") {
+               this.relayJobsDone += 1;
+            }
+            var percentage = Math.round(
+               (this.relayJobsDone / this.relayJobsTotal) * 100 || 0
+            );
+            this.app.progressbar.set(
+               `#${target} .progressbar`,
+               percentage,
+               100
+            );
+         } else {
+            // tell sentry we have a verbless message
+            analytics.logError(message);
          }
-         var percentage = Math.round(
-            (this.relayJobsDone / this.relayJobsTotal) * 100 || 0
-         );
-         this.app.progressbar.set(
-            `#${target} .progressbar`,
-            percentage,
-            100
-         );
       };
       
 

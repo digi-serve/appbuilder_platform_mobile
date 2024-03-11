@@ -80,6 +80,27 @@ module.exports = class ABModel extends ABModelCore {
       this.object.emit("CREATE", copiedValues);
       await this._reloadAffectedDC();
    }
+   /**
+    * @method createLocalPriority
+    * create model values locally, then send to server without waiting.
+    * @param {obj} values  the values to create.
+    * @return {Promise}
+    */
+   async createLocalPriority(values) {
+      const copiedValues = structuredClone(values) || {};
+      this.prepareMultilingualData(copiedValues);
+
+      // make sure any values we create have a UUID field set:
+      const UUID = this.object.fieldUUID(copiedValues);
+      if (copiedValues[UUID] == null) copiedValues[UUID] = this.AB.uuid();
+      
+      // we'll return before the remote call is complete.
+      this.remote().create(copiedValues);
+
+      await this.local().create(copiedValues);
+      this.object.emit("CREATE", copiedValues);
+      await this._reloadAffectedDC();
+   }
 
    /**
     * @method delete
