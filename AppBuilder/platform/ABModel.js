@@ -98,8 +98,8 @@ module.exports = class ABModel extends ABModelCore {
       this.remote().create(copiedValues);
 
       await this.local().create(copiedValues);
+      this._reloadAffectedDC();
       this.object.emit("CREATE", copiedValues);
-      await this._reloadAffectedDC();
    }
 
    /**
