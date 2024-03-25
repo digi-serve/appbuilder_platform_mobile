@@ -891,12 +891,7 @@ export class AppPage extends Page {
          })
          .then(() => {
             // wipe the cache and hard reload
-
-            // TODO temporary logging of all site reloads
-            console.error("Reloading app due to forced local reset being called: appPage.js");
-            analytics.logError("app reload forceLocalReset()");
             window.location.reload(true);
-            // this.reload();
          })
          .catch((err) => {
             this.closeRelayLoader();

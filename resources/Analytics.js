@@ -83,10 +83,12 @@ class Analytics extends EventEmitter {
 
          if (memoryUsage > memoryPanic) {
             const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env`;
-            sendMessage(alertMessage);
+            let memoryError = new Error(alertMessage);
+            analytics.logError(memoryError);
          } else if (memoryUsage > memoryThreshold) {
             const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env`;
-            sendMessage(alertMessage);
+            let memoryError = new Error(alertMessage);
+            analytics.logError(memoryError);
          }
       }
       // Set up the monitoring interval
@@ -291,6 +293,18 @@ class Analytics extends EventEmitter {
          name: name,
          message: data.message,
       };
+   }
+   /**
+    * manage logging of an error which is important, but is often sent too often.
+    * @param {Error/String} err
+    * @return {Object}
+    *      {
+    *          "name": {string},
+    *          "message": {string}
+    *      }
+    */
+   manageManyError(err) {
+      // TODO: Implement this
    }
 
    /**
