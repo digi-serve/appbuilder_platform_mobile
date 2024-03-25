@@ -84,10 +84,12 @@ class Analytics extends EventEmitter {
          if (memoryUsage > memoryPanic) {
             const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env`;
             let memoryError = new Error(alertMessage);
+            console.log("Firing memory error message");
             analytics.logError(memoryError);
          } else if (memoryUsage > memoryThreshold) {
             const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env`;
             let memoryError = new Error(alertMessage);
+            console.log("Firing memory error message");
             analytics.logError(memoryError);
          }
       }
@@ -267,6 +269,7 @@ class Analytics extends EventEmitter {
       }
       // [object has no keys]
       if (Object.keys(err).length === 0) {
+         console.dir(err)
          err = new Error("Empty error object");
       }
       var name = err.name || "Error";
