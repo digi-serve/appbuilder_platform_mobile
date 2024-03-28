@@ -220,9 +220,9 @@ class NetworkRest extends EventEmitter {
                      Log(
                         "*** NetworkRest._request():network connection error detected."
                      );
-                     analytics.log(
-                        "NetworkRest._request():network connection error detected."
-                     );
+                     // analytics.log(
+                     //    "NetworkRest._request():network connection error detected."
+                     // );
                      // retry the attempt:
                      if (numRetries > 0) {
                         Log("Trying again");
@@ -261,28 +261,26 @@ class NetworkRest extends EventEmitter {
                      }
                   }
 
-                  // Maybe we lost the connection mid-send
+                  // add it to the queue and retry later
+                  this.queue(params, jobResponse);
                   if (!this.isNetworkConnected()) {
-                     // add it to the queue and retry later
-                     this.queue(params, jobResponse);
                      let error = new Error(
                         "Network error: adding to queue for later retry."
                      );
-                     resolve({ status: "queued" })
+                     analytics.manageManyError(error);
                   } else {
+                     // TODO send an alert to the user, ask them if they want to report the error
                      let error = new Error(
                         "NetworkRest._request() error with .ajax() command:"
-                     );
-                     error.response = jqXHR.responseText;
-                  error.text = text;
-                  error.err = err;
-                  error.code = jqXHR.status;
-                  analytics.logError(error);
-                  Log.error(error);
-                     // TODO: insert some default error handling for expected
-                     // situations:
-                     reject(error);
+                        );
+                        error.response = jqXHR.responseText;
+                        error.text = text;
+                        error.err = err;
+                        error.code = jqXHR.status;
+                        analytics.manageManyError(error);
+                        Log.error(error);
                   }
+                  resolve({ status: "queued" })
                });
          } else {
             // Network is not connected

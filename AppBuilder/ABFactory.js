@@ -117,7 +117,7 @@ export default class ABFactory extends ABFactoryCore {
       this.network.on("object", async (context, data) => {
          if (context.error != null) {
             context.callback?.(context.error);
-            this.analytics.logError(error);
+            this.analytics.logError(context.error);
             return;
          }
          const obj = this.datacollections(

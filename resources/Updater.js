@@ -188,8 +188,7 @@ class Updater extends EventEmitter {
                         next();
                      })
                      .catch((err) => {
-                        console.error("Couldn't fetch cache version");
-                        console.error(err);
+                        analytics.manageManyError("Couldn't fetch cache version", err);
                         next();
                      });
                },

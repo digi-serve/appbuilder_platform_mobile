@@ -524,8 +524,8 @@ class NetworkRelay extends NetworkRest {
                      analytics.log(
                         "Relay.poll().checkin(): an error was returned:"
                      );
-                     analytics.logError(err);
-                     // console.error('Relay.poll().checkin(): an error was returned:', err);
+                     // got 1200 errors in a single day from this line, so commenting out for now
+                     // analytics.logError(err);
                      this.pollTimerID = setTimeout(checkIn, this.pollFrequency);
                   });
             } else {
