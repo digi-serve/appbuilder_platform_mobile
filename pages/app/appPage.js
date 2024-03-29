@@ -628,8 +628,9 @@ export class AppPage extends Page {
                percentage,
                100
             );
-         } else {
-            // tell sentry we have a verbless message
+         } else if (message){
+            // report of empty inbox can be sent here for some reason?
+            // if we have a message, tell sentry we have a verbless message
             analytics.logError(message);
          }
       };
