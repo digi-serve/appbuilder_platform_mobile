@@ -261,26 +261,34 @@ class NetworkRest extends EventEmitter {
                      }
                   }
 
-                  // add it to the queue and retry later
-                  this.queue(params, jobResponse);
+                  // Maybe we lost the connection mid-send
                   if (!this.isNetworkConnected()) {
+                     // add it to the queue and retry later
+                     this.queue(params, jobResponse);
                      let error = new Error(
                         "Network error: adding to queue for later retry."
                      );
-                     analytics.manageManyError(error);
+                     resolve({ status: "queued" })
                   } else {
-                     // TODO send an alert to the user, ask them if they want to report the error
                      let error = new Error(
                         "NetworkRest._request() error with .ajax() command:"
-                        );
-                        error.response = jqXHR.responseText;
-                        error.text = text;
-                        error.err = err;
-                        error.code = jqXHR.status;
-                        analytics.manageManyError(error);
+                     );
+                     error.response = jqXHR.responseText;
+                     error.text = text;
+                     error.err = err;
+                     error.code = jqXHR.status;
+                     analytics.logError(error);
+                     // TODO: insert some default error handling for expected
+                     // TODO temporarily DO NOT log status 0 errors. Should they be logged?
+                     // The most common error is status 0, which is a timeout
+                     if (jqXHR && jqXHR.status != '0') {
+                        // Error code 0 usually means a timeout: lets not log that to sentry
                         Log.error(error);
+                     }
+                     // reject with error as that is the expected behavior while the relay server is UP
+                     // may trigger a retry somewhere else
+                     reject(error);
                   }
-                  resolve({ status: "queued" })
                });
          } else {
             // Network is not connected
