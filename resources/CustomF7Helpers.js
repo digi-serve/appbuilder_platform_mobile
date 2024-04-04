@@ -197,7 +197,8 @@ Template7.registerHelper("lockIcon", (field) => {
 // For disabling field if locked
 Template7.registerHelper("lockDisable", (field) => {
    if (field === true) {
-      return "disabled";
+      // just make it the disabled opacity
+      return "discourage";
    }
    return "";
 });
