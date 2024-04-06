@@ -836,7 +836,7 @@ export class AppPage extends Page {
 
    /**
     * Reinitialize local data for the AB Applications.
-    * This is manually called by the user from the Settings page.
+    * This is manually called by the user 
     * usually because there is a problem with the local data.
     *
     * @return {Promise}
@@ -892,7 +892,7 @@ export class AppPage extends Page {
          })
          .then(() => {
             // wipe the cache and hard reload
-            window.location.reload(true);
+            updater.updateNow();
          })
          .catch((err) => {
             this.closeRelayLoader();

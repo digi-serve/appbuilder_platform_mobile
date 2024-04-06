@@ -57,6 +57,10 @@ export default {
          // Fully show the main app page, and hide the password page.
          pages.app.show();
       });
+      // refresh the service workers, local storage, and other resources
+      pages.password.on("refreshAppLogin", () => {
+         pages.app.forceLocalReset();
+      });
 
       return pages;
    },
