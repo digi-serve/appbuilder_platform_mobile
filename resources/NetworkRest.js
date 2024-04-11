@@ -277,6 +277,7 @@ class NetworkRest extends EventEmitter {
                      error.text = text;
                      error.err = err;
                      error.code = jqXHR.status;
+                     error.message += `NetworkRest._request() error with .ajax() command: ${params.url}`;
                      analytics.logError(error);
                      // TODO: insert some default error handling for expected
                      // TODO temporarily DO NOT log status 0 errors. Should they be logged?
@@ -376,8 +377,9 @@ class NetworkRest extends EventEmitter {
                this.queueLock.release();
                resolve();
             })
-            .catch((err) => {
+            .catch((err = {}) => {
                Log.error("Error while queueing data", err);
+               err.message += `Error while queueing data: ${data.url}`;
                analytics.logError(err);
                reject(err);
 
@@ -471,8 +473,9 @@ class NetworkRest extends EventEmitter {
             })
 
             // respond to errors:
-            .catch((err) => {
+            .catch((err = {}) => {
                Log.error("commAPI queueFlush error", err);
+               err.message += `commAPI queueFlush error: NetworkRest.js quewueFlush()`;
                analytics.logError(err);
 
                this.queueLock?.release();

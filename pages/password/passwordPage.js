@@ -108,8 +108,9 @@ export default class PasswordPage extends Page {
                .then(() => {
                   this.emit("passwordDone");
                })
-               .catch((err = "") => {
+               .catch((err = {}) => {
                   this.emit("loadingDone");
+                  err.message += "Error setting password passwordPage.js - form submit";
                   $.alert(err.message || err, "<t>Error</t>");
                   analytics.logError(err);
                });

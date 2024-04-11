@@ -298,7 +298,7 @@ class NetworkRelay extends NetworkRest {
                Log("NetworkRelay: init complete");
                resolve();
             })
-            .catch((err) => {
+            .catch((err = {}) => {
                // if this was a simple skip attempt:
                if (err.code == "E_SKIP") {
                   Log("init was skipped");
@@ -306,6 +306,7 @@ class NetworkRelay extends NetworkRest {
                   resolve();
                } else {
                   Log.error("init failed", err);
+                  err.message += `NetworkRelay:init(): error during init()`;
                   analytics.logError(err);
                   reject(err);
                }
@@ -367,9 +368,9 @@ class NetworkRelay extends NetworkRest {
                Log("initRSA() done");
                resolve(rsaKey);
             })
-            .catch((err) => {
+            .catch((err = {}) => {
                Log("initRSA error", err.message || err);
-
+               err.message += `NetworkRelay:initRSA(): error during initRSA()`;
                analytics.logError(err);
                Log.error("::: 2) error trying to get rsa key:", err);
 
@@ -444,6 +445,7 @@ class NetworkRelay extends NetworkRest {
             plaintext = decrypted.toString(CryptoJS.enc.Utf8);
          } catch (err) {
             Log.error("Error decrypting incoming relay data", data, err);
+            err.message += `ABRelay.decrypt(): error decrypting incoming relay data`;
             analytics.logError(err);
 
             plaintext = data;
@@ -455,6 +457,7 @@ class NetworkRelay extends NetworkRest {
             analytics.log(
                "ABRelay.decrypt(): error trying to JSON.parse() the returned data."
             );
+            err.message += `ABRelay.decrypt(): error trying to JSON.parse() the returned data.`;
             analytics.logError(err);
             finalData = plaintext;
          }
@@ -997,7 +1000,7 @@ class NetworkRelay extends NetworkRest {
             }
             return p;
          })
-         .catch((err) => {
+         .catch((err = {}) => {
             analytics.log(
                "NetworkRelay." +
                   params.type +
@@ -1005,6 +1008,7 @@ class NetworkRelay extends NetworkRest {
             );
             this.emit("sending.stop");
             this.emit("error.sending");
+            err.message += `NetworkRelay.${params.type}(): error communicating with RelayServer`;
             analytics.logError(err);
 
             // throw err again to pass it back to calling routine:
@@ -1044,10 +1048,11 @@ class NetworkRelay extends NetworkRest {
     * @return {Promise}
     */
    _resend(params /*, jobResponse */) {
-      return super.post(params).catch((err) => {
+      return super.post(params).catch((err = {}) => {
          analytics.log(
             "NetworkRelay._resend(): error communicating with RelayServer"
          );
+         err.message += `NetworkRelay._resend(): error communicating with RelayServer`;
          analytics.logError(err);
 
          // throw err again to pass it back to calling routine:

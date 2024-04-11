@@ -157,8 +157,9 @@ export default class Component extends EventEmitter {
 
             return value;
          })
-         .catch((err) => {
+         .catch((err = {}) => {
             console.log("Error reading from storage: " + key);
+            err.message += `Error reading from storage: ${key}`;
             analytics.logError(err);
 
             log.alert(

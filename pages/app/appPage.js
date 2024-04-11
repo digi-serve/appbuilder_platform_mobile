@@ -346,7 +346,7 @@ export class AppPage extends Page {
             clearTimeout(timeout);
             this.dataReady.resolve();
          })
-         .catch((err) => {
+         .catch((err = {}) => {
             clearTimeout(timeout);
             console.log(err);
 
@@ -376,7 +376,8 @@ export class AppPage extends Page {
                      "<t>There is an unexpected problem with the server at this time.</t>",
                      "<t>Error</t>"
                   ).open();
-                  analytics.log("Error during AppPage.prepareData():");
+                  // add the location of the error to the error message
+                  err.message += " ::: Error during AppPage.prepareData()";
                   analytics.log(err.message);
                   analytics.logError(err);
                   break;
@@ -419,8 +420,9 @@ export class AppPage extends Page {
          .then(() => {
             console.log("appPage:begin(): Network Queue flushed.");
          })
-         .catch((err) => {
-            analytics.log("appPage:begin(): unable to flush Network Queue");
+         .catch((err = {}) => {
+            analytics.log("appPage:begin():");
+            err.message += " ::: unable to flush Network Queue: appPage.begin()";
             analytics.logError(err);
          });
 
@@ -435,8 +437,9 @@ export class AppPage extends Page {
             analytics.log("ABApplication timed out during init(): " + abApp.id);
          });
 
-         abApp.init(this).catch((err) => {
+         abApp.init(this).catch((err = {}) => {
             console.log("Failed to init() ABApplication: " + abApp.id);
+            err.message += " ::: Failed to init() ABApplication: ABApplication.init()";
             console.log(err.message);
             console.log(err.stack);
             analytics.logError(err);
@@ -553,8 +556,9 @@ export class AppPage extends Page {
 
             return value;
          })
-         .catch((err) => {
+         .catch((err = {}) => {
             console.log("Error reading from storage: " + key);
+            err.message += ` ::: Error reading from storage: ${key}`;
             analytics.logError(err);
 
             log.alert(
@@ -827,9 +831,10 @@ export class AppPage extends Page {
                this.emit("resetComplete");
             }
          })
-         .catch((err) => {
+         .catch((err = {}) => {
             this.closeRelayLoader();
             console.log("::: forceApplicationReset(): error");
+            err.message += " ::: forceApplicationReset()";
             analytics.logError(err);
          });
    }
@@ -894,9 +899,12 @@ export class AppPage extends Page {
             // wipe the cache and hard reload
             updater.updateNow();
          })
-         .catch((err) => {
+         // .then(() => {
+         .catch((err = {}) => {
             this.closeRelayLoader();
             console.log("::: forceLocalReset(): error");
+            // add the location of the error to the error message
+            err.message += " ::: forceLocalReset()";
             analytics.logError(err);
          });
    }

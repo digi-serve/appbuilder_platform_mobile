@@ -45,14 +45,15 @@ class FileStorage extends EventEmitter {
          }
       } 
       // IndexedDB not supported on this device?
-      catch (err) {
-         Log(err);
+      catch (err)  {
          alert(
             "Error initializing the file storage system:\n" +
-               (err.message || "") +
-               "\n" +
-               (err.stack || "")
+            (err.message || "") +
+            "\n" +
+            (err.stack || "")
          );
+         err.message += `Error initializing the file storage system, IndexedDB not supported`;
+         Log(err);
          analytics.logError(err);
       }
    }
