@@ -171,7 +171,9 @@ class CameraPWA extends EventEmitter {
          if (options.timeout != null)
             recurseShrinkTimeout = setTimeout(() => {
                reject(
-                  new Error(`Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:${options.timeout} qualityValue:${qualityValue} gain:${qualityGain} factor:${qualityFactor} times:${compressionTimes}`),
+                  new Error(
+                     `Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:${options.timeout} qualityValue:${qualityValue} gain:${qualityGain} factor:${qualityFactor} times:${compressionTimes}`,
+                  ),
                );
                recurseShrinkTimeout = null;
             }, options.timeout);
@@ -312,7 +314,6 @@ class CameraPWA extends EventEmitter {
       return await fileStorage.convertFileToBase64Data(file);
    }
 
-
    /**
     * Convert base64 data into a File object.
     *
@@ -323,7 +324,9 @@ class CameraPWA extends EventEmitter {
     */
    convertToFile(filename, type, base64Data) {
       this._checkFileType(type);
-      return fileStorage.convertBase64DataToFile(filename, base64Data, { type });
+      return fileStorage.convertBase64DataToFile(filename, base64Data, {
+         type,
+      });
    }
 
    /**

@@ -14,7 +14,7 @@ var config = require("../../config/config.js");
 
 //// Private variables
 
-var _f7app = null;
+var _f7App = null;
 
 var _liveDebug = false;
 var _remoteDebug = false;
@@ -89,25 +89,25 @@ log.emitter = new EventEmitter();
 /**
  * Initialize options.
  *
- * @param {Framework7} [options.app]
+ * @param {Framework7} [options.f7App]
  *      Set the Framework7 app object to use for creating the dialog boxes.
  */
 log.init = function(options = {}) {
-   if (options.app instanceof Framework7) {
-      _f7app = options.app;
+   if (options.f7App instanceof Framework7) {
+      _f7App = options.f7App;
    }
 };
 
 /**
  * Display a basic message dialog box.
- * Wrapper for f7app.dialog.alert().
+ * Wrapper for f7App.dialog.alert().
  *
  * @param {string} message
  * @param {string} title
  */
 log.alert = function(message, title) {
-   if (_f7app) {
-      _f7app.dialog.alert(message, title);
+   if (_f7App) {
+      _f7App.dialog.alert(message, title);
    }
    log(title, message);
 };

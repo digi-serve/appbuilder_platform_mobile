@@ -8,7 +8,7 @@ import NetworkRelay from "./NetworkRelay";
 var config = require("../../config/config.js");
 
 // pages that use :
-// /lib/pages/app/appPage.js
+// /lib/pages/appPage.js
 
 var network;
 

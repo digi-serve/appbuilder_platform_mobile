@@ -3,10 +3,17 @@ import moment from "moment";
 import { v4 as uuidv4 } from "uuid";
 
 import ABFactoryCore from "./core/ABFactoryCore";
-import analytics from "../resources/Analytics.js";
 import account from "../resources/Account.js";
+import analytics from "../resources/Analytics.js";
+import buildTimestamp from "../resources/BuildTimestamp.js";
 import busy from "../resources/Busy.js";
 import camera from "../resources/Camera.js";
+
+// TODO move this to an npm module, so it can be updated independently
+// this is the same structure as how we access jsEncrypt
+// jsQR should be imported as an npm module, but there were some issues
+// so for initial release we are including it in the platform
+import jsQR from "../../platform/resources/jsQR.js";
 import network from "../resources/Network.js";
 import { storage } from "../resources/Storage.js";
 import { translate } from "../resources/Translate.js";
@@ -18,6 +25,7 @@ export default class ABFactory extends ABFactoryCore {
       this.analytics = analytics;
       this.busy = busy;
       this.camera = camera;
+      this.jsQR = jsQR;
       this.network = network;
       this.storage = storage;
       this.translate = translate;
@@ -270,5 +278,9 @@ export default class ABFactory extends ABFactoryCore {
 
    uuid() {
       return uuidv4();
+   }
+
+   get buildTimeStamp() {
+      return buildTimestamp.getBuild_Timestamp();
    }
 }

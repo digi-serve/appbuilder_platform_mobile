@@ -95,11 +95,10 @@ module.exports = class ABModel extends ABModelCore {
       if (copiedValues[UUID] == null) copiedValues[UUID] = this.AB.uuid();
       
       // we'll return before the remote call is complete.
-      this.remote().create(copiedValues);
-
+      await this.remote().create(copiedValues);
       await this.local().create(copiedValues);
-      this._reloadAffectedDC();
       this.object.emit("CREATE", copiedValues);
+      await this._reloadAffectedDC();
    }
 
    /**

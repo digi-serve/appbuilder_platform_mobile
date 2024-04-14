@@ -222,11 +222,11 @@ class Storage extends EventEmitter {
                      this.set("__sdc_password", hash, {
                         serialize: false
                      });
-                     this.emit("ready");
                      resolve();
+                     this.emit("ready");
                   } else if (value == hash) {
-                     this.emit("ready");
                      resolve();
+                     this.emit("ready");
                   } else {
                      reject();
                   }
