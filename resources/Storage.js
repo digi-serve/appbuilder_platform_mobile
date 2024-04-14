@@ -426,6 +426,7 @@ class Storage extends EventEmitter {
          var transaction = this.db.transaction(storeName, "readwrite");
          transaction.onerror = (event) => {
             Log("DB error during clear", event.error);
+            err.message += `DB Error clearing record: ${key}`;
             analytics.logError(event.error);
             reject(event.error);
          }

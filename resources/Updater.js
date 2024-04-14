@@ -200,7 +200,7 @@ class Updater extends EventEmitter {
 
                         next();
                      },
-                     (err) => {
+                     (err = {}) => {
                         console.log("failed to get CodePush package", err);
                         err.message = "CodePush error: " + err.message;
                         analytics.logError(err);

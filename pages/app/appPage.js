@@ -652,7 +652,7 @@ export class AppPage extends Page {
     *
     * @return {Promise}
     */
-   async forceApplicationReset(resetLocal = false) {
+   async forceApplicationReset(includeLocal = false) {
       this._pendingApplicationReset = true;
       // TODO: Implement code to clear local code and get new code from the server
       // ex: the platform code, the ABApplication code, and the ABObject code
@@ -680,7 +680,7 @@ export class AppPage extends Page {
       this.emit("resetComplete");
 
       // wipe the cache and hard reload
-      // window.location.reload(true);
+      if(includeLocal) updater.updateNow();
    }
 
    /**

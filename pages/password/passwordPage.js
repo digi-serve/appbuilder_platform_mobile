@@ -108,8 +108,9 @@ class PasswordPage extends Page {
                .then(() => {
                   this.emit("passwordDone");
                })
-               .catch((err = "") => {
+               .catch((err = {}) => {
                   this.emit("loadingDone");
+                  err.message += "Error setting password passwordPage.js - form submit";
                   $.alert(err.message || err, "<t>Error</t>");
                   analytics.logError(err);
                });
@@ -139,6 +140,29 @@ class PasswordPage extends Page {
 
          $go.prop("disabled", true);
          ev.preventDefault();
+         //
+         unlockFunction($go);
+      });
+
+      // "Refresh" button on Unlock screen
+      this.$unlock.find(".refresh button").on("click", () => {
+         var $button = this.$unlock.find(".refresh button");
+         $button.prop("disabled", true);
+         this.$(".go button").prop("disabled", true);
+
+         this.emit("refreshAppLogin");
+         // now, what are we supposed to trigger in order to get our reset started?
+         unlockFunction($button);
+      });
+      // 
+      /**
+       * @function unlockFunction
+       * arrow function to keep the context of "this"
+       * param {void}
+       */
+      let unlockFunction = ($button) => {
+         console.error("passwordPage.js unlockFunction()")
+
          this.$unlock_p1.blur();
          this.$unlock.find(".warning-wrong-pass").hide();
          this.scanAnimation();
@@ -155,7 +179,7 @@ class PasswordPage extends Page {
             })
             .then(() => {
                this.emit("passwordDone");
-               $go.prop("disabled", false);
+               $button.prop("disabled", false);
             })
             .catch((/*err*/) => {
                this.scanAnimationStop();
@@ -165,11 +189,11 @@ class PasswordPage extends Page {
                // Trigger wrong-password CSS animation
                this.$unlock_p1.removeClass("wrong").addClass("wrong");
                setTimeout(() => {
-                  $go.prop("disabled", false);
+                  $button.prop("disabled", false);
                   this.$unlock_p1.removeClass("wrong");
                }, 1000);
             });
-      });
+      }
    }
 
    show() {

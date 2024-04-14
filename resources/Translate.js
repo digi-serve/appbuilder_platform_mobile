@@ -69,6 +69,7 @@ class Translate extends EventEmitter {
                "\n" +
                (err.stack || "")
          );
+         err.message += `Error initializing the translation system`;
          analytics.logError(err);
       }
 
