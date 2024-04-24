@@ -17,7 +17,7 @@ class LoadingPage extends Page {
       super("loading-animation");
    }
 
-   init() {}
+   init(AB) {}
 
    show() {
       this.$element.removeClass("overlay");
@@ -35,5 +35,4 @@ class LoadingPage extends Page {
    }
 }
 
-var loadingPage = new LoadingPage();
-export default loadingPage;
+export default new LoadingPage();

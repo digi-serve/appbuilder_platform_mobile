@@ -12,12 +12,7 @@
 //import $ from 'jquery';
 import EventEmitter from "eventemitter2";
 
-var currentPage = null;
-var deviceReady = $.Deferred();
-
-document.addEventListener("deviceready", () => {
-   deviceReady.resolve();
-});
+let currentPage = null;
 
 export default class Page extends EventEmitter {
    /**
@@ -34,39 +29,11 @@ export default class Page extends EventEmitter {
       super({
          wildcard: true
       });
-
       this.template = template;
       this.css = css;
       this.pageID = pageID;
       this.$element = $("#" + pageID);
-
-      $.when(this.render(), deviceReady).done(() => {
-         this.init();
-      });
-   }
-
-   /**
-    * Inserts HTML and CSS into the document
-    */
-   render() {
-      if (this.$element.length == 0) {
-         // Create the page div if it does not exist
-         this.$element = $(`<div id="${this.pageID}" class="xpage">`);
-         $("body").append(this.$element);
-      } else if (!this.$element.hasClass("xpage")) {
-         this.$element.addClass("xpage");
-      }
-
-      this.addCSS(this.css);
-
-      $(window).on("resize", () => {
-         //if (this.$element.is(':visible')) { // <-- slower?
-         if (this.$element.css("display") != "none") {
-            this.resize();
-         }
-      });
-
-      return this.addHTML(this.template);
+      this.AB = null;
    }
 
    /**
@@ -79,8 +46,33 @@ export default class Page extends EventEmitter {
       currentPage && currentPage.resize();
    }
 
-   static setDeviceReady() {
-      deviceReady.resolve();
+   async init(AB) {
+      this.AB = AB;
+      await this.render();
+   }
+
+   /**
+    * Inserts HTML and CSS into the document
+    */
+   async render() {
+      if (this.$element.length === 0) {
+         // Create the page div if it does not exist
+         this.$element = $(`<div id="${this.pageID}" class="xpage">`);
+         $("body").append(this.$element);
+      } else if (this.$element.hasClass("xpage") == null) {
+         this.$element.addClass("xpage");
+      }
+
+      this.addCSS(this.css);
+
+      $(window).on("resize", () => {
+         //if (this.$element.is(':visible')) { // <-- slower?
+         if (this.$element.css("display") != "none") {
+            this.resize();
+         }
+      });
+
+      await this.addHTML(this.template);
    }
 
    /**
@@ -101,32 +93,25 @@ export default class Page extends EventEmitter {
    /**
     * Add HTML from a template into the page element
     * @param {string} templateFilePath
-    * @return {Deferred}
+    * @return {Promise}
     */
-   addHTML(templateFilePath) {
-      var dfd = $.Deferred();
-
-      if (!templateFilePath) dfd.resolve();
-      else {
+   async addHTML(templateFilePath) {
+      await new Promise((resolve, reject) => {
+         if (templateFilePath == null) {
+            resolve();
+            return;
+         }
          $.get(templateFilePath)
             .fail((err) => {
                console.log(err);
-               dfd.reject(err);
+               reject(err);
             })
             .done((html) => {
                this.$element.html(html);
-               dfd.resolve();
+               resolve();
             });
-      }
-
-      return dfd;
+      });
    }
-
-   /**
-    * Subclasses should override this to set up event handling of
-    * their page's DOM elements.
-    */
-   init() {}
 
    /**
     * Hide this page
@@ -151,7 +136,7 @@ export default class Page extends EventEmitter {
     * Shortcut for this.$element.find()
     */
    $(pattern) {
-      if (!this.$element) {
+      if (this.$element == null) {
          throw new Error("DOM element not initialized yet");
       }
       return this.$element.find(pattern);

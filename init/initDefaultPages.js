@@ -2,91 +2,69 @@
  * initDefaultPages.js
  * Setup the main application Pages
  */
-import account from "../resources/Account.js";
-
-import LoadingPage from "../pages/loadingPage.js";
-import PasswordPage from "../pages/password/passwordPage.js";
-import getAppPage from "../pages/app/appPage.js";
+import loadingPage from "../pages/loadingPage.js";
+import passwordPage from "../pages/password/passwordPage.js";
+import appPage from "../pages/app/appPage.js";
 
 // Initialize the top level pages.
-var pages = {
-   loading: LoadingPage,
-   password: null,
-   app: null, // will contain all Framework7 sub pages
+const pages = {
+   loadingPage,
+   passwordPage,
+   appPage, // will contain all Framework7 sub pages
 };
 
 export default {
-   init: async (AB) => {
-      // Setup the Password Page
+   init: async (AB, appUUID) => {
+      // Setup the Pages
+      let pageKeyErr = "";
       try {
-         pages.password = new PasswordPage();
+         await pages.loadingPage.init(AB);
+         await pages.passwordPage.init(AB);
+         await pages.appPage.init(AB, appUUID);
       } catch (err) {
-         console.log(err);
+         console.error(err);
          $.alert(
             (err.message || "") + "<br />" + (err.stack || ""),
-            "Error starting password page"
+            `Error starting ${pageKeyErr}`
          );
          AB.analytics.logError(err);
       }
 
-      // Setup our Application Page
-      try {
-         pages.app = getAppPage(AB);
-      } catch (err) {
-         console.log(err);
-         $.alert(
-            (err.message || "") + "<br />" + (err.stack || ""),
-            "Error starting app page"
-         );
-         AB.analytics.logError(err);
-      }
-
-      pages.password.on("loading", () => {
-         pages.loading.overlay();
+      pages.passwordPage.on("loading", () => {
+         pages.loadingPage.overlay();
       });
-      pages.password.on("loadingDone", () => {
-         pages.loading.hide();
+      pages.passwordPage.on("loadingDone", () => {
+         pages.loadingPage.hide();
       });
-      pages.password.on("passwordReady", () => {
+      pages.passwordPage.on("passwordReady", () => {
          // After password is ready, make the main app visible.
          // If there are transparent UI elements on the password page, the main
          // app page will show through under that.
-         pages.app.$element.show();
+         pages.appPage.$element.show();
       });
-      pages.password.on("passwordDone", () => {
+      pages.passwordPage.on("passwordDone", () => {
          // Fully show the main app page, and hide the password page.
-         pages.app.show();
-      });
-      // refresh the service workers, local storage, and other resources
-      pages.password.on("refreshAppLogin", () => {
-         pages.app.forceLocalReset();
+         pages.appPage.show();
       });
 
-      return pages;
+      // refresh the service workers, local storage, and other resources
+      pages.passwordPage.on("refreshAppLogin", () => {
+         pages.appPage.forceApplicationReset(true);
+      });
    },
    show: (pageKey) => {
       switch (pageKey) {
-         case "app":
+         case "appPage":
             // making sure other objects respond to any password signals:
             // simulate the password process:
-            pages.password.emit("loading");
-            pages.password.emit("loadingDone");
-            pages.password.emit("passwordReady");
-            pages.password.emit("passwordDone");
-            break;
+            pages.passwordPage.emit("loading");
+            pages.passwordPage.emit("loadingDone");
+            pages.passwordPage.emit("passwordReady");
+            pages.passwordPage.emit("passwordDone");
       }
 
       if (pages[pageKey]) {
          pages[pageKey].show();
       }
-   },
-   /*
-    * consoleDebugging
-    * expose some of our resources globally so we can access them on the
-    * javascript console.
-    */
-   consoleDebugging: () => {
-      window.appPage = pages.app;
-      window.appPage.account = account;
    },
 };

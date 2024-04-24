@@ -11,7 +11,6 @@ import Lock from "./Lock.js";
 import Log from "./Log";
 import NetworkRest from "./NetworkRest";
 import { storage } from "./Storage.js";
-import async from "async";
 
 var config = require("../../config/config.js");
 const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
@@ -137,32 +136,24 @@ class NetworkRelay extends NetworkRest {
     * @return {Promise}
     *    Resolves with {string} of the new authToken.
     */
-  registerAuthToken(preToken) {
+  async registerAuthToken(preToken) {
     this.prepare();
-    let authToken = NetworkRelay.randomBytes(64);
+    const authToken = NetworkRelay.randomBytes(64);
+
     // prevent queueing re-attempt, as mobile/register will only work once
-    return super
+    await super
       .post({
-        url: "/mobile/register",
-        data: {
-          pre: preToken,
-          new: authToken,
-        },
-      }, null, false)
-      .then(() => {
-        return authToken;
-         })
-         .catch((err) => {
-            if (err.code >= 400 && err.code < 500) {
-               err.code = "E_BADJRRTOKEN";
-            }
-            throw err;
-         });
+         url: "/mobile/register",
+         data: {
+         pre: preToken,
+         new: authToken,
+         },
+      }, null, false);
+    return authToken;
    }
 
    init() {
       this.prepare();
-
       return new Promise((resolve, reject) => {
          //// Pull out our stored values:
          // AES key,  SyncStatus
@@ -197,6 +188,7 @@ class NetworkRelay extends NetworkRest {
             .then(() => {
                if (!this.appUUID) {
                   this.appUUID = this.uuid();
+                  console.log("xxxxxxxxxx => appUUID: ", this.appUUID);
                   return storage.set("appUUID", this.appUUID);
                }
             })
@@ -244,12 +236,14 @@ class NetworkRelay extends NetworkRest {
                if (this.aesKey == null) {
                   // Generate AES key now.
                   this.aesKey = NetworkRelay.randomBytes(32);
+                  console.log("xxxxxxxxxx => aesKey: ", this.aesKey);
                   return storage.set("aesKey", this.aesKey);
                }
             })
 
             // if we haven't sent the AES key then we need to send it.
             .then(() => {
+               // debugger
                Log("NetworkRelay: init stage 7");
                if (!this.relayState.aesKeySent) {
             // - MF contacts PublicServer.mobile/initresolve  { rsa_aes, userUUID, AppID, AppUUID }
@@ -523,6 +517,7 @@ class NetworkRelay extends NetworkRest {
                      this.pollTimerID = setTimeout(checkIn, this.pollFrequency);
                   })
                   .catch((err) => {
+                     console.error(err);
                      this.emit('receiving.stop');
                      analytics.log(
                         "Relay.poll().checkin(): an error was returned:"

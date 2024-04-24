@@ -11,33 +11,18 @@ import EventEmitter2 from "eventemitter2";
 
 export default class ABAppController extends EventEmitter2 {
    /**
-    * @param {Framework7} app
-    * @param {object} [options]
+    * @param {Object} [routes]
     */
-   constructor(AB, options = {}) {
+   constructor(routes) {
       super({
          wildcard: true,
       });
-
-      this.AB = AB;
-
-      this.options = options;
-
-      this.id = "??";
       this.appPage = null;
-      this.routes = null;
-
+      this.routes = routes;
       this._status = "constructor";
-
-      // default to using the __ContainerApp if the child doesn't override it
-      this.application = this.AB.applicationNew({});
-
-      // this.f7App = app;
-
       this.datacollections = []; //this.application.datacollectionsIncluded();
       // keep track of which datacollections we are managing.
       // will try to initialize these when the App initializes (init()).
-
       this.initTimeout = 25 * 1000;
    }
 
@@ -52,27 +37,35 @@ export default class ABAppController extends EventEmitter2 {
     *      "loading"           loading datacollection data
     *      "ready"             ready for operation.
     *
-    * @param {lib/platform/pages/appPage} appPage
+    * @param {AppPage} appPage
     *        the live instance of the Application Page Controller that
     *        displays this application.
+    * @param {Array<String>} dcIDs
     * @return {Promise}
     */
-   init(appPage) {
+   async init(appPage, dcIDs) {
       // save a reference to the lib/platform/pages/appPage/appPage.js object.
-      if (appPage) {
-         this.appPage = appPage;
-      }
+      this.appPage = appPage;
+      this.application = this.appPage.application;
+      if (dcIDs?.length > 0)
+         this.datacollections =
+            this.appPage.application.datacollectionsIncluded((dc) => {
+               return dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1;
+            });
 
       // Emit a message if init doesn't complete within 25 seconds
-      var initTimeout = setTimeout(() => {
-         this.emit("init.timeout");
+      const initTimeout = setTimeout(() => {
+         this.appPage.AB.analytics.log(
+            "ABApplication timed out during init(): " +
+               this.appPage.application.id,
+         );
       }, this.initTimeout);
 
       return new Promise((resolve, reject) => {
          this.status = "init";
 
          // make sure each of our Datacollections have loaded their data:
-         var allInits = [];
+         const allInits = [];
          this.datacollections.forEach((dc) => {
             if (dc) {
                dc.init();
@@ -86,12 +79,14 @@ export default class ABAppController extends EventEmitter2 {
             .then(() => {
                // make sure our site user data has been properly
                // loaded. (1st load this needs to come from server call)
-               return this.AB.account.initUserData();
-            })
-            .then(() => {
+               if (
+                  this.appPage.AB.account.authToken == null &&
+                  this.appPage.AB.account.username == null
+               )
+                  throw new Error("Not found authToken and username.");
                this.status = "loading";
 
-               var allLoads = [];
+               const allLoads = [];
                this.datacollections.forEach((dc) => {
                   if (dc) {
                      if (
@@ -111,59 +106,11 @@ export default class ABAppController extends EventEmitter2 {
                // NOTE: the setter for .status emits it's value:
 
                clearTimeout(initTimeout);
-               // transitional:  legacy method.
-               this.emit("dataReady");
                resolve();
             })
             .catch((err) => {
                reject(err);
             });
-      });
-   }
-
-   /**
-    * initRemote()
-    * Perform an init() but don't resolve until all the data from the remote
-    * models are returned.
-    *
-    * @param {lib/platform/pages/appPage} appPage
-    *        the live instance of the Application Page Controller that
-    *        displays this application.
-    * @return {Promise}
-    */
-   initRemote(appPage) {
-      var numFinished = 0; // the # of DC that have completed their update
-
-      var checkEm = (res, rej, err = null) => {
-         if (err) {
-            rej(err);
-            return;
-         }
-
-         numFinished++;
-         if (numFinished >= this.datacollections.length) {
-            res();
-         }
-      };
-
-      return new Promise((resolve, reject) => {
-         // continue if we don't have any datacollections
-         if (this.datacollections.length == 0) {
-            resolve();
-            return;
-         }
-
-         // setup listeners on all our datacollections:
-         this.datacollections.forEach((dc) => {
-            if (dc) {
-               dc.once("init.remote", () => {
-                  checkEm(resolve, reject);
-               });
-            }
-         });
-
-         // start the data loading process:
-         this.init(appPage);
       });
    }
 
@@ -179,13 +126,18 @@ export default class ABAppController extends EventEmitter2 {
    /**
     * status
     * register our current application status state.
-    * @param {string} status
+    * @return {String}
     */
 
    get status() {
       return this._status;
    }
 
+   /**
+    * status
+    * register our current application status state.
+    * @param {String} newStatus
+    */
    set status(newStatus) {
       this._status = newStatus;
       this.emit("status", newStatus);
@@ -208,7 +160,9 @@ export default class ABAppController extends EventEmitter2 {
     * @return {ABDataCollection}
     */
    dataCollection(key) {
-      return this.AB.datacollectionByID(key);
+      return this.datacollections.find(
+         (dc) => dc.id === key || dc.name === key || dc.label == key,
+      );
    }
 
    /**
@@ -227,7 +181,7 @@ export default class ABAppController extends EventEmitter2 {
    listItems(objKey, fieldKey, langCode = "en") {
       var results = [];
 
-      var object = this.AB.objectByID(objKey);
+      var object = this.appPage.AB.objectByID(objKey);
       if (!object) return results;
 
       var field = object.fields((f) => {
@@ -287,198 +241,8 @@ export default class ABAppController extends EventEmitter2 {
     * @return {ABDataCollection}
     */
    object(key) {
-      return this.AB.objectByID(key);
+      return this.appPage.AB.objectByID(key);
    }
-
-   /**
-    * dc()
-    * initialize a DataCollection (dc) from a given id.
-    *
-    * this method() will create an internal property:  .data[fieldName] and
-    * a method to access this data:  .get[fieldName]()
-    *
-    * in addition, an internal reference to the data collection is
-    * maintained at dc[fieldName];
-    *
-    * this method populates the data from the values stored in our
-    * local storage.
-    *
-    * @param {string} id  the uuid of the defined OBJ that contains this data
-    * @param {string} fieldName the local field name to reference this data
-    *                 by.
-    * @return {Promise}
-    */
-   //     dc(id, fieldName) {
-
-   //         var dataRef = this.refDataField(fieldName);
-   //         this[dataRef] = [];
-
-   //         var methodRef = this.refMethod(fieldName);
-   //         this[methodRef] = function() {
-   //             return this[dataRef];
-   //         }
-
-   //         var dcRef = this.refDC(fieldName);
-   //         if (!this[dcRef]) {
-   //             var dc = this.dcFind(id);
-   //             if (!dc) {
-   //                 console.error(' could not find DataCollection by id['+id+']');
-   //                 return Promise.reject();
-   //             }
-   //             this[dcRef] = dc;
-   //         }
-
-   //         return new Promise((resolve, reject)=>{
-   //             this[dcRef].loadDataLocal()
-   //             .then((dcData) => {
-   //                 this[dataRef] = dcData;
-   //                 resolve();
-   //             })
-   //             .catch((err)=>{
-   // console.error('::: .dc.loadDataLocal() error:', err);
-   //                 reject(err);
-   //             });
-   //         })
-   //     }
-
-   /**
-    * dcFind()
-    * lookup a DataCollection by a given id.
-    * @param {string} id the UUID of the DC to find
-    * @return {ABDataCollection} or null if not found.
-    */
-   // dcFind(id) {
-   //     // try to search all pages for the specified data collection id
-   //     var pages = this.application.pages();
-   //     var dc = null;
-   //     pages.forEach((p)=>{
-   //         if (!dc) {
-   //             dc = p.dataCollections((c) => {
-   //                     return c.id == id;
-   //                 })[0];
-   //         }
-   //     })
-   //     return dc;
-   // }
-
-   /**
-    * dcRemote()
-    * initiates a request to gather the DataCollection's data from the Server.
-    *
-    * @param {string} id  the uuid of the DC that contains this data
-    * @param {string} fieldName the local field name to reference this data
-    *                 by.
-    * @return {Promise}
-    */
-   //     dcRemote(id, fieldName) {
-
-   //         var dataRef = this.refDataField(fieldName);
-   //         var emitRef = fieldName+'Updated';
-   //         var dcRef   = this.refDC(fieldName);
-
-   //         if (!this[dcRef]) {
-   //             var dc = this.dcFind(id);
-   //             if (!dc) {
-   //                 console.error(' could not find DataCollection by id['+id+']');
-   //                 return Promise.reject();
-   //             }
-   //             this[dcRef] = dc;
-   //         }
-
-   //         return new Promise((resolve, reject) =>{
-   //             this[dcRef].loadData()
-   //             .catch((err)=>{
-   // console.error('::: .dcRemote().loadData() error:', err);
-   //                 reject(err);
-   //             });    // kicks off a Relay request
-   //             this[dcRef].removeAllListeners('data'); // prevent multiple
-   //             this[dcRef].on('data', (dcData) => {
-   //                 this[dataRef] = dcData;
-   //                 this.emit(emitRef);
-   //                 resolve(dcData);
-   //             });
-   //         });
-   //     }
-
-   /**
-    * lookupData()
-    * initialize a special 'lookup' data type. This type is data
-    * from a table that is used for list selection type values.
-    * --> there are alot of these in HRIS.
-    *
-    * this fn() will create an internal data:  .data[fieldName] and
-    * a method to access this data:  .get[fieldName]()
-    *
-    * this method populates the data from the values stored in our
-    * local storage.
-    *
-    * @param {string} id  the uuid of the defined OBJ that contains this data
-    * @param {string} fieldName the local field name to reference this data
-    *                 by.
-    * @return {Promise}
-    */
-   // lookupData(id, fieldName) {
-   //     var obj = this.objByID(id);
-
-   //     var objRef = this.refObj(fieldName);
-   //     if (!this[objRef]) this[objRef] = obj;
-
-   //     var dataRef = this.refDataField(fieldName);
-   //     this[dataRef] = [];
-
-   //     var methodRef = this.refMethod(fieldName);
-   //     this[methodRef] = function() {
-   //         return this[dataRef];
-   //     }
-
-   //     var methodRefreshRef = this.refMethodRefresh(fieldName);
-   //     this[methodRefreshRef] = function() {
-   //         return this.lookupData(id, fieldName);
-   //     }
-
-   //     return new Promise((resolve, reject)=>{
-   //         obj.model().local().findAll().then((listEntries)=>{
-   //             this[dataRef] = listEntries || [];
-   //             resolve();
-   //         })
-   //     })
-   // }
-
-   /**
-    * lookupDataRemote()
-    * initiates a request to gather the lookup data from the Server.
-    *
-    * @param {string} id  the uuid of the defined OBJ that contains this data
-    * @param {string} fieldName the local field name to reference this data
-    *                 by.
-    * @return {Promise}
-    */
-   // lookupDataRemote(id, fieldName, shouldOverwriteLocal) {
-   //     return new Promise((resolve, reject) => {
-   //         var obj = this.objByID(id);
-
-   //         var dataRef = this.refDataField(fieldName);
-
-   //         // send our Relay request for our data
-   //         obj.model().relay().findAll({where:{}, populate:false});
-
-   //         // .relay() doesn't return data immediately.
-   //         // so listen for our 'data' event and respond with that
-   //         obj.on('data', (allEntries)=>{
-   //             this[dataRef] = allEntries || [];
-
-   //             if (shouldOverwriteLocal) {
-   //                 obj.model().local().saveLocalData(allEntries)
-   //                 .then(()=>{
-   //                     resolve();
-   //                 })
-   //             } else {
-   //                 resolve();
-   //             }
-
-   //         })
-   //     });
-   // }
 
    /**
     * objByID()
@@ -487,7 +251,7 @@ export default class ABAppController extends EventEmitter2 {
     * @return {ABObject} or {undefined} if not found.
     */
    objByID(id) {
-      return this.application.objects((o) => {
+      return this.appPage.application.objects((o) => {
          return o.id == id;
       })[0];
    }
@@ -609,134 +373,15 @@ export default class ABAppController extends EventEmitter2 {
     * uninitialized state, and the perform an init()
     * @return {Promise}
     */
-   reset() {
-      return this.AB.storage
-         .set(this.refStatusKey(), null)
-         .then(() => {
-            // make sure each of our Datacollections have resset their
-            // data:
-            var allResets = [];
-            this.datacollections.forEach((dc) => {
-               if (dc) {
-                  allResets.push(dc.platformReset());
-               }
-            });
-
-            return Promise.all(allResets);
-         })
-         .then(() => {
-            return this.init();
-         });
-   }
-
-   loadState() {
-      return this.AB.storage.get(`${this.id}-STATE`);
-   }
-
-   saveState(myState) {
-      return this.AB.storage.set(`${this.id}-STATE`, myState);
-   }
-   /**
-    * valueLoad()
-    * load a value from local storage.
-    *
-    * This routine will create a local property for the value as well as
-    * an accessor method.
-    *
-    * @param {string} fieldName the local field name to reference this data
-    *                 by.
-    */
-   // valueLoad(fieldName) {
-   //     var dataRef = this.refDataField(fieldName);
-   //     var storageRef = this.refStorageField(fieldName);
-
-   //     var methodRef = this.refMethod(fieldName);
-   //     this[methodRef] = function() {
-   //         return this[dataRef];
-   //     }
-
-   //     return AB.Platform.storage.get(storageRef)
-   //     .then((value)=>{
-   //         this[dataRef] = value;
-   //     });
-   // }
-
-   /**
-    * valueSave()
-    * save a value to local storage.
-    *
-    * If a value is provided, then that value is set to the local property
-    * as well as stored in local storage.
-    *
-    * otherwise, the current property values is saved to local storage.
-    *
-    * @param {string} fieldName the local field name to reference this data
-    *                 by.
-    */
-   // valueSave(fieldName, value) {
-   //     var dataRef = this.refDataField(fieldName);
-
-   //     // if no value was given, assume a save on the curent value.
-   //     if (typeof value === 'undefined') {
-   //         value = this[dataRef];
-   //     }
-   //     this[dataRef] = value;
-
-   //     var storageRef = this.refStorageField(fieldName);
-   //     return AB.Platform.storage.set(storageRef, value);
-   // }
-
-   // refDataField(fieldName) {
-   //     return 'data'+fieldName;
-   // }
-   // refDC(fieldName) {
-   //     return 'dc'+fieldName;
-   // }
-   // refMarkers() {
-   //     return this.id+'-Markers';
-   // }
-   // refMethod(fieldName) {
-   //     return 'get'+fieldName;
-   // }
-   // refMethodRefresh(fieldName) {
-   //     return 'refresh'+fieldName;
-   // }
-   // refObj(fieldName) {
-   //     return 'obj'+fieldName;
-   // }
-   refStatusKey() {
-      return this.id + "-init-status";
-   }
-   // refStorageField(fieldName) {
-   //     return this.id+'-'+fieldName;
-   // }
-
-   // hasMarker( marker ) {
-   //     return Promise.resolve()
-   //     .then(()=>{
-   //         if (this._markers[marker]) {
-   //             return true;
-   //         }
-
-   //         return false;
-   //     })
-   // }
-
-   // setMarker( marker ) {
-   //     this._markers[marker] = '1';
-   //     return AB.Platform.storage.set(this.refMarkers(), this._markers);
-   // }
-
-   /**
-    * Shortcut for this.$element.find()
-    */
-   $(pattern) {
-      var $element;
-      if (this.id) {
-         $element = $("#" + this.id);
-      } else {
-         $element = $(document.body);
-      }
-      return $element.find(pattern);
+   async reset() {
+      await this.appPage.AB.storage.set(this.refStatusKey(), null);
+      // make sure each of our Datacollections have resset their
+      // data:
+      const allResets = [];
+      this.datacollections.forEach((dc) => {
+         allResets.push(dc.platformReset());
+      });
+      await Promise.all(allResets);
+      await this.init();
    }
 }

@@ -3,10 +3,17 @@ import moment from "moment";
 import { v4 as uuidv4 } from "uuid";
 
 import ABFactoryCore from "./core/ABFactoryCore";
-import analytics from "../resources/Analytics.js";
 import account from "../resources/Account.js";
+import analytics from "../resources/Analytics.js";
+import buildTimestamp from "../resources/BuildTimestamp.js";
 import busy from "../resources/Busy.js";
 import camera from "../resources/Camera.js";
+
+// TODO move this to an npm module, so it can be updated independently
+// this is the same structure as how we access jsEncrypt
+// jsQR should be imported as an npm module, but there were some issues
+// so for initial release we are including it in the platform
+import jsQR from "../../platform/resources/jsQR.js";
 import network from "../resources/Network.js";
 import { storage } from "../resources/Storage.js";
 import { translate } from "../resources/Translate.js";
@@ -18,6 +25,7 @@ export default class ABFactory extends ABFactoryCore {
       this.analytics = analytics;
       this.busy = busy;
       this.camera = camera;
+      this.jsQR = jsQR;
       this.network = network;
       this.storage = storage;
       this.translate = translate;
@@ -190,8 +198,6 @@ export default class ABFactory extends ABFactoryCore {
                   await obj
                      .model()
                      .local()
-                     // .syncLocalMaster(data) // ! changing this to remoteMaster
-                     // ! the whole point of the UPDATE is to push an overruling change
                      .syncRemoteMaster(data);
 
                   // alert any DataCollections that are using this
@@ -213,42 +219,8 @@ export default class ABFactory extends ABFactoryCore {
                // alert our Datacollections:
                if (data.numRows && data.numRows > 0)
                   obj.emit("DELETE", context.pk);
-
-               /*
-                     // if data already exists locally, we delete it
-                     this.model().local().doesExist(data)
-                     .then((exists)=>{
-                           if (exists) {
-
-
-                              // if the context provides the .pk value,
-                              // use that to perform the local delete:
-                              var id = data[context.pk];
-                              if (!id) {
-
-                                 // otherwise attempt to gather it from the
-                                 // data itself:
-                                 var UUID = this.fieldUUID(data);
-                                 id = data[UUID];
-                              }
-                              
-                              if (id) {
-                                 this.model().local().localStorageDestroy(id)
-                                 .then(()=>{
-                                       // alert any DataCollections that are using this 
-                                       // object that they should remove this entry:
-                                       this.emit("DELETE", data);
-                                 })
-                              } else {
-                                 console.error("ABObject.Relay.on: Delete: could not determine .id", { context:context, UUID:UUID, data:data })
-                              }
-                           }
-                     })
-                     */
                break;
             default:
-               // TODO: Legacy: remove this once Events and Profile are upgraded.
-               obj.emit("data", data);
                break;
          }
          const callbackResult = context.callback?.(null, data);
@@ -289,15 +261,9 @@ export default class ABFactory extends ABFactoryCore {
                : await dc.datasource.model().local().syncLocalMaster(data);
          if (isServerPreferred) dc.reduceCondition(normalizedData);
          await dc.processIncomingData(normalizedData);
-         if (context.verb !== "uninitialized") dc.emit("REFRESH");
-
-         // signal our remote data has arrived.
-         dc.emit("init.remote", {});
-
-         // TODO: Legacy: remove this once Events and HRIS are upgraded
-         dc.emit("data", normalizedData);
          const callbackResult = context.callback?.(null, data);
          if (callbackResult instanceof Promise) await callbackResult;
+         dc.emit("data", normalizedData);
       });
    }
 
@@ -312,5 +278,9 @@ export default class ABFactory extends ABFactoryCore {
 
    uuid() {
       return uuidv4();
+   }
+
+   get buildTimeStamp() {
+      return buildTimestamp.getBuild_Timestamp();
    }
 }

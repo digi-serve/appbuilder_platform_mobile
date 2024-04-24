@@ -39,11 +39,11 @@ class Status extends EventEmitter {
       this.dataReady = $.Deferred();
       this.inProgress = false;
       this.onGoingWork = [];
-      this.app = null;
+      this.f7App = null;
    }
 
    setApp(app) {
-      this.app = app;
+      this.f7App = app;
    }
 
    bootDataReady() {
@@ -62,7 +62,7 @@ class Status extends EventEmitter {
    // User triggered a save, we receive a report of what is expected to happen
    add(dataCollections, identifyText) {
       // lets try to pass some unique text so user can know what record is mentioned in future status messages
-      if (!this.app) {
+      if (this.f7App == null) {
          console.error(
             "use of status.show() before status.setApp() is initialized."
          );
@@ -79,7 +79,7 @@ class Status extends EventEmitter {
    }
 
    show() {
-      if (!this.app) {
+      if (this.f7App == null) {
          console.error(
             "use of status.show() before status.setApp() is initialized."
          );
@@ -113,7 +113,7 @@ class Status extends EventEmitter {
 
    banner(dataCollection) {
       let text = dataCollection.text;
-      this.app.toast
+      this.f7App.toast
          .create({
             text,
             closeTimeout: 40000, // Close the after 3 seconds
@@ -136,7 +136,7 @@ class Status extends EventEmitter {
    }
 
    hide() {
-      if (!this.app) {
+      if (this.f7App == null) {
          console.error(
             "use of status.hide() before status.setApp() is initialized."
          );
@@ -146,9 +146,9 @@ class Status extends EventEmitter {
       if (this.inProgress) {
          this.inProgress = false;
       }
-      this.app.dialog.close();
+      this.f7App.dialog.close();
    }
 }
 
-var status = new Status();
+const status = new Status();
 export default status;

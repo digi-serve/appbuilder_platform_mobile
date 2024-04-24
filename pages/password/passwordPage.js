@@ -12,23 +12,23 @@ import fileStorage from "../../resources/FileStorage.js";
 // For development only
 const disableEncryption = false;
 
-export default class PasswordPage extends Page {
+class PasswordPage extends Page {
    /**
     */
    constructor() {
       super(
          "password-page",
          "lib/platform/pages/password/password.html",
-         "lib/platform/pages/password/password.css",
+         "lib/platform/pages/password/passwordPage.css",
       );
    }
 
-   init() {
+   async init(AB) {
+      await super.init(AB);
       if (disableEncryption) {
          storage.emit("ready");
          return;
       }
-
       this.$setup = this.$("div.setup");
       this.$setup_p1 = this.$setup.find('input[name="p1"]');
       this.$setup_p2 = this.$setup.find('input[name="p2"]');
@@ -290,3 +290,5 @@ export default class PasswordPage extends Page {
       });
    }
 }
+
+export default new PasswordPage();

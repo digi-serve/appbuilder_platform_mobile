@@ -1,0 +1,73 @@
+<!-- Framework7 component template -->
+<template>
+   <div class="page">
+      <div class="navbar">
+         <div class="navbar-bg"></div>
+         <div class="navbar-inner">
+            <div class="left">
+               <a href="#" class="link icon-only panel-open" data-panel="left">
+                  <i class="fa fa-bars"></i>
+               </a>
+            </div>
+            <div class="sliding title">
+               <t>conneXted</t>
+            </div>
+         </div>
+      </div>
+
+      <div class="page-content">
+         <div class="block">
+            <center>
+               <img
+                  style="width: 100%; max-width: 400px"
+                  src="img/connexted_splash.png"
+               />
+            </center>
+            <div
+               style="
+                  width: 42px;
+                  height: 42px;
+                  margin: -40px auto 0;
+                  display: block;
+               "
+               class="preloader preloader-big"
+               data-cy="preloader"
+            ></div>
+            <p style="font-size: 18px; text-align: center" translate="1">
+               Welcome to the conneXted app. If this is your first time to log
+               in please wait while we connect your staff account.
+            </p>
+         </div>
+      </div>
+   </div>
+</template>
+
+<!-- Framework7 component script -->
+<script>
+   const ROUTE_WELCOM = "/welcomePage/";
+   return {
+      on: {
+         pageBeforeIn() {
+            const self = this;
+            const $root = self.$root;
+            const $router = self.$router;
+            if ($root.account.authToken == null) {
+               $router.navigate(ROUTE_WELCOM);
+               return;
+            }
+
+            // We need to set the locale for moment so we can translate the date picker
+            const langCode = $(document.body).attr("lang");
+            switch ($(document.body).attr("lang")) {
+               case "zh":
+                  moment.locale("zh-cn");
+                  break;
+               default:
+                  moment.locale("en");
+                  break;
+            }
+            $router.navigate(ROUTE_WELCOM);
+         },
+      },
+   };
+</script>

@@ -1,7 +1,5 @@
-// import Applications from "../../applications/applications.js";
-import getAppPage from "../pages/app/appPage.js";
-
-("use strict");
+"use strict";
+import appPage from "../pages/app/appPage.js";
 
 // Template7 is required
 if (typeof Template7 == "undefined") {
@@ -90,7 +88,7 @@ Template7.registerHelper("initial", (parent, object, alternateObject) => {
 Template7.registerHelper(
    "listItem",
    (appID, obj, item, selected, language_code) => {
-      const app = getAppPage().getApplicationByID(appID);
+      const app = appPage.getApplicationByID(appID);
 
       // this is a sample of how we populate list options
       var list = app.listItems(
@@ -122,7 +120,7 @@ Template7.registerHelper(
 Template7.registerHelper(
    "listItems",
    (appID, obj, item, selected, template) => {
-      const app = getAppPage().getApplicationByID(appID);
+      const app = appPage.getApplicationByID(appID);
 
       // this is a sample of how we populate list options
       var list = app.listItems(obj, item, app.application.languageDefault());
@@ -165,7 +163,7 @@ Template7.registerHelper("L", (text) => {
 // Helper to get the translated value of a field that was a select list
 // ex: {{listItem 'app' 'obj' 'item' selected}}
 Template7.registerHelper("translate", (appID, obj, item) => {
-   const app = getAppPage().getApplicationByID(appID);
+   const app = appPage.getApplicationByID(appID);
    // var thisApp = Applications.filter((x) => {
    //    return (x.id = app);
    // })[0];
