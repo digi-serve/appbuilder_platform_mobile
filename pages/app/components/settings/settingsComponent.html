@@ -485,13 +485,13 @@
                     // get the code from the form
                     let jrrMatch = $("#rawjrrtoken").get(0).value
                     // plug it into the app
-                    app.toast.create({
+                    self.$app.toast.create({
                         text: '<t>Code inputting...</t>',
                         position: 'center'
                     }).open();
                     self.$root.appPage.updateAccount(jrrMatch, "admin").then(() => {
                         // app.dialog.alert('Credentials imported successfully');
-                        app.toast.create({
+                        self.$app.toast.create({
                             text: '<t>Credentials imported successfully</t>',
                             position: 'center'
                         }).open();
