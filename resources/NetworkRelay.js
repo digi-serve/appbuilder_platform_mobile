@@ -243,7 +243,7 @@ class NetworkRelay extends NetworkRest {
 
             // if we haven't sent the AES key then we need to send it.
             .then(() => {
-               debugger
+               // debugger
                Log("NetworkRelay: init stage 7");
                if (!this.relayState.aesKeySent) {
             // - MF contacts PublicServer.mobile/initresolve  { rsa_aes, userUUID, AppID, AppUUID }

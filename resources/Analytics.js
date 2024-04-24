@@ -269,8 +269,9 @@ class Analytics extends EventEmitter {
       }
       // [object has no keys]
       if (Object.keys(err).length === 0) {
-         console.error(err)
-         err = new Error("Empty error object");
+         return false;
+         // console.error(err)
+         // err = new Error("Empty error object");
       }
       var name = err.name || "Error";
       var data = {
