@@ -49,6 +49,8 @@ export default {
 
       // refresh the service workers, local storage, and other resources
       pages.passwordPage.on("refreshAppLogin", () => {
+         // display a loading ui
+         pages.passwordPage.emit("loading");
          pages.appPage.forceApplicationReset(true);
       });
    },

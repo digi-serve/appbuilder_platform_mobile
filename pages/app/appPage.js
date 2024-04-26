@@ -125,13 +125,13 @@ export class AppPage extends Page {
                      const err = new Error("No pre-token found");
                      err.code = "E_NOJRRTOKEN";
                      throw err;
+                  } else {
+                     // Import pre-token from the URL. Generate new authToken.
+                     await this.AB.account.importCredentials(
+                        jrrMatch[1],
+                        hash.match(/tenant=(\w+)/)?.[1],
+                     );
                   }
-
-                  // Import pre-token from the URL. Generate new authToken.
-                  await this.AB.account.importCredentials(
-                     jrrMatch[1],
-                     hash.match(/tenant=(\w+)/)?.[1],
-                  );
                }
 
                // Initialize the secure relay.
@@ -541,12 +541,13 @@ export class AppPage extends Page {
          const err = new Error("No pre-token found");
          err.code = "E_NOJRRTOKEN";
          throw err;
+      } else {
+         // Import pre-token from the URL. Generate new authToken.
+         // importCredentials then refresh the page
+         await this.AB.account.importCredentials(authToken, tenantUUID);
+         // await this.fetchApplicationData(true);
       }
 
-      // Import pre-token from the URL. Generate new authToken.
-      // importCredentials then refresh the page
-      await this.AB.account.importCredentials(authToken, tenantUUID);
-      // await this.fetchApplicationData(true);
    }
 
    getApplicationByID(id) {
@@ -661,7 +662,7 @@ export class AppPage extends Page {
       // TODO: Implement any additional logic or actions required after clearing and getting new code
 
       // Reset the cached application data
-      console.log("::: forceLocalReset(): Relay.init().");
+      console.log("::: forceApplicationReset(): Relay.init().");
       await this.AB.network.init(this);
       const allClears = [];
       const allResets = [];
