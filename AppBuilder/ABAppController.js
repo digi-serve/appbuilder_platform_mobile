@@ -384,4 +384,9 @@ export default class ABAppController extends EventEmitter2 {
       await Promise.all(allResets);
       await this.init();
    }
+
+   refStatusKey() {
+      let id = this.id || this?.AB.uuid() || "NA"
+      return id + "-init-status";
+   }
 }
