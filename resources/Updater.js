@@ -129,6 +129,7 @@ class Updater extends EventEmitter {
    }
 
    async updateNow() {
+      console.error("Updater.updateNow: navigator.serviceWorker.getRegistration deleting all registrations");
       // navigator.serviceWorker.getRegistration().then((registration) => {
       // if (registration) {
       // codePush is no longer available in the global scope

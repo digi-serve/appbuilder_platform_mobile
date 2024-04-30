@@ -172,7 +172,7 @@ class CameraPWA extends EventEmitter {
             recurseShrinkTimeout = setTimeout(() => {
                reject(
                   new Error(
-                     `Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:${options.timeout} qualityValue:${qualityValue} gain:${qualityGain} factor:${qualityFactor} times:${compressionTimes}`,
+                     `Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:t} qualityValue: gain: factor:} times:${compressionTimes}`,
                   ),
                );
                recurseShrinkTimeout = null;
@@ -285,6 +285,7 @@ class CameraPWA extends EventEmitter {
                timeout,
             },
          );
+
          const imageUUID = uuid();
          return {
             uuid: imageUUID,

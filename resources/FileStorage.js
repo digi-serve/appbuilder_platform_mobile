@@ -1,7 +1,8 @@
 import EventEmitter from 'eventemitter2';
 import analytics from './Analytics.js';
 import Log from './Log.js';
-import Compressor from "compressorjs";
+// import Compressor from "compressorjs";
+import {compressAccurately} from 'image-conversion';
 
 const storeName = "file_data";
 const DEFAULT_SLICESIZE = 512;
@@ -160,30 +161,24 @@ class FileStorage extends EventEmitter {
     * Compress a file using the browser's built-in compression.
     * * @param {Blob} file
     */
-   async compress(file, options) {
+   async compress(file) {
       return new Promise((resolve, reject) => {
-         new Compressor(file, {
-            ...options,
-            // The compression process is asynchronous,
-            // which means you have to access the `result` in the `success` hook function.
-            success(compressedFile) {
-               if (compressedFile instanceof Blob) {
-                  // Convert Blob to File if needed
-                  const compressedFileFromBlob = new File(
-                     [compressedFile],
-                     file.name,
-                     {
-                        type: compressedFile.type,
-                     }
-                  );
-                  resolve(compressedFileFromBlob);
-               } else {
-                  reject(new Error("Invalid compressed file format"));
-               }
-            },
-            error(err) {
-               reject(err.message);
-            },
+         new compressAccurately(file, 100).then(compressedFile=>{
+            //The res in the promise is a compressed Blob type (which can be treated as a File type) file;
+            if (compressedFile instanceof Blob) {
+               // Convert Blob to File if needed
+               const compressedFileFromBlob = new File(
+                  [compressedFile],
+                  file.name,
+                  
+                  {
+                     type: compressedFile.type,
+                  }
+               );
+               resolve(compressedFileFromBlob);
+            } else {
+               reject(new Error("Invalid compressed file format"));
+            }
          });
       });
    }

@@ -52,6 +52,7 @@ class Analytics extends EventEmitter {
             this.sentry = sentry;
          }
       }
+      const userAgent = window?.navigator?.userAgent?.toLowerCase();
       const isIos = () => {
          return /iphone|ipad|ipod/.test(userAgent);
       };
@@ -73,7 +74,6 @@ class Analytics extends EventEmitter {
          // window.postMessage({ type: 'memoryAlert', message }, '*');
          analytics.logError(message);
       }
-      const userAgent = window.navigator.userAgent.toLowerCase();
       const memoryThreshold = 450000000; // ios threshold in bytes
       const memoryPanic = 500000000; // ios threshold in bytes
       const monitoringInterval = 5000; // Example interval in milliseconds
