@@ -8,7 +8,6 @@
 "use strict";
 
 import EventEmitter from "eventemitter2";
-import Log from "./Log.js";
 
 const config = require("../../config/config.js");
 const EVENT_NAME_PLATFORM_ACCOUNT_USERNAME = "platform.account.username";
@@ -105,7 +104,7 @@ class Account extends EventEmitter {
     */
    importCredentials(preToken, tenantUUID) {
       if (this.importInProgress) {
-         Log("::: importSettings(): already in progress");
+         console.log("::: importSettings(): already in progress");
          return Promise.reject("Import already in progress");
       }
       this.importInProgress = true;
@@ -118,7 +117,7 @@ class Account extends EventEmitter {
 
       var loader = this.f7App.dialog.progress("<t>Connecting your account</t>");
 
-      Log("::: New Account Init Begin :::");
+      console.log("::: New Account Init Begin :::");
       var currentAuthToken = this._authToken;
       var newAuthToken = null;
 
@@ -179,9 +178,9 @@ class Account extends EventEmitter {
             })
             .then((authToken) => {
                this.AB.analytics.event("importSettings(): reset credentials");
-               Log("::: importSettings(): reset credentials");
+               console.log("::: importSettings(): reset credentials");
                return this.AB.network.reset().then(() => {
-                  Log("::: importSettings(): saved new credentials");
+                  console.log("::: importSettings(): saved new credentials");
                   this._authToken = authToken;
                   return this.AB.storage.set("authToken", this._authToken);
                });
@@ -197,7 +196,7 @@ class Account extends EventEmitter {
                   loader.destroy();
                }
                this.importInProgress = false;
-               Log("::: importSettings(): all done!");
+               console.log("::: importSettings(): all done!");
                this.AB.storage.testCrypto();
             })
 
@@ -221,9 +220,9 @@ class Account extends EventEmitter {
                   });
                   this.emit("importError", err);
 
-                  Log("::: importSettings(): error");
-                  Log.error("Error while importing credentials");
-                  Log(err.message || err);
+                  console.error("::: importSettings(): error");
+                  console.error("Error while importing credentials");
+                  console.error(err);
                   this.AB.analytics.logError(err);
                   this.importInProgress = false;
                   return Promise.reject(err);

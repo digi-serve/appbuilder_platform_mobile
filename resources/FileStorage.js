@@ -1,6 +1,5 @@
 import EventEmitter from 'eventemitter2';
 import analytics from './Analytics.js';
-import Log from './Log.js';
 // import Compressor from "compressorjs";
 import {compressAccurately} from 'image-conversion';
 
@@ -19,18 +18,18 @@ class FileStorage extends EventEmitter {
       super();
 
       try {
-         var request = indexedDB.open(name);
+         const request = indexedDB.open(name);
          request.onerror = (event) => {
-            Log("FileStorage IndexedDB failure on init", request.error);
+            console.error("FileStorage IndexedDB failure on init", request.error);
             analytics.logError(request.error);
          }
          request.onsuccess = (event) => {
             this.db = request.result;
             this.db.onerror = (event) => {
-               Log("FileStorage IndexedDB error", event.target.errorCode);
+               console.error("FileStorage IndexedDB error", event.target.errorCode);
             }
             // Test if the object store is present
-            var transaction = this.db.transaction(storeName, "readonly");
+            const transaction = this.db.transaction(storeName, "readonly");
             transaction.onerror = (event) => {
                console.log('FileStorage IndexedDB store not found?', transaction.error);
                // Store was not found. Try to create it now.
@@ -41,8 +40,8 @@ class FileStorage extends EventEmitter {
          }
          // On first time, set up the obect store
          request.onupgradeneeded = (event) => {
-            var db = event.target.result;
-            var objectStore = db.createObjectStore(storeName);
+            const db = event.target.result;
+            const objectStore = db.createObjectStore(storeName);
          }
       } 
       // IndexedDB not supported on this device?
@@ -54,7 +53,7 @@ class FileStorage extends EventEmitter {
             (err.stack || "")
          );
          err.message += `Error initializing the file storage system, IndexedDB not supported`;
-         Log(err);
+         console.error(err);
          analytics.logError(err);
       }
    }
@@ -103,7 +102,7 @@ class FileStorage extends EventEmitter {
     */
    put(key, value) {
       return new Promise((resolve, reject) => {
-         var transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this.db.transaction(storeName, "readwrite");
          transaction.oncomplete = (event) => {
             if (value.size) {
                this._updateTotalSize(value.size);
@@ -111,12 +110,12 @@ class FileStorage extends EventEmitter {
             resolve();
          }
          transaction.onerror = (event) => {
-            Log("DB error during put", transaction.error)
+            console.error("DB error during put", transaction.error)
             reject(transaction.error);
          }
 
-         var store = transaction.objectStore(storeName);
-         var req = store.put(value, key);
+         const store = transaction.objectStore(storeName);
+         const req = store.put(value, key);
       });
    }
 
@@ -141,14 +140,14 @@ class FileStorage extends EventEmitter {
          }
          // DB is ready now
          else {
-            var transaction = this.db.transaction(storeName, "readonly");
+            const transaction = this.db.transaction(storeName, "readonly");
             transaction.onerror = (event) => {
-               Log("FileStorage DB error during get", transaction.error)
+               console.error("FileStorage DB error during get", transaction.error)
                reject(transaction.error);
             }
 
-            var store = transaction.objectStore(storeName);
-            var req = store.get(key);
+            const store = transaction.objectStore(storeName);
+            const req = store.get(key);
             req.onsuccess = (event) => {
                let file = req.result;
                resolve(file);
@@ -261,15 +260,15 @@ class FileStorage extends EventEmitter {
                   return;
                }
 
-               var fileSize = file.size;
-               var transaction = this.db.transaction(storeName, "readwrite");
+               const fileSize = file.size;
+               const transaction = this.db.transaction(storeName, "readwrite");
                transaction.onerror = (event) => {
-                  Log("FileStorage DB error during delete", event.error);
+                  console.error("FileStorage DB error during delete", event.error);
                   analytics.logError(event.error);
                   reject(event.error);
                }
-               var store = transaction.objectStore(storeName);
-               var req = store.delete(key);
+               const store = transaction.objectStore(storeName);
+               const req = store.delete(key);
                req.onsuccess = (event) => {
                   this._updateTotalSize(-fileSize);
                   resolve();
@@ -288,14 +287,14 @@ class FileStorage extends EventEmitter {
     */
    deleteAll() {
       return new Promise((resolve, reject) => {
-         var transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this.db.transaction(storeName, "readwrite");
          transaction.onerror = (event) => {
-            Log("FileStorage DB error during deleteAll", event.error);
+            console.error("FileStorage DB error during deleteAll", event.error);
             analytics.logError(event.error);
             reject(event.error);
          }
-         var store = transaction.objectStore(storeName);
-         var req = store.clear();
+         const store = transaction.objectStore(storeName);
+         const req = store.clear();
          req.onsuccess = (event) => {
             resolve();
          }
@@ -303,5 +302,4 @@ class FileStorage extends EventEmitter {
    }
 }
 
-var fileStorage = new FileStorage();
-export default fileStorage;
+export default new FileStorage();

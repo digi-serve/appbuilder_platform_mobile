@@ -7,7 +7,6 @@ import account from "../resources/Account.js";
 import analytics from "../resources/Analytics.js";
 import buildTimestamp from "../resources/BuildTimestamp.js";
 import busy from "../resources/Busy.js";
-import camera from "../resources/Camera.js";
 
 // TODO move this to an npm module, so it can be updated independently
 // this is the same structure as how we access jsEncrypt
@@ -24,7 +23,6 @@ export default class ABFactory extends ABFactoryCore {
       this.account = account;
       this.analytics = analytics;
       this.busy = busy;
-      this.camera = camera;
       this.jsQR = jsQR;
       this.network = network;
       this.storage = storage;
@@ -46,14 +44,12 @@ export default class ABFactory extends ABFactoryCore {
           */
          toDate: (dateText = "", options = {}) => {
             if (!dateText) return;
-
             if (options.ignoreTime) dateText = dateText.replace(/T.*/, "");
-
             let result = options.format
                ? moment(dateText, options.format)
                : moment(dateText);
 
-            let supportFormats = [
+            const supportFormats = [
                "YYYY-MM-DD",
                "YYYY/MM/DD",
                "DD/MM/YYYY",
@@ -61,12 +57,10 @@ export default class ABFactory extends ABFactoryCore {
                "DD-MM-YYYY",
                "MM-DD-YYYY",
             ];
-
             supportFormats.forEach((format) => {
                if (!result || !result.isValid())
                   result = moment(dateText, format);
             });
-
             return new Date(result);
          },
 
@@ -83,11 +77,8 @@ export default class ABFactory extends ABFactoryCore {
           */
          toDateFormat: (date, options) => {
             if (!date) return "";
-
             let momentObj = moment(date);
-
             if (options.localeCode) momentObj.locale(options.localeCode);
-
             return momentObj.format(options.format);
          },
 

@@ -10,11 +10,9 @@
 import Page from "../../resources/Page.js";
 
 import ABApplicationList from "../../../applications/applications.js";
-import log from "../../resources/Log.js";
 import Shake from "shake.js";
 import updater from "../../resources/Updater.js";
 import config from "../../../config/config.js";
-
 import appFeedback from "../../resources/AppFeedback.js";
 
 import NavMenu from "../../../applications/navMenu/app.js";
@@ -450,7 +448,6 @@ export class AppPage extends Page {
                analytics: this.AB.analytics,
                busy: this.AB.busy,
                camera: this.AB.camera,
-               log,
                network: this.AB.network,
                storage: this.AB.storage,
                updater,
@@ -503,10 +500,6 @@ export class AppPage extends Page {
       this.components.profileComponent = profileComponent;
       this.components.settingsComponent = settingsComponent;
       this.components.welcomeComponent = welcomeComponent;
-
-      // Log function can use F7 to create alert dialogs
-      log.init({ f7App: this.f7App });
-
       if (!this._initializeListener) this.emit("init.listener");
    }
 

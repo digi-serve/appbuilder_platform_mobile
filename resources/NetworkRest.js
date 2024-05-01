@@ -9,11 +9,10 @@ import account from "./Account";
 import analytics from "./Analytics";
 import EventEmitter from "eventemitter2";
 import Lock from "./Lock";
-import Log from "./Log";
 import { storage } from "./Storage";
 import uuidv4 from "uuid/v4";
 
-var config = require("../../config/config.js");
+const config = require("../../config/config.js");
 
 class NetworkRest extends EventEmitter {
    constructor() {
@@ -209,7 +208,7 @@ class NetworkRest extends EventEmitter {
                   //  data:{returned Data here}
                   // }
                   // we just want to return the .data portion
-                  var data = packet;
+                  let data = packet;
                   if (data.data) data = data.data;
                   resolve(data);
                })
@@ -217,7 +216,7 @@ class NetworkRest extends EventEmitter {
                   // if this is a network connection error, send the attempt again:
                   if (text == "timeout" || jqXHR.readyState == 0) {
                      //// Network Error: conneciton refused, access denied, etc...
-                     Log(
+                     console.error(
                         "*** NetworkRest._request():network connection error detected."
                      );
                      // analytics.log(
@@ -225,16 +224,16 @@ class NetworkRest extends EventEmitter {
                      // );
                      // retry the attempt:
                      if (numRetries > 0) {
-                        Log("Trying again");
+                        console.error("Trying again");
                         this._request(params, jobResponse, numRetries-1)
                            .then((data) => {
-                              Log.warn(
+                              console.warn(
                                  "*** NetworkRest._request().then(): attempt resolved."
                               );
                               resolve(data);
                            })
                            .catch((err) => {
-                              Log.error(
+                              console.error.error(
                                  "*** NetworkRest._request().catch(): retry failed:",
                               );
                               reject(err);
@@ -249,8 +248,8 @@ class NetworkRest extends EventEmitter {
                      }
                   } else if (jqXHR.readyState == 4) {
                      //// an HTTP error
-                     Log("HTTP error while communicating with relay server");
-                     Log("status code: " + jqXHR.status);
+                     console.error("HTTP error while communicating with relay server");
+                     console.error("status code: " + jqXHR.status);
 
                      if (jqXHR.status == 403) {
                         this.emit("error.badAuth", err);
@@ -270,7 +269,7 @@ class NetworkRest extends EventEmitter {
                      );
                      resolve({ status: "queued" })
                   } else {
-                     let error = new Error(
+                     const error = new Error(
                         "NetworkRest._request() error with .ajax() command:"
                      );
                      error.response = jqXHR.responseText;
@@ -284,7 +283,7 @@ class NetworkRest extends EventEmitter {
                      // The most common error is status 0, which is a timeout
                      if (jqXHR && jqXHR.status != '0') {
                         // Error code 0 usually means a timeout: lets not log that to sentry
-                        Log.error(error);
+                        console.error(error);
                      }
                      // reject with error as that is the expected behavior while the relay server is UP
                      // may trigger a retry somewhere else
@@ -315,7 +314,7 @@ class NetworkRest extends EventEmitter {
     * @return {Promise}
     */
    _resend(params, jobResponse) {
-      var op = params.type.toLowerCase();
+      const op = params.type.toLowerCase();
       return this[op](params, jobResponse);
    }
 
@@ -350,9 +349,9 @@ class NetworkRest extends EventEmitter {
     * @return {Promise}
     */
    queue(data, jobResponse) {
-      var refQueue = this.refQueue();
+      const refQueue = this.refQueue();
       if (data.url.includes("/mobile/register")) {
-         Log.error("Queueing a QR scan doesn't seem to work...", data);
+         console.error("Queueing a QR scan doesn't seem to work...", data);
          return Promise.resolve();
       }
 
@@ -365,7 +364,7 @@ class NetworkRest extends EventEmitter {
             .then((queue) => {
                queue = queue || [];
                queue.push({ data, jobResponse });
-               Log(
+               console.log(
                   `:::: ${queue.length} request${
                      queue.length > 1 ? "s" : ""
                   } queued`
@@ -378,7 +377,7 @@ class NetworkRest extends EventEmitter {
                resolve();
             })
             .catch((err = {}) => {
-               Log.error("Error while queueing data", err);
+               console.error("Error while queueing data", err);
                err.message += `Error while queueing data: ${data.url}`;
                analytics.logError(err);
                reject(err);
@@ -394,11 +393,11 @@ class NetworkRest extends EventEmitter {
     * Flush the queue and send the contents to the relay server.
     */
    queueFlush() {
-      var refQueue = this.refQueue();
+      const refQueue = this.refQueue();
 
       // if we are not connected, then stop
       if (!this.isNetworkConnected()) {
-         var error = new Error("Not connected to the internet.");
+         const error = new Error("Not connected to the internet.");
          error.code = "E_NOTCONNECTED";
          return Promise.reject(error);
       }
@@ -423,17 +422,17 @@ class NetworkRest extends EventEmitter {
                queue = queue || [];
 
                // recursively process each pending queue request
-               var processRequest = (cb) => {
+               const processRequest = (cb) => {
                   if (queue.length == 0) {
                      cb();
                   } else {
-                     var entry = queue.shift();
-                     var params = entry.data;
+                     const entry = queue.shift();
+                     const params = entry.data;
                      // temporarily search the queue for mobile/register
                      // and skip it if found
                      // TODO remove this when users don't have to scan QR from within app
                      if (!params.url.includes("/mobile/register")) {
-                        var job = entry.jobResponse;
+                        const job = entry.jobResponse;
                         this._resend(params, job)
                            .then(() => {
                               processRequest(cb);
@@ -474,7 +473,7 @@ class NetworkRest extends EventEmitter {
 
             // respond to errors:
             .catch((err = {}) => {
-               Log.error("commAPI queueFlush error", err);
+               console.error("commAPI queueFlush error", err);
                err.message += `commAPI queueFlush error: NetworkRest.js quewueFlush()`;
                analytics.logError(err);
 

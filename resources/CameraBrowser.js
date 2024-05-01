@@ -12,7 +12,6 @@
 /* global PERSISTENT */
 import async from "async";
 import CameraPlatform from "./CameraPlatform";
-import Log from "./Log";
 
 import { storage } from "../../platform/resources/Storage.js";
 
@@ -20,7 +19,7 @@ class CameraBrowser extends CameraPlatform {
    constructor() {
       super();
 
-      Log("Camera: CameraBrowser in use.");
+      console.log("Camera: CameraBrowser in use.");
    }
 
    /**
@@ -30,20 +29,18 @@ class CameraBrowser extends CameraPlatform {
     */
    init() {
       return new Promise((resolve, reject) => {
-         var onInitFs = (data /*, _rootDirEntry */) => {
-            Log("onInitFS: name:", data.name);
-            Log("onInitFS: DE:", data.root);
-
+         const onInitFs = (data /*, _rootDirEntry */) => {
+            console.log("onInitFS: name:", data.name);
+            console.log("onInitFS: DE:", data.root);
             this._testDirectoryEntry = data.root;
             resolve();
          };
-         var errorHandler = (error) => {
+         const errorHandler = (error) => {
             console.error("*** Error loading _testDirectoryEntry:");
             console.error(error);
             reject(error);
          };
-         var requestedBytes = 1024 * 1024 * 10;
-
+         const requestedBytes = 1024 * 1024 * 10;
          navigator.webkitPersistentStorage.requestQuota(
             requestedBytes,
             function (grantedBytes) {
@@ -55,7 +52,7 @@ class CameraBrowser extends CameraPlatform {
                );
             },
             function (e) {
-               Log("CameraBrowser.js:init():requestQuota():Error", e);
+               console.log("CameraBrowser.js:init():requestQuota():Error", e);
             }
          );
       });
@@ -76,7 +73,8 @@ class CameraBrowser extends CameraPlatform {
          }
 
          // Get a directory reader
-         var directoryReader = this._testDirectoryEntry.createReader();
+         const directoryReader = this._testDirectoryEntry.createReader();
+
          // Get a list of all the entries in the directory
          directoryReader.readEntries(
             (entries) => {
@@ -98,7 +96,7 @@ class CameraBrowser extends CameraPlatform {
                reject("Failed during operations: " + error.code);
             }
          );
-         var range = IDBKeyRange.bound(
+         const range = IDBKeyRange.bound(
             "Receipt Image-0",
             "Receipt Image-z",
             false,
@@ -138,12 +136,12 @@ class CameraBrowser extends CameraPlatform {
             return;
          }
          // Get a directory reader
-         var directoryReader = this._testDirectoryEntry.createReader();
+         const directoryReader = this._testDirectoryEntry.createReader();
          // Get a list of all the entries in the directory
          directoryReader.readEntries(
             (entries) => {
-               var currentDate = new Date();
-               var currentTime = currentDate.getTime();
+               const currentDate = new Date();
+               const currentTime = currentDate.getTime();
                if (entries.length) {
                   this.loadPhotoByName(entries[0].name)
                      .then(resolve)
@@ -152,67 +150,11 @@ class CameraBrowser extends CameraPlatform {
                   alert("No images found");
                   reject("No images found");
                }
-               // entries.forEach((item, i) => {
-               //    if (item.isFile && item.name.indexOf("receipt-") > -1) {
-               //       item.getMetadata(
-               //          (file) => {
-               //             var timeDiff = Math.abs(
-               //                currentTime - file.modificationTime.getTime()
-               //             );
-               //             var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-               //             if (diff > 14) {
-               //                item.remove(
-               //                   function() {
-               //                      console.log("File removed");
-               //                      if (item.name.indexOf("receipt-") > -1) {
-               //                         storage.set(
-               //                            "Receipt Image-" +
-               //                               item.name
-               //                                  .replace("receipt-", "")
-               //                                  .replace(".jpg", ""),
-               //                            null
-               //                         );
-               //                      }
-               //                   },
-               //                   function() {
-               //                      console.log("Error while removing file");
-               //                   }
-               //                );
-               //             }
-               //          },
-               //          (error) => {
-               //             reject(error);
-               //          }
-               //       );
-               //    }
-               // });
             },
             (error) => {
                reject("Failed during operations: " + error.code);
             }
          );
-         // this.camera.getPicture(
-         //    (imageURI) => {
-         //       this.savePhoto(imageURI)
-         //          .then((result) => {
-         //             resolve(result);
-         //          })
-         //          .catch(reject);
-         //    },
-         //    (err) => {
-         //       Log("Error", err);
-         //       reject(err);
-         //    },
-         //    {
-         //       saveToPhotoAlbum: false,
-         //       allowEdit: canEditPhoto,
-         //       encodingType: window.Camera.EncodingType.JPEG,
-         //       mediaType: window.Camera.MediaType.PICTURE,
-         //       sourceType: window.Camera.PictureSourceType.SAVEDPHOTOALBUM,
-         //       targetWidth: width,
-         //       targetHeight: height
-         //    }
-         // );
       });
    }
 
@@ -231,20 +173,21 @@ class CameraBrowser extends CameraPlatform {
          }
 
          // Get a directory reader
-         var directoryReader = this._testDirectoryEntry.createReader();
+         const directoryReader = this._testDirectoryEntry.createReader();
+
          // Get a list of all the entries in the directory
          directoryReader.readEntries(
             (entries) => {
-               var currentDate = new Date();
-               var currentTime = currentDate.getTime();
+               const currentDate = new Date();
+               const currentTime = currentDate.getTime();
                entries.forEach((item, i) => {
                   if (item.isFile && item.name.indexOf("receipt-") > -1) {
                      item.getMetadata(
                         (file) => {
-                           var timeDiff = Math.abs(
+                           const timeDiff = Math.abs(
                               currentTime - file.modificationTime.getTime()
                            );
-                           var diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                           const diff = Math.ceil(timeDiff / (1000 * 3600 * 24));
                            if (diff > 14) {
                               item.remove(
                                  function () {
@@ -296,12 +239,12 @@ class CameraBrowser extends CameraPlatform {
          }
 
          // Get a directory reader
-         var directoryReader = this._testDirectoryEntry.createReader();
+         const directoryReader = this._testDirectoryEntry.createReader();
          // Get a list of all the entries in the directory
          directoryReader.readEntries(
             (entries) => {
-               var totalStorage = 0;
-               var allFiles = [];
+               let totalStorage = 0;
+               const allFiles = [];
                entries.forEach((item, i) => {
                   if (item.isFile) {
                      allFiles.push(
@@ -322,7 +265,7 @@ class CameraBrowser extends CameraPlatform {
                   }
                });
                Promise.all(allFiles).then((values) => {
-                  var totalMB = totalStorage / 1000000; //bytes to megabytes rounded to two decimal places
+                  const totalMB = totalStorage / 1000000; //bytes to megabytes rounded to two decimal places
                   console.log("Total Storage: " + totalMB.toFixed(2));
                   resolve(totalMB);
                });
@@ -376,7 +319,7 @@ class CameraBrowser extends CameraPlatform {
                });
             },
             (err) => {
-               Log("Unable to find photo file", err);
+               console.log("Unable to find photo file", err);
                reject(err);
             }
          );
@@ -392,7 +335,7 @@ class CameraBrowser extends CameraPlatform {
     */
    rename(fromName, toName) {
       return new Promise((resolve, reject) => {
-         var fileEntry;
+         let fileEntry;
 
          async.series(
             [
@@ -427,7 +370,7 @@ class CameraBrowser extends CameraPlatform {
                         next();
                      },
                      (err) => {
-                        Log("Error while trying to rename photo");
+                        console.log("Error while trying to rename photo");
                         next(err);
                      }
                   );
@@ -450,8 +393,7 @@ class CameraBrowser extends CameraPlatform {
     */
    saveBinaryToName(data, filename) {
       return new Promise((resolve, reject) => {
-         var fileEntry = null;
-
+         let fileEntry = null;
          if (this._testDirectoryEntry) {
             async.series(
                [
@@ -464,7 +406,7 @@ class CameraBrowser extends CameraPlatform {
                            next();
                         },
                         (err) => {
-                           Log("Error creating file: " + filename, err);
+                           console.log("Error creating file: " + filename, err);
                            next(err);
                         }
                      );
@@ -477,7 +419,7 @@ class CameraBrowser extends CameraPlatform {
                         };
 
                         fileWriter.onerror = (err) => {
-                           Log("Error writing to file: " + filename, err);
+                           console.log("Error writing to file: " + filename, err);
                            next(err);
                         };
 

@@ -7,11 +7,7 @@
 "use strict";
 
 import EventEmitter from "eventemitter2";
-import { storage } from "../../../../resources/Storage.js";
-import log from "../../../../resources/Log.js";
-import analytics from "../../../../resources/Analytics.js";
 import { translate } from "../../../../resources/Translate.js";
-import camera from "../../../../resources/Camera.js";
 import updater from "../../../../resources/Updater.js";
 
 class SettingsComponent extends EventEmitter {
@@ -21,18 +17,15 @@ class SettingsComponent extends EventEmitter {
       });
       this.id = "settings-page";
       this.appPage = null;
-      this.storage = storage;
       this.templates = {};
       translate.on("recenterTitle", () => {
          if ($(".navbar").length) {
-            // console.log("recenterTitle");
             this.appPage.f7App.navbar.size(".navbar");
          }
       });
       this.isUpdateReady = false;
       this.appInfo = null;
       this.pfsBackupDate = null;
-      this.camera = camera;
       updater.on("installed", () => {
          this.isUpdateReady = true;
       });
@@ -140,7 +133,7 @@ class SettingsComponent extends EventEmitter {
     * @return {Promise}
     */
    loadData(key, defaultValue = null) {
-      return this.storage
+      return this.appPage.AB.storage
          .get(key)
          .then((value) => {
             if (typeof defaultValue == "function") {
@@ -153,13 +146,8 @@ class SettingsComponent extends EventEmitter {
             return value;
          })
          .catch((err) => {
-            console.log("Error reading from storage: " + key);
-            analytics.logError(err);
-
-            log.alert(
-               "<t>There was a problem reading your data</t>",
-               "<t>Sorry</t>"
-            );
+            console.error(err);
+            this.appPage.AB.analytics.logError(err);
          });
    }
 
@@ -178,7 +166,7 @@ class SettingsComponent extends EventEmitter {
             value = value.serialize();
          }
       }
-      return this.storage.set(key, value);
+      return this.appPage.AB.storage.set(key, value);
    }
 
    /**
@@ -199,7 +187,7 @@ class SettingsComponent extends EventEmitter {
     */
    getStorageSize() {
       return new Promise((resolve, reject) => {
-         this.camera.imageLookUp().then((data) => {
+         this.appPage.AB.camera.imageLookUp().then((data) => {
             resolve(data);
          });
       });
@@ -207,8 +195,8 @@ class SettingsComponent extends EventEmitter {
 
    deleteLocalImages() {
       return new Promise((resolve, reject) => {
-         this.camera.deleteLocalImages().then((data) => {
-            this.camera.imageLookUp().then((data) => {
+         this.appPage.AB.camera.deleteLocalImages().then((data) => {
+            this.appPage.AB.camera.imageLookUp().then((data) => {
                resolve(data);
             });
          });

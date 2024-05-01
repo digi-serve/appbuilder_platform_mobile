@@ -20,7 +20,6 @@
 "use strict";
 
 import EventEmitter from "eventemitter2";
-import Log from "./Log";
 import uuid from "uuid/v1";
 
 // import { Decoder } from "@nuintun/qrcode";
@@ -253,7 +252,7 @@ class CameraPWA extends EventEmitter {
       } catch (err) {
          // User canceled the photo. Not a real error.
          if (err.message !== "Canceled")
-            Log("CameraPWA:getCameraPhoto():Error", err);
+            console.error("CameraPWA:getCameraPhoto():Error", err);
          throw err;
       }
    }
@@ -295,7 +294,7 @@ class CameraPWA extends EventEmitter {
       } catch (err) {
          // User canceled the photo. Not a real error.
          if (err.message !== "Canceled")
-            Log("CameraPWA:getCameraPhoto():Error", err);
+            console.error("CameraPWA:getCameraPhoto():Error", err);
          throw err;
       }
    }

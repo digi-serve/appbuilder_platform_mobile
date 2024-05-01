@@ -10,10 +10,9 @@ import analytics from "./Analytics.js";
 import EventEmitter from "eventemitter2";
 import CryptoJS from "crypto-js";
 import Lock from "./Lock.js";
-import Log from "./Log.js";
 import PBKDF2async from "./PBKDF2-async.js";
 
-var config = require("../../config/config.js");
+const config = require("../../config/config.js");
 
 const disableEncryption = !config.platform.encryptedStorage; // false;
 const storeName = "key_value_data";
@@ -32,18 +31,18 @@ class Storage extends EventEmitter {
 
       // IndexedDB is standard on modern browsers
       try {
-         var request = indexedDB.open(name);
+         const request = indexedDB.open(name);
          request.onerror = (event) => {
-            Log("IndexedDB failure on init", request.error);
+            console.error("IndexedDB failure on init", request.error);
             analytics.logError(request.error);
          }
          request.onsuccess = (event) => {
             this.db = request.result;
             this.db.onerror = (event) => {
-               Log("IndexedDB error", event.target.errorCode);
+               console.error("IndexedDB error", event.target.errorCode);
             }
             // Test if the `key_value_data` object store is present
-            var transaction = this.db.transaction(storeName, "readonly");
+            const transaction = this.db.transaction(storeName, "readonly");
             transaction.onerror = (event) => {
                console.log('IndexedDB store not found?', transaction.error);
                // Store was not found. Try to create it now.
@@ -55,13 +54,13 @@ class Storage extends EventEmitter {
          }
          // On first time, set up the obect store
          request.onupgradeneeded = (event) => {
-            var db = event.target.result;
-            var objectStore = db.createObjectStore(storeName);
+            const db = event.target.result;
+            const objectStore = db.createObjectStore(storeName);
          }
       } 
       // IndexedDB not supported on this device?
       catch (err) {
-         Log(err);
+         console.error(err);
          alert(
             "Error initializing the storage system:\n" +
                (err.message || "") +
@@ -94,7 +93,7 @@ class Storage extends EventEmitter {
     */
    setPassword(secret, resetSalt = false) {
       return new Promise((resolve, reject) => {
-         var startTime = Date.now();
+         const startTime = Date.now();
          this.secret = secret;
 
          Promise.resolve()
@@ -129,12 +128,8 @@ class Storage extends EventEmitter {
                return this.wait(10);
             })
             .then(() => {
-               // Sync (may lock up UI)
-               //var fn = CryptoJS.PBKDF2;
-
                // Async (crashes debugger)
-               var fn = PBKDF2async;
-
+               const fn = PBKDF2async;
                return fn(this.secret, this.salt, {
                   keySize: 256 / 32,
                   iterations: 10000,
@@ -146,8 +141,8 @@ class Storage extends EventEmitter {
                this.key = key;
 
                // If the KDF was too fast, wait some more
-               var endTime = Date.now();
-               var diff = endTime - startTime;
+               const endTime = Date.now();
+               const diff = endTime - startTime;
                if (diff > 650) {
                   return null;
                } else {
@@ -158,7 +153,7 @@ class Storage extends EventEmitter {
                resolve();
             })
             .catch((err) => {
-               Log("Password error", err);
+               console.error("Password error", err);
                analytics.logError(err);
                reject(err);
             });
@@ -173,17 +168,8 @@ class Storage extends EventEmitter {
     *      Ciphertext with embedded IV.
     */
    encrypt(plaintext) {
-      // var startTime = new Date().getTime();
-      var iv = CryptoJS.lib.WordArray.random(16);
-      var ciphertext = CryptoJS.AES.encrypt(plaintext, this.key, { iv: iv });
-      // var diff = new Date().getTime() - startTime;
-      // if (diff > 999) {
-      //    console.warn("-----> Storage stop encrypting ", diff);
-      //    console.log("Big data", plaintext);
-      // } else {
-      //    console.log("-----> Storage stop encrypting ", diff);
-      // }
-      // return ciphertext.toString() + ":::" + iv.toString();
+      const iv = CryptoJS.lib.WordArray.random(16);
+      const ciphertext = CryptoJS.AES.encrypt(plaintext, this.key, { iv: iv });
       return `${ciphertext}:::${iv}`;
    }
 
@@ -216,7 +202,7 @@ class Storage extends EventEmitter {
             })
                .then((value) => {
                   // Compare against previously set password
-                  var hash = CryptoJS.SHA256(this.secret).toString();
+                  const hash = CryptoJS.SHA256(this.secret).toString();
                   if (value === null) {
                      // No previous password. Save hash now.
                      this.set("__sdc_password", hash, {
@@ -255,7 +241,7 @@ class Storage extends EventEmitter {
     * @return {Promise}
     */
    set(key, value, options = {}) {
-      var defaults = {
+      const defaults = {
          forcePlainText: false,
          serialize: true
       };
@@ -263,8 +249,8 @@ class Storage extends EventEmitter {
          defaults.forcePlainText = true;
       }
       options = $.extend({}, defaults, options);
+      let isEncrypted = 0;
 
-      var isEncrypted = 0;
       // Serialize
       if (options.serialize) {
          const circularItems = []
@@ -287,17 +273,17 @@ class Storage extends EventEmitter {
       }
 
       return new Promise((resolve, reject) => {
-         var transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this.db.transaction(storeName, "readwrite");
          transaction.oncomplete = (event) => {
             resolve();
          }
          transaction.onerror = (event) => {
-            Log("DB error during set", transaction.error)
+            console.error("DB error during set", transaction.error)
             reject(transaction.error);
          }
 
-         var store = transaction.objectStore(storeName);
-         var req = store.put({
+         const store = transaction.objectStore(storeName);
+         const req = store.put({
             value: value,
             isEncrypted: isEncrypted
          }, key);
@@ -327,7 +313,7 @@ class Storage extends EventEmitter {
             });
       }
 
-      var defaults = {
+      const defaults = {
          resetAppOnFailure: true,
          deserialize: true
       };
@@ -337,17 +323,17 @@ class Storage extends EventEmitter {
       options = $.extend({}, defaults, options);
 
       return new Promise((resolve, reject) => {
-         var transaction = this.db.transaction(storeName, "readonly");
+         const transaction = this.db.transaction(storeName, "readonly");
          transaction.onerror = (event) => {
-            Log("DB error during get", transaction.error)
+            console.error("DB error during get", transaction.error)
             reject(transaction.error);
          }
 
-         var store = transaction.objectStore(storeName);
-         var req = store.get(key);
+         const store = transaction.objectStore(storeName);
+         const req = store.get(key);
          req.onsuccess = (event) => {
-            var row = req.result;
-            var value, isEncrypted;
+            const row = req.result;
+            let value, isEncrypted;
             // Parse results
             if (row) {
                value = row.value;
@@ -368,7 +354,7 @@ class Storage extends EventEmitter {
                   if (options.resetAppOnFailure) {
                      document.location.reload();
                   } else {
-                     Log("Incorrect password");
+                     console.error("Incorrect password");
                      reject(new Error("Incorrect password"));
                   }
                   return;
@@ -379,7 +365,7 @@ class Storage extends EventEmitter {
                if (options.resetAppOnFailure) {
                   document.location.reload();
                } else {
-                  Log("Missing password");
+                  console.error("Missing password");
                   reject(new Error("Missing password"));
                }
                return;
@@ -390,7 +376,7 @@ class Storage extends EventEmitter {
                try {
                   value = JSON.parse(value);
                } catch (err) {
-                  Log("Bad saved data?", key, value);
+                  console.log("Bad saved data?", key, value);
                   value = null;
                }
             }
@@ -423,15 +409,15 @@ class Storage extends EventEmitter {
     */
    clear(key) {
       return new Promise((resolve, reject) => {
-         var transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this.db.transaction(storeName, "readwrite");
          transaction.onerror = (event) => {
-            Log("DB error during clear", event.error);
+            console.error("DB error during clear", event.error);
             err.message += `DB Error clearing record: ${key}`;
             analytics.logError(event.error);
             reject(event.error);
          }
-         var store = transaction.objectStore(storeName);
-         var req = store.delete(key);
+         const store = transaction.objectStore(storeName);
+         const req = store.delete(key);
          req.onsuccess = (event) => {
             resolve();
          }
@@ -446,17 +432,17 @@ class Storage extends EventEmitter {
     */
    clearAll(keyRange) {
       return new Promise((resolve, reject) => {
-         var transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this.db.transaction(storeName, "readwrite");
          transaction.onerror = (event) => {
-            Log("DB error during clearAll", event.error);
+            console.error("DB error during clearAll", event.error);
             analytics.logError(event.error);
             reject(event.error);
          }
-         var store = transaction.objectStore(storeName);
+         const store = transaction.objectStore(storeName);
          if (keyRange) {
-            var req = store.delete(keyRange);
+            const req = store.delete(keyRange);
          } else {
-            var req = store.clear();
+            const req = store.clear();
          }
          req.onsuccess = (event) => {
             resolve();
@@ -479,5 +465,5 @@ class Storage extends EventEmitter {
    }
 }
 
-var storage = new Storage();
+const storage = new Storage();
 export { storage, Storage };
