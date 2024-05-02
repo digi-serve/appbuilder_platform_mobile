@@ -14,7 +14,11 @@ import Page from "../resources/Page.js";
 
 class LoadingPage extends Page {
    constructor() {
-      super("loading-animation");
+      super(
+         "loading-page",
+         "lib/platform/pages/loadingPage.html",
+         "lib/platform/pages/loadingPage.css"
+      );
    }
 
    async init(AB) {}

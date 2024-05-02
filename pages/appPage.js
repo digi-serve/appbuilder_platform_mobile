@@ -7,18 +7,19 @@
  */
 "use strict";
 
-import Page from "../../resources/Page.js";
+import Page from "../resources/Page.js";
 
-import ABApplicationList from "../../../applications/applications.js";
+import ABApplicationList from "../../applications/applications.js";
 import Shake from "shake.js";
-import updater from "../../resources/Updater.js";
-import config from "../../../config/config.js";
-import appFeedback from "../../resources/AppFeedback.js";
+import updater from "../resources/Updater.js";
+import config from "../../config/config.js";
+import appFeedback from "../resources/AppFeedback.js";
 
-import NavMenu from "../../../applications/navMenu/app.js";
+import NavMenu from "../../applications/navMenu/app.js";
 const navMenu = new NavMenu();
 
-import settingsComponent from "./components/settings/settingsComponent.js";
+import landingComponent from "./components/landingComponent.js";
+import settingsComponent from "./components/settingsComponent.js";
 
 const MAX_BACK_PRESSES = 3;
 const WAIT_FOR_BUSY = 1000;
@@ -27,7 +28,11 @@ export class AppPage extends Page {
    /**
     */
    constructor() {
-      super("sdc-app", "lib/platform/pages/app/appPage.html");
+      super(
+         "app-page",
+         "lib/platform/pages/appPage.html",
+         "lib/platform/pages/appPage.css"
+      );
 
       // Are the AB Applications in the middle of being reset?
       // TODO (Guy): Refactor this in the future;
@@ -42,7 +47,10 @@ export class AppPage extends Page {
       this.datacollections = [];
       this.updateOnLogin = true;
       this.f7App = null;
-      this.components = {};
+      this.components = {
+         landingComponent,
+         settingsComponent,
+      };
       this.menuView = null;
       this.logView = null;
       this.appView = null;
@@ -190,16 +198,8 @@ export class AppPage extends Page {
             // TODO: Refactor later.
             this.AB.busy.show("Preparing components.");
             const routes = [
-               {
-                  path: "/",
-                  componentUrl:
-                     "./lib/platform/pages/app/components/landing/landingComponent.html",
-               },
-               {
-                  path: "/settings/",
-                  componentUrl:
-                     "./lib/platform/pages/app/components/settings/settingsComponent.html",
-               },
+               this.components.landingComponent.route,
+               this.components.settingsComponent.route,
                {
                   path: "/welcomePage/",
                   componentUrl:
@@ -244,6 +244,7 @@ export class AppPage extends Page {
             // Preparing components.
             try {
                await Promise.all([
+                  this.components.landingComponent.init(this),
                   this.components.settingsComponent.init(this),
                   this.components.welcomeComponent.init(this),
                ]);
@@ -489,7 +490,6 @@ export class AppPage extends Page {
       this.components.feedbackComponent = feedbackComponent;
       this.components.inboxComponent = inboxComponent;
       this.components.profileComponent = profileComponent;
-      this.components.settingsComponent = settingsComponent;
       this.components.welcomeComponent = welcomeComponent;
       if (!this._initializeListener) this.emit("init.listener");
    }

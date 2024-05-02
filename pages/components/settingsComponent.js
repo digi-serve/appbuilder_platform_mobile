@@ -7,15 +7,19 @@
 "use strict";
 
 import EventEmitter from "eventemitter2";
-import { translate } from "../../../../resources/Translate.js";
-import updater from "../../../../resources/Updater.js";
+import { translate } from "../../resources/Translate.js";
+import updater from "../../resources/Updater.js";
 
 class SettingsComponent extends EventEmitter {
    constructor() {
       super({
          wildcard: true,
       });
-      this.id = "settings-page";
+      this.id = "settings-component";
+      this.route = {
+         path: "/settings/",
+         componentUrl: "./lib/platform/pages/components/settingsComponent.html",
+      };
       this.appPage = null;
       this.templates = {};
       translate.on("recenterTitle", () => {
@@ -52,7 +56,7 @@ class SettingsComponent extends EventEmitter {
       this.appPage = appPage;
       await this.prepareTemplates({
          updateInfo:
-            "lib/platform/pages/app/components/settings/settingsComponent-update-info.html",
+            "lib/platform/pages/components/settingsComponent-update-info.html",
       });
 
       // Initialize data.

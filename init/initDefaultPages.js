@@ -3,8 +3,8 @@
  * Setup the main application Pages
  */
 import loadingPage from "../pages/loadingPage.js";
-import passwordPage from "../pages/password/passwordPage.js";
-import appPage from "../pages/app/appPage.js";
+import passwordPage from "../pages/passwordPage.js";
+import appPage from "../pages/appPage.js";
 
 // Initialize the top level pages.
 const pages = {
