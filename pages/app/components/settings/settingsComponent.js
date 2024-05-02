@@ -51,7 +51,7 @@ class SettingsComponent extends EventEmitter {
    async init(appPage) {
       this.appPage = appPage;
       await this.prepareTemplates({
-         updateInfo: "lib/platform/pages/app/components/settings/update-info.html"
+         updateInfo: "lib/platform/pages/app/components/settings/settingsComponent-update-info.html"
       });
 
       // Initialize data.
@@ -171,7 +171,7 @@ class SettingsComponent extends EventEmitter {
 
    /**
     * Render the App Info card
-    * See update-info.html
+    * See settingsComponent-update-info.html
     */
    renderPackageInfo() {
       if (this.appInfo) {

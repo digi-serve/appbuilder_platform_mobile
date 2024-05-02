@@ -242,79 +242,68 @@
      * the page is not active should be handled with the help of the settings
      * component object rather than purely here on this page's script.
      */
-    var Network;
     return {
-        data: function () {
-            Network = this.$root.network;
-
-            // See lib/app/controllers/appPage.js
-            var appPage = this.$root.appPage;
-
-            // See lib/app/controllers/components/settings.js
-            var settings = this.$root.getComponent("settingsComponent");
-            const appName = localStorage.getItem("name") ?? "conneXted";
-
+        data () {
             return {
                 hasAuthToken: Boolean(this.$root.account.authToken),
                 totalStorage: 0,
                 iconOptions: [],
-                appName,
+                appName: localStorage.getItem("name") ?? "conneXted",
                 appIconSrc: "icons/32.png",
             };
         },
         methods: {
-            setIcon: function (e) {
+            setIcon (e) {
+                const self = this;
                 const selectedIcon = e.currentTarget.getAttribute("data-icon-name");
+
                 // Save to local storage
                 localStorage.setItem("icon", selectedIcon);
+
                 // Update F7 UI
-                this.iconOptions.forEach(o => {
+                self.iconOptions.forEach(o => {
                     if (o.name == selectedIcon) {
                         o.selected = true;
-                        this.appIconSrc = o.src;
+                        self.appIconSrc = o.src;
                     }
                     else o.selected = false;
                 });
-                this.$update();
+                self.$update();
             },
         },
         on: {
-            pageBeforeIn: function () {
-                this.$(".view-main .navbar").attr(
+            pageBeforeIn () {
+                const self = this;
+                self.$(".view-main .navbar").attr(
                     "class",
                     "navbar bg-color-purple text-color-white color-theme-white"
                 );
-                this.$(".view-main .navbar-bg").attr(
+                self.$(".view-main .navbar-bg").attr(
                     "class",
                     "navbar-bg bg-color-purple"
                 );
             },
 
-            pageInit: function () {
+            pageInit() {
+                const self = this;
                 fetch("/icons/list").then(res => {
                     res.json().then(data => {
                         const stored = localStorage.getItem("icon");
                         const selectedOpt = data.find(o => o.name == stored) ?? data.find(o => o.name == "default");
                         selectedOpt.selected = true;
-                        this.$setState({ iconOptions: data, appIconSrc: selectedOpt.src });
+                        self.$setState({ iconOptions: data, appIconSrc: selectedOpt.src });
                     })
                 });
-                var appPage = this.$root.appPage;
-
-                var updater = this.$root.updater;
-                var analytics = this.$root.analytics;
-
-                var self = this;
-                var settings = this.$root.getComponent("settingsComponent");
-
+                const appPage = self.$root.appPage;
+                const updater = self.$root.updater;
+                const settings = self.$root.getComponent("settingsComponent");
                 settings.getStorageSize().then((data) => {
                     self.$setState({
                         totalStorage: Number(data).toFixed(2)
                     });
                 });
-
                 $("#test-camera").on("click", () => {
-                    this.$root.camera.getCameraPhoto()
+                    self.$root.camera.getCameraPhoto()
                         .then((photo) => {
                             // scan photo for QR code
                             $("#test-camera-result").attr("src", photo.url);
@@ -327,7 +316,8 @@
                 // input a JRR token manually
                 $("#codeSubmit").on("click", () => {
                     // get the code from the form
-                    let jrrMatch = $("#rawjrrtoken").get(0).value
+                    const jrrMatch = $("#rawjrrtoken").get(0).value
+
                     // plug it into the app
                     self.$app.toast.create({
                         text: '<t>Code inputting...</t>',
@@ -348,7 +338,7 @@
 
                 // when custom settings is checked reveal or hide advanced settings
                 $("#customServerCheckbox").on("change", () => {
-                    var isEnabledCustom = $("#customServerCheckbox").prop(
+                    const isEnabledCustom = $("#customServerCheckbox").prop(
                         "checked"
                     );
                     if (isEnabledCustom) {
@@ -379,13 +369,11 @@
                 updater.getPackageInfo();
                 settings.renderPackageInfo();
 
-                // var events = this.$root.getApplication('EVENTS');
-                // var hris = this.$root.getApplication('HRIS');
-                var syncing;
+                let syncing;
 
                 // Sync with server
                 $("#sync-with-server").on("click", () => {
-                    if (!Network.isNetworkConnected()) {
+                    if (!self.$root.appPage.AB.network.isNetworkConnected()) {
                         self.$app.dialog.alert(
                             "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
                             "<t>No Network Detected.</t>"
@@ -393,7 +381,7 @@
                         return;
                     }
 
-                    var continueSync = self.$app.dialog.confirm(
+                    const continueSync = self.$app.dialog.confirm(
                         "<t>This will fetch the latest data from the server without affecting any locally changed data. Continue?</t>",
                         "<t>Update Data</t>",
                         () => {
@@ -404,7 +392,7 @@
 
                 // Sync with server
                 $("#reset-get-server").on("click", () => {
-                    if (!Network.isNetworkConnected()) {
+                    if (!self.$root.appPage.AB.network.isNetworkConnected()) {
                         self.$app.dialog.alert(
                             "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
                             "<t>No Network Detected.</t>"
@@ -412,7 +400,7 @@
                         return;
                     }
 
-                    var continueSync = self.$app.dialog.confirm(
+                    const continueSync = self.$app.dialog.confirm(
                         "<t>This will fetch the latest data from the server, clearing all local data. Continue?</t>",
                         `<t data-cy="confirmReset" >Reset Data</t>`,
                         // TODO
@@ -442,16 +430,15 @@
                     );
                 });
 
-                if (this.$root.appPage.authToken) {
+                if (self.$root.appPage.authToken) {
                     $("#sync-data").show();
                 }
                 $("#updateOnLoginCheckbox").prop(
                     "checked",
-                    this.$root.appPage.updateOnLogin
+                    self.$root.appPage.updateOnLogin
                 );
-                var self = this;
                 $("#updateOnLoginCheckbox").change(function () {
-                    if ($(this).is(":checked")) {
+                    if ($(self).is(":checked")) {
                         localStorage.setItem("updateOnLogin", "true");
                         self.$root.appPage.updateOnLogin = true;
                     } else {
@@ -461,33 +448,31 @@
                 });
 
                 $(".edit-customization").click(() => {
-                    this.$app.sheet.open(".modal-cusomization");
+                    self.$app.sheet.open(".modal-cusomization");
                 });
 
                 $("#app-name").on("change", () => {
                     const appName = $("#app-name").val();
                     localStorage.setItem("name", appName);
-                    this.$setState({ appName });
+                    self.$setState({ appName });
                 });
-                self?.$app?.off("ptrRefresh");
-                self?.$app?.on("ptrRefresh", () => {
+                self.$app.off("ptrRefresh");
+                self.$app.on("ptrRefresh", () => {
                     // user has pulled to refresh, 
                     // they may want to know the status of auth token, and whether we are fetching data
                     // is network connected?
-                    self?.$app?.toast.create({
-                        text: "Auth Token Status: " + (self?.$root?.account?.authToken ? "Valid" : "Invalid") +
+                    self.$app.toast.create({
+                        text: "Auth Token Status: " + (self.$root.account.authToken ? "Valid" : "Invalid") +
                             "<br>Fetching Data: " + (syncing ? "Yes" : "No") + "<br>Network: " +
-                            (Network.isNetworkConnected() ? "Connected" : "Disconnected"),
+                            (self.$root.appPage.AB.network.isNetworkConnected() ? "Connected" : "Disconnected"),
                         position: "center",
                         closeTimeout: 2000,
                     }).open();
                     // they may want to clear a render issue, refresh the page
-                    self?.$app?.router.refreshPage();
-                    self?.$app?.ptr.get('.ptr-content').done()
+                    self.$app.router.refreshPage();
+                    self.$app.ptr.get('.ptr-content').done()
                 });
             }
         },
-
-        pageBeforeRemove: function () { }
     };
 </script>
