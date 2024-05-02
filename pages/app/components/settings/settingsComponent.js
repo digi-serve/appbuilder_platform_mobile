@@ -13,7 +13,7 @@ import updater from "../../../../resources/Updater.js";
 class SettingsComponent extends EventEmitter {
    constructor() {
       super({
-         wildcard: true
+         wildcard: true,
       });
       this.id = "settings-page";
       this.appPage = null;
@@ -51,7 +51,8 @@ class SettingsComponent extends EventEmitter {
    async init(appPage) {
       this.appPage = appPage;
       await this.prepareTemplates({
-         updateInfo: "lib/platform/pages/app/components/settings/settingsComponent-update-info.html"
+         updateInfo:
+            "lib/platform/pages/app/components/settings/settingsComponent-update-info.html",
       });
 
       // Initialize data.
@@ -59,7 +60,7 @@ class SettingsComponent extends EventEmitter {
          this.loadData("pfsBackupDate", null),
 
          // CodePush app info
-         this.loadData("appInfo", null)
+         this.loadData("appInfo", null),
       ]);
       this.appPage.f7App.getSize();
 
@@ -72,7 +73,10 @@ class SettingsComponent extends EventEmitter {
       updater.on("downloading", (percentage) => {
          this.$(".settings-update").hide();
          this.$("#update-progress").show();
-         this.appPage.f7App.progressbar.set("#update-progress .progressbar", percentage);
+         this.appPage.f7App.progressbar.set(
+            "#update-progress .progressbar",
+            percentage
+         );
       });
       updater.on("installing", () => {
          this.$(".settings-update-card").hide();
@@ -110,13 +114,13 @@ class SettingsComponent extends EventEmitter {
                   url: path,
                   success: (data /* , status, xhr */) => {
                      this.templates[name] = Template7.compile(data);
-                  }
+                  },
                })
             );
          })(path, name);
       }
       // await Promise.all(DFDs);
-      return $.when(...DFDs)
+      return $.when(...DFDs);
    }
 
    /**

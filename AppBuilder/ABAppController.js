@@ -57,7 +57,7 @@ export default class ABAppController extends EventEmitter2 {
       const initTimeout = setTimeout(() => {
          this.appPage.AB.analytics.log(
             "ABApplication timed out during init(): " +
-               this.appPage.application.id,
+               this.appPage.application.id
          );
       }, this.initTimeout);
 
@@ -161,7 +161,7 @@ export default class ABAppController extends EventEmitter2 {
     */
    dataCollection(key) {
       return this.datacollections.find(
-         (dc) => dc.id === key || dc.name === key || dc.label == key,
+         (dc) => dc.id === key || dc.name === key || dc.label == key
       );
    }
 
@@ -183,7 +183,7 @@ export default class ABAppController extends EventEmitter2 {
       const object = this.appPage.AB.objectByID(objKey);
       if (object == null) return results;
       const field = object.fields(
-         (f) => f.id === fieldKey || f.columnName === fieldKey,
+         (f) => f.id === fieldKey || f.columnName === fieldKey
       )[0];
       if (field == null) return results;
 
@@ -235,7 +235,7 @@ export default class ABAppController extends EventEmitter2 {
    }
 
    refStatusKey() {
-      let id = this.id || this.AB.uuid() || "NA"
+      let id = this.id || this.AB.uuid() || "NA";
       return `${this.id || this.AB.uuid() || "NA"}-init-status`;
    }
 }

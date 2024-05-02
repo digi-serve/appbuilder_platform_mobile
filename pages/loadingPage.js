@@ -17,7 +17,7 @@ class LoadingPage extends Page {
       super("loading-animation");
    }
 
-   init(AB) {}
+   async init(AB) {}
 
    show() {
       this.$element.removeClass("overlay");

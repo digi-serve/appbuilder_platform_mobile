@@ -22,8 +22,8 @@ module.exports = class ABModel extends ABModelCore {
          .concat(this.object.id);
       await Promise.all(
          this.AB.datacollections((datacollection) =>
-            affectedOBJs.includes(datacollection.datasource.id),
-         ).map((datacollection) => datacollection.loadData()),
+            affectedOBJs.includes(datacollection.datasource.id)
+         ).map((datacollection) => datacollection.loadData())
       );
    }
 
@@ -93,7 +93,7 @@ module.exports = class ABModel extends ABModelCore {
       // make sure any values we create have a UUID field set:
       const UUID = this.object.fieldUUID(copiedValues);
       if (copiedValues[UUID] == null) copiedValues[UUID] = this.AB.uuid();
-      
+
       // we'll return before the remote call is complete.
       await this.remote().create(copiedValues);
       await this.local().create(copiedValues);

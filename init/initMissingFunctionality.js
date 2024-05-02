@@ -53,12 +53,12 @@ if (typeof Object.assign != "function") {
          return to;
       },
       writable: true,
-      configurable: true
+      configurable: true,
    });
 }
 
 export default {
    init: () => {
       return Promise.resolve(); // nothing async, so just return
-   }
+   },
 };

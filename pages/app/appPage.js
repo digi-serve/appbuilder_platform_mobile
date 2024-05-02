@@ -69,7 +69,7 @@ export class AppPage extends Page {
             () => {
                this.activateFeedback();
             },
-            false,
+            false
          );
 
          // Android hardware back button
@@ -78,7 +78,7 @@ export class AppPage extends Page {
             () => {
                this.appView.router.back();
             },
-            false,
+            false
          );
          this.AB.network.on("*", (message) => {
             if (this._currentRelayProgressBarTarget == null) return;
@@ -90,7 +90,7 @@ export class AppPage extends Page {
             this.f7App.dialog
                .alert(
                   "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
-                  "<t>No Network Connection</t>",
+                  "<t>No Network Connection</t>"
                )
                .open();
          });
@@ -124,7 +124,7 @@ export class AppPage extends Page {
                      // Import pre-token from the URL. Generate new authToken.
                      await this.AB.account.importCredentials(
                         jrrMatch[1],
-                        hash.match(/tenant=(\w+)/)?.[1],
+                        hash.match(/tenant=(\w+)/)?.[1]
                      );
                   }
                }
@@ -152,7 +152,7 @@ export class AppPage extends Page {
                               "<t>Problem authenticating with server</t>",
                               () => {
                                  resolve();
-                              },
+                              }
                            )
                            .open();
                         break;
@@ -164,7 +164,7 @@ export class AppPage extends Page {
                               "<t>Welcome to conneXted!</t>",
                               () => {
                                  resolve();
-                              },
+                              }
                            )
                            .open();
                         // if we are in chrome, maybe we report no token. Else is expected behavior
@@ -179,7 +179,7 @@ export class AppPage extends Page {
                               "<t>Error</t>",
                               () => {
                                  resolve();
-                              },
+                              }
                            )
                            .open();
                         break;
@@ -269,7 +269,7 @@ export class AppPage extends Page {
                   dcComponent.datacollections.forEach((dc) => {
                      if (
                         this.datacollections.find(
-                           (existingDC) => existingDC.id === dc.id,
+                           (existingDC) => existingDC.id === dc.id
                         ) == null
                      )
                         this.datacollections.push(dc);
@@ -284,7 +284,7 @@ export class AppPage extends Page {
                   app.datacollections.forEach((dc) => {
                      if (
                         this.datacollections.find(
-                           (existingDC) => existingDC.id === dc.id,
+                           (existingDC) => existingDC.id === dc.id
                         ) == null
                      )
                         this.datacollections.push(dc);
@@ -295,7 +295,7 @@ export class AppPage extends Page {
                      await pendingInitializedApp;
                   } catch (err) {
                      console.error(
-                        `Failed to initialize the app id: ${app.ID}`,
+                        `Failed to initialize the app id: ${app.ID}`
                      );
                      console.error(err.message);
                      this.AB.analytics.logError(err);
@@ -316,7 +316,7 @@ export class AppPage extends Page {
                await this.AB.network.queueFlush();
             } catch (err) {
                this.AB.analytics.log(
-                  'storage.emit("ready"): unable to flush Network Queue',
+                  'storage.emit("ready"): unable to flush Network Queue'
                );
                this.AB.analytics.logError(err);
             }
@@ -370,12 +370,12 @@ export class AppPage extends Page {
             this._relayJobsDone += 1;
          }
          var percentage = Math.round(
-            (this._relayJobsDone / this._relayJobsTotal) * 100 || 0,
+            (this._relayJobsDone / this._relayJobsTotal) * 100 || 0
          );
          this.f7App.progressbar.set(
             `#${this._currentRelayProgressBarTarget} .progressbar`,
             percentage,
-            100,
+            100
          );
       } else if (message) {
          // report of empty inbox can be sent here for some reason?
@@ -462,16 +462,16 @@ export class AppPage extends Page {
       // TODO (Guy): Refactor these in the future.
       this.applications = ABApplicationList.map((App) => new App());
       const feedbackComponent = this.applications.find(
-         (app) => app.ID === "Feedback",
+         (app) => app.ID === "Feedback"
       );
       const inboxComponent = this.applications.find(
-         (app) => app.ID === "INBOX",
+         (app) => app.ID === "INBOX"
       );
       const profileComponent = this.applications.find(
-         (app) => app.ID === "PROFILE",
+         (app) => app.ID === "PROFILE"
       );
       const welcomeComponent = this.applications.find(
-         (app) => app.ID === "WELCOME",
+         (app) => app.ID === "WELCOME"
       );
       this.applications = this.applications.filter((app) => {
          switch (app.ID) {
@@ -531,7 +531,6 @@ export class AppPage extends Page {
          await this.AB.account.importCredentials(authToken, tenantUUID);
          // await this.fetchApplicationData(true);
       }
-
    }
 
    getApplicationByID(id) {
@@ -592,11 +591,11 @@ export class AppPage extends Page {
          this.f7App.dialog
             .alert(
                "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
-               "<t>Sorry</t>",
+               "<t>Sorry</t>"
             )
             .open();
          this.AB.analytics.log(
-            "Timeout (90 secs) during fetchApplicationData()",
+            "Timeout (90 secs) during fetchApplicationData()"
          );
       }, 90000);
 
@@ -626,7 +625,7 @@ export class AppPage extends Page {
          });
       console.assert(
          targetDC,
-         "appPage.fetchRecordData() could not find the datacollection",
+         "appPage.fetchRecordData() could not find the datacollection"
       );
       return targetDC.reloadData();
    }
@@ -665,7 +664,7 @@ export class AppPage extends Page {
       this.emit("resetComplete");
 
       // wipe the cache and hard reload
-      if(includeLocal) updater.updateNow();
+      if (includeLocal) updater.updateNow();
    }
 
    /**
@@ -678,7 +677,7 @@ export class AppPage extends Page {
          console.log("Feedback error", err);
          this.f7App.dialog.alert(
             "<t>There was a problem sending feedback</t>",
-            "<t>Sorry</t>",
+            "<t>Sorry</t>"
          );
          appFeedback.close();
       }

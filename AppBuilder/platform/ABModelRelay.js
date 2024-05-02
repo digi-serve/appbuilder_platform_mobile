@@ -22,7 +22,8 @@ module.exports = class ABModelRelay extends ABModelCore {
       const newResponseContext = Object.assign({}, responseContext);
       return new Promise((resolve, reject) => {
          newResponseContext.context.callback = async (err, result) => {
-            if (err != null){
+            debugger;
+            if (err != null) {
                err["info"] = {
                   method,
                   params,
@@ -30,7 +31,7 @@ module.exports = class ABModelRelay extends ABModelCore {
                   result,
                };
                reject(new Error(err.message));
-            } 
+            }
             resolve(result);
          };
          (async () => {
@@ -54,7 +55,7 @@ module.exports = class ABModelRelay extends ABModelCore {
       return this.processRequest(
          "post",
          this.urlParamsCreate(values),
-         this.responseContext,
+         this.responseContext
       );
    }
 
@@ -75,7 +76,7 @@ module.exports = class ABModelRelay extends ABModelCore {
       return this.processRequest(
          "delete",
          this.urlParamsDelete(id),
-         this.responseContext,
+         this.responseContext
       );
    }
 
@@ -107,12 +108,11 @@ module.exports = class ABModelRelay extends ABModelCore {
 
       // for now:
       const responseContext = this.responseContext;
-      responseContext.context.verb =
-         responseContext?.context?.verb || "find";
+      responseContext.context.verb = responseContext?.context?.verb || "find";
       return this.processRequest(
          "get",
          this.urlParamsFind(cond),
-         responseContext,
+         responseContext
       );
    }
 

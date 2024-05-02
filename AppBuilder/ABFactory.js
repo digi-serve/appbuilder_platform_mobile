@@ -122,7 +122,7 @@ export default class ABFactory extends ABFactoryCore {
             return;
          }
          const obj = this.datacollections(
-            (datacollection) => datacollection.datasource.id === context.id,
+            (datacollection) => datacollection.datasource.id === context.id
          )[0]?.datasource;
          if (obj == null) {
             context.callback?.(new Error(data));
@@ -139,7 +139,10 @@ export default class ABFactory extends ABFactoryCore {
                ":: data": data,
             });
          }
-         console.assert(context, "ABFactory::network.object: context is null!!");
+         console.assert(
+            context,
+            "ABFactory::network.object: context is null!!"
+         );
          switch (context.verb) {
             case "create":
                // we are being alerted of a NEW object instance.
@@ -188,10 +191,7 @@ export default class ABFactory extends ABFactoryCore {
 
                // if data does not already exist locally ignore it
                if (await modelLocal.doesExist(data)) {
-                  await obj
-                     .model()
-                     .local()
-                     .syncRemoteMaster(data);
+                  await obj.model().local().syncRemoteMaster(data);
 
                   // alert any DataCollections that are using this
                   // object that there might be new data for them to
@@ -228,7 +228,7 @@ export default class ABFactory extends ABFactoryCore {
             return;
          }
          const dc = this.datacollections(
-            (datacollection) => datacollection.id === context.id,
+            (datacollection) => datacollection.id === context.id
          )[0];
          if (dc == null) return;
          if (dc.name) {
