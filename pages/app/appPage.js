@@ -18,9 +18,6 @@ import appFeedback from "../../resources/AppFeedback.js";
 import NavMenu from "../../../applications/navMenu/app.js";
 const navMenu = new NavMenu();
 
-import Logs from "../../../applications/Logs/app.js";
-const Logger = new Logs();
-
 import settingsComponent from "./components/settings/settingsComponent.js";
 
 const MAX_BACK_PRESSES = 3;
@@ -334,12 +331,6 @@ export class AppPage extends Page {
             this.menuView = this.f7App.views.create("#left-view", {
                url: "/nav/",
                routes: navMenu.routes,
-            });
-
-            // Log view
-            this.logView = this.f7App.views.create("#right-view", {
-               url: "/log/",
-               routes: Logger.routes,
             });
             this.appView = this.f7App.views.create("#main-view", {
                url: "/",

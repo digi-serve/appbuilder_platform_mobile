@@ -7,6 +7,7 @@ import account from "../resources/Account.js";
 import analytics from "../resources/Analytics.js";
 import buildTimestamp from "../resources/BuildTimestamp.js";
 import busy from "../resources/Busy.js";
+import camera from "../resources/Camera.js";
 
 // TODO move this to an npm module, so it can be updated independently
 // this is the same structure as how we access jsEncrypt
@@ -23,6 +24,7 @@ export default class ABFactory extends ABFactoryCore {
       this.account = account;
       this.analytics = analytics;
       this.busy = busy;
+      this.camera = camera;
       this.jsQR = jsQR;
       this.network = network;
       this.storage = storage;
