@@ -441,11 +441,14 @@ class Storage extends EventEmitter {
          const store = transaction.objectStore(storeName);
          if (keyRange) {
             const req = store.delete(keyRange);
+            req.onsuccess = (event) => {
+               resolve();
+            }
          } else {
             const req = store.clear();
-         }
-         req.onsuccess = (event) => {
-            resolve();
+            req.onsuccess = (event) => {
+               resolve();
+            }
          }
       });
    }
