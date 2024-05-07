@@ -22,7 +22,7 @@ module.exports = class ABModelRelay extends ABModelCore {
       const newResponseContext = Object.assign({}, responseContext);
       return new Promise((resolve, reject) => {
          newResponseContext.context.callback = async (err, result) => {
-            debugger;
+            // debugger;
             if (err != null) {
                err["info"] = {
                   method,

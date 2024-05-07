@@ -166,15 +166,15 @@ export class AppPage extends Page {
                         break;
 
                      case "E_NOJRRTOKEN":
-                        this.f7App.dialog
-                           .alert(
-                              "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
-                              "<t>Welcome to conneXted!</t>",
-                              () => {
-                                 resolve();
-                              }
-                           )
-                           .open();
+                        // this.f7App.dialog
+                        //    .alert(
+                        //       "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
+                        //       "<t>Welcome to conneXted!</t>",
+                        //       () => {
+                        //          resolve();
+                        //       }
+                        //    )
+                        //    .open();
                         // if we are in chrome, maybe we report no token. Else is expected behavior
                         // this.AB.analytics.log("App launched with no token");
                         break;
