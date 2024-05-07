@@ -7,32 +7,29 @@
 "use strict";
 
 import EventEmitter from "eventemitter2";
-import { storage } from "../../../../resources/Storage.js";
-import log from "../../../../resources/Log.js";
-import analytics from "../../../../resources/Analytics.js";
-import { translate } from "../../../../resources/Translate.js";
-import camera from "../../../../resources/Camera.js";
-import updater from "../../../../resources/Updater.js";
+import { translate } from "../../resources/Translate.js";
+import updater from "../../resources/Updater.js";
 
 class SettingsComponent extends EventEmitter {
    constructor() {
       super({
-         wildcard: true
+         wildcard: true,
       });
-      this.id = "settings-page";
+      this.id = "settings-component";
+      this.route = {
+         path: "/settings/",
+         componentUrl: "./lib/platform/pages/components/settingsComponent.html",
+      };
       this.appPage = null;
-      this.storage = storage;
       this.templates = {};
       translate.on("recenterTitle", () => {
          if ($(".navbar").length) {
-            // console.log("recenterTitle");
             this.appPage.f7App.navbar.size(".navbar");
          }
       });
       this.isUpdateReady = false;
       this.appInfo = null;
       this.pfsBackupDate = null;
-      this.camera = camera;
       updater.on("installed", () => {
          this.isUpdateReady = true;
       });
@@ -58,7 +55,8 @@ class SettingsComponent extends EventEmitter {
    async init(appPage) {
       this.appPage = appPage;
       await this.prepareTemplates({
-         updateInfo: "lib/platform/pages/app/components/settings/update-info.html"
+         updateInfo:
+            "lib/platform/pages/components/settingsComponent-update-info.html",
       });
 
       // Initialize data.
@@ -66,7 +64,7 @@ class SettingsComponent extends EventEmitter {
          this.loadData("pfsBackupDate", null),
 
          // CodePush app info
-         this.loadData("appInfo", null)
+         this.loadData("appInfo", null),
       ]);
       this.appPage.f7App.getSize();
 
@@ -79,7 +77,10 @@ class SettingsComponent extends EventEmitter {
       updater.on("downloading", (percentage) => {
          this.$(".settings-update").hide();
          this.$("#update-progress").show();
-         this.appPage.f7App.progressbar.set("#update-progress .progressbar", percentage);
+         this.appPage.f7App.progressbar.set(
+            "#update-progress .progressbar",
+            percentage
+         );
       });
       updater.on("installing", () => {
          this.$(".settings-update-card").hide();
@@ -117,13 +118,13 @@ class SettingsComponent extends EventEmitter {
                   url: path,
                   success: (data /* , status, xhr */) => {
                      this.templates[name] = Template7.compile(data);
-                  }
+                  },
                })
             );
          })(path, name);
       }
       // await Promise.all(DFDs);
-      return $.when(...DFDs)
+      return $.when(...DFDs);
    }
 
    /**
@@ -140,7 +141,7 @@ class SettingsComponent extends EventEmitter {
     * @return {Promise}
     */
    loadData(key, defaultValue = null) {
-      return this.storage
+      return this.appPage.AB.storage
          .get(key)
          .then((value) => {
             if (typeof defaultValue == "function") {
@@ -153,13 +154,8 @@ class SettingsComponent extends EventEmitter {
             return value;
          })
          .catch((err) => {
-            console.log("Error reading from storage: " + key);
-            analytics.logError(err);
-
-            log.alert(
-               "<t>There was a problem reading your data</t>",
-               "<t>Sorry</t>"
-            );
+            console.error(err);
+            this.appPage.AB.analytics.logError(err);
          });
    }
 
@@ -178,12 +174,12 @@ class SettingsComponent extends EventEmitter {
             value = value.serialize();
          }
       }
-      return this.storage.set(key, value);
+      return this.appPage.AB.storage.set(key, value);
    }
 
    /**
     * Render the App Info card
-    * See update-info.html
+    * See settingsComponent-update-info.html
     */
    renderPackageInfo() {
       if (this.appInfo) {
@@ -199,7 +195,7 @@ class SettingsComponent extends EventEmitter {
     */
    getStorageSize() {
       return new Promise((resolve, reject) => {
-         this.camera.imageLookUp().then((data) => {
+         this.appPage.AB.camera.imageLookUp().then((data) => {
             resolve(data);
          });
       });
@@ -207,8 +203,8 @@ class SettingsComponent extends EventEmitter {
 
    deleteLocalImages() {
       return new Promise((resolve, reject) => {
-         this.camera.deleteLocalImages().then((data) => {
-            this.camera.imageLookUp().then((data) => {
+         this.appPage.AB.camera.deleteLocalImages().then((data) => {
+            this.appPage.AB.camera.imageLookUp().then((data) => {
                resolve(data);
             });
          });

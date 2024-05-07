@@ -208,7 +208,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             const obj = {};
             obj[pk] = value;
             return obj;
-         }),
+         })
       );
    }
 
@@ -227,7 +227,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          // if we couldn't find the reference to our datasource
          // someone should know about this!
          const dsError = new Error(
-            "ABViewDataCollection:platformInit(): unknown datasource",
+            "ABViewDataCollection:platformInit(): unknown datasource"
          );
          dsError.context = { settings: this.settings };
          this.AB.analytics.logError(dsError);
@@ -251,7 +251,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          // save our info:
          if (this._reducedConditions && this.__filterDatasource)
             this.__filterDatasource.setReducedConditions(
-               this._reducedConditions,
+               this._reducedConditions
             );
       } else {
          // this must be our 1st time through.
@@ -423,7 +423,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   await this.loadData(start, count);
 
                   return false; // <-- prevent the default "onDataRequest"
-               },
+               }
             );
          }
          if (!dataStore.___AD.onAfterLoadEvent) {
@@ -431,7 +431,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                "onAfterLoad",
                () => {
                   this.emit("loadData", {});
-               },
+               }
             );
          }
       }
@@ -476,8 +476,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await this.processIncomingData(
             (await myModel.local().findAll(cond)).filter((entry) =>
                // add it to our list if it passes our filter:
-               this.__filterDatasource.isValid(entry),
-            ),
+               this.__filterDatasource.isValid(entry)
+            )
          );
       }
       modelRemote.contextKey(ABDataCollectionCore.contextKey());
@@ -490,14 +490,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    // Mock QL so that the current calls still work.
    QL() {
       console.warn(
-         `Depreciating ABDatacollection.QL(). Try ABDatacollection.getAllRecords() instead?`,
+         `Depreciating ABDatacollection.QL(). Try ABDatacollection.getAllRecords() instead?`
       );
       return {
          value: (...args) => {
             if (args.length > 0)
                console.warn(
                   `ABDatacollection.QL().value() called with args`,
-                  args,
+                  args
                );
             return this.getAllRecords();
          },

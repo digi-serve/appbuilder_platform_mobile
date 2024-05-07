@@ -12,8 +12,6 @@
 //import $ from 'jquery';
 import EventEmitter from "eventemitter2";
 
-let currentPage = null;
-
 export default class Page extends EventEmitter {
    /**
     * @param {string} pageID
@@ -36,16 +34,6 @@ export default class Page extends EventEmitter {
       this.AB = null;
    }
 
-   /**
-    * Subclasses should override this if they have elements that need to be
-    * manually resized.
-    */
-   resize() {}
-
-   static resize() {
-      currentPage && currentPage.resize();
-   }
-
    async init(AB) {
       this.AB = AB;
       await this.render();
@@ -66,10 +54,7 @@ export default class Page extends EventEmitter {
       this.addCSS(this.css);
 
       $(window).on("resize", () => {
-         //if (this.$element.is(':visible')) { // <-- slower?
-         if (this.$element.css("display") != "none") {
-            this.resize();
-         }
+         if (this.$element.css("display") !== "none") {}
       });
 
       await this.addHTML(this.template);

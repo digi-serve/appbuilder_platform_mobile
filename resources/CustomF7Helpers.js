@@ -1,5 +1,5 @@
 "use strict";
-import appPage from "../pages/app/appPage.js";
+import appPage from "../pages/appPage.js";
 
 // Template7 is required
 if (typeof Template7 == "undefined") {

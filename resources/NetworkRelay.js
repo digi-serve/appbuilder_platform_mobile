@@ -8,11 +8,10 @@ import analytics from "./Analytics.js";
 import CryptoJS from "crypto-js";
 import JSEncrypt from "./jsencrypt.js";
 import Lock from "./Lock.js";
-import Log from "./Log";
 import NetworkRest from "./NetworkRest";
 import { storage } from "./Storage.js";
 
-var config = require("../../config/config.js");
+const config = require("../../config/config.js");
 const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
 const MAX_JOB_AGE = config.appbuilder.maxJobAge || 1000*60*60*24*7; // 7 days
 
@@ -29,14 +28,14 @@ class NetworkRelay extends NetworkRest {
     */
    static randomBytes(numBytes = 32) {
       // browser WebCrypto for secure random number generator
-      var numbers = new Uint8Array(numBytes);
+      const numbers = new Uint8Array(numBytes);
       // Note: window.crypto != CryptoJS
       window.crypto.getRandomValues(numbers); // 0 to 255
 
       // convert numbers to hex string
-      var hexString = "";
+      let hexString = "";
       numbers.forEach((num) => {
-         var h = num.toString(16); // '0' to 'ff'
+         const h = num.toString(16); // '0' to 'ff'
          if (h.length == 1) {
             hexString += "0" + h; // left pad with '0' if needed
          } else {
@@ -80,7 +79,7 @@ class NetworkRelay extends NetworkRest {
          document.addEventListener(
             "online",
             () => {
-               Log("NetorkRelay: network has come online.");
+               console.log("NetorkRelay: network has come online.");
 
                // make sure we are properly initialized
                // NOTE: should not be a problem to call even after we have
@@ -102,7 +101,7 @@ class NetworkRelay extends NetworkRest {
          document.addEventListener(
             "offline",
             () => {
-               Log("NetworkRelay: network has gone offline.");
+               console.log("NetworkRelay: network has gone offline.");
 
                // trigger an 'online' event
                this.emit("offline");
@@ -116,11 +115,11 @@ class NetworkRelay extends NetworkRest {
 
    prepare() {
       this.startListening();
-      Log("NetworkRelay: init()");
+      console.log("NetworkRelay: init()");
 
       //
       // make sure our Relay system is properly configured: authToken, aesKey, etc...
-      var init = super.init({
+      const init = super.init({
          baseURL: config.appbuilder.urlRelayServer
       });
    }
@@ -158,22 +157,22 @@ class NetworkRelay extends NetworkRest {
          //// Pull out our stored values:
          // AES key,  SyncStatus
 
-         var readAESKey = storage.get("aesKey").then((value) => {
+         const readAESKey = storage.get("aesKey").then((value) => {
             this.aesKey = value || null;
          });
 
-      var readSyncStatus = storage.get("relayState").then((value) => {
+      const readSyncStatus = storage.get("relayState").then((value) => {
         this.relayState = value || {
           aesKeySent: false,
           lastSyncDate: null,
         };
       });
 
-         var readAppUUID = storage.get("appUUID").then((value) => {
+         const readAppUUID = storage.get("appUUID").then((value) => {
             this.appUUID = value || null;
          });
 
-      var readTenantUUID = storage.get("tenantUUID").then((value) => {
+      const readTenantUUID = storage.get("tenantUUID").then((value) => {
         // "tenantUUID" was set in Account.js :: importCredentials()
         this.tenantUUID = value || null;
       });
@@ -202,10 +201,10 @@ class NetworkRelay extends NetworkRest {
 
             // skip this process if we are offline:
             .then(() => {
-               Log("NetworkRelay: init stage 2");
+               console.log("NetworkRelay: init stage 2");
                if (!this.isNetworkConnected()) {
-                  Log("NetworkRelay: network is offline");
-                  var offlineError = new Error(
+                  console.log("NetworkRelay: network is offline");
+                  const offlineError = new Error(
                      "NetworkRelay:init(): Skipping init() -> network is off line."
                   );
                   offlineError.code = "E_OFFLINE";
@@ -215,10 +214,10 @@ class NetworkRelay extends NetworkRest {
 
             // if no authToken, then we can exit because we probaly haven't had a QR code yet.
             .then(() => {
-               Log("NetworkRelay: init stage 3");
+               console.log("NetworkRelay: init stage 3");
                if (!account.authToken) {
-                  Log("NetworkRelay: no credentials found");
-                  var skipError = new Error("I want to skip the next step.");
+                  console.log("NetworkRelay: no credentials found");
+                  const skipError = new Error("I want to skip the next step.");
                   skipError.code = "E_SKIP";
                   throw skipError;
                }
@@ -226,13 +225,13 @@ class NetworkRelay extends NetworkRest {
 
             // have we done our initial /mobile/init and gotten an RSA key?
             .then(() => {
-               Log("NetworkRelay: init stage 4");
+               console.log("NetworkRelay: init stage 4");
                return this.initRSA();
             })
 
             // if no AES key (but we have a authToken), we can generate the AES key,
             .then(() => {
-               Log("NetworkRelay: init stage 5");
+               console.log("NetworkRelay: init stage 5");
                if (this.aesKey == null) {
                   // Generate AES key now.
                   this.aesKey = NetworkRelay.randomBytes(32);
@@ -244,27 +243,27 @@ class NetworkRelay extends NetworkRest {
             // if we haven't sent the AES key then we need to send it.
             .then(() => {
                // debugger
-               Log("NetworkRelay: init stage 7");
+               console.log("NetworkRelay: init stage 7");
                if (!this.relayState.aesKeySent) {
             // - MF contacts PublicServer.mobile/initresolve  { rsa_aes, userUUID, AppID, AppUUID }
 
-            var aesObj = {
+            const aesObj = {
               aesKey: this.aesKey,
             };
-            var plaintext = JSON.stringify(aesObj);
-            var encrypted = this.rsa.encrypt(plaintext);
+            const plaintext = JSON.stringify(aesObj);
+            const encrypted = this.rsa.encrypt(plaintext);
 
                   return storage.get("uuid").then((uuid) => {
                      // prevent offline attempt.
                      if (!this.isNetworkConnected()) {
-                        var error = new Error(
+                        const error = new Error(
                            "NetworkRelay:init(): prevent initresolve when no network conencted."
                         );
                         analytics.logError(error);
                         return;
                      }
 
-                     var data = {
+                     const data = {
                         rsa_aes: encrypted,
                 userUUID: uuid,
                 appID: config.appbuilder.maID,
@@ -289,18 +288,19 @@ class NetworkRelay extends NetworkRest {
 
             // at this point, we should be ready to go.
             .then(() => {
-               Log("NetworkRelay: init complete");
+               console.log("NetworkRelay: init complete");
                resolve();
             })
             .catch((err = {}) => {
                // if this was a simple skip attempt:
                if (err.code == "E_SKIP") {
-                  Log("init was skipped");
+                  console.error("init was skipped");
                   // actually, everything is just fine.
                   resolve();
                } else {
-                  Log.error("init failed", err);
+                  console.error("init failed", err);
                   err.message += `NetworkRelay:init(): error during init()`;
+                  console.error(err)
                   analytics.logError(err);
                   reject(err);
                }
@@ -315,16 +315,16 @@ class NetworkRelay extends NetworkRest {
     */
    initRSA() {
       return new Promise((resolve, reject) => {
-         Log("begin initRSA()");
+         console.log("begin initRSA()");
 
          storage
             .get("rsaPublicKey")
             .then((value) => {
-               Log("..stored RSA public key length: ", String(value).length);
+               console.log("..stored RSA public key length: ", String(value).length);
                if (value && String(value).length > 50) {
                   return value;
                } else {
-                  Log("..fetching RSA public key from server");
+                  console.log("..fetching RSA public key from server");
                   return super
               .get({
                 url: config.appbuilder.routes.mobileInit, // "/mobile/init",
@@ -333,7 +333,7 @@ class NetworkRelay extends NetworkRest {
                 },
               })
               .then((data) => {
-                Log("..got server response");
+                console.log("..got server response");
                         // data should be:
                         // {
                         //  userUUID:'<string>',
@@ -347,26 +347,26 @@ class NetworkRelay extends NetworkRest {
                   storage.set("rsaPublicKey", data.rsaPublic),
                   storage.set("appPolicy", data.appPolicy),
                 ]).then(() => {
-                  Log("..saved server response");
+                  console.log("..saved server response");
                   return data.rsaPublic;
                         });
                      });
                }
             })
             .then((rsaKey) => {
-               Log("... pre .rsa config");
+               console.log("... pre .rsa config");
                // now configure our RSA library with our public key
                this.rsaPublicKey = rsaKey;
                this.rsa.setKey(this.rsaPublicKey);
 
-               Log("initRSA() done");
+               console.log("initRSA() done");
                resolve(rsaKey);
             })
             .catch((err = {}) => {
-               Log("initRSA error", err.message || err);
+               console.error("initRSA error", err.message || err);
                err.message += `NetworkRelay:initRSA(): error during initRSA()`;
                analytics.logError(err);
-               Log.error("::: 2) error trying to get rsa key:", err);
+               console.error("::: 2) error trying to get rsa key:", err);
 
                // Update error to make it more informative than a generic
                // ajax failure.
@@ -387,14 +387,13 @@ class NetworkRelay extends NetworkRest {
     * @return {string}
     */
    encrypt(data) {
-      var encoded = "";
+      let encoded = "";
 
       if (data && this.aesKey) {
-         // var startTime = new Date().getTime();
-         var plaintext = JSON.stringify(data);
+         const plaintext = JSON.stringify(data);
 
-         var iv = NetworkRelay.randomBytes(16);
-         var ciphertext = CryptoJS.AES.encrypt(
+         const iv = NetworkRelay.randomBytes(16);
+         const ciphertext = CryptoJS.AES.encrypt(
             plaintext,
             CryptoJS.enc.Hex.parse(this.aesKey),
             { iv: CryptoJS.enc.Hex.parse(iv) }
@@ -402,12 +401,6 @@ class NetworkRelay extends NetworkRest {
 
          // <base64 encoded cipher text>:::<hex encoded IV>
          encoded = ciphertext.toString() + ":::" + iv;
-         // var diff = new Date().getTime() - startTime;
-         // if (diff > 999) {
-         //    console.warn("-----> Network stop encrypting ", diff);
-         // } else {
-         //    console.log("-----> Network stop encrypting ", diff);
-         // }
       }
 
       return encoded;
@@ -421,24 +414,23 @@ class NetworkRelay extends NetworkRest {
     * @return {obj}
     */
    decrypt(data) {
-      var finalData = null;
+      let finalData = null;
 
       if (typeof data == "string" && data.match(":::")) {
-         // var startTime = new Date().getTime();
-         var dataParts = data.split(":::");
-         var ciphertext = dataParts[0];
-         var iv = dataParts[1];
-         var plaintext;
+         const dataParts = data.split(":::");
+         const ciphertext = dataParts[0];
+         const iv = dataParts[1];
+         let plaintext;
          // Decrypt AES
          try {
-            var decrypted = CryptoJS.AES.decrypt(
+            const decrypted = CryptoJS.AES.decrypt(
                ciphertext,
                CryptoJS.enc.Hex.parse(this.aesKey),
                { iv: CryptoJS.enc.Hex.parse(iv) }
             );
             plaintext = decrypted.toString(CryptoJS.enc.Utf8);
          } catch (err) {
-            Log.error("Error decrypting incoming relay data", data, err);
+            console.error("Error decrypting incoming relay data", data, err);
             err.message += `ABRelay.decrypt(): error decrypting incoming relay data`;
             analytics.logError(err);
 
@@ -455,12 +447,6 @@ class NetworkRelay extends NetworkRest {
             analytics.logError(err);
             finalData = plaintext;
          }
-         // var diff = new Date().getTime() - startTime;
-         // if (diff > 999) {
-         //    console.warn("-----> Network stop decrypting ", diff);
-         // } else {
-         //    console.log("-----> Network stop decrypting ", diff);
-         // }
       }
 
       return finalData;
@@ -476,7 +462,7 @@ class NetworkRelay extends NetworkRest {
       if (!this.isPolling) {
          this.isPolling = true;
 
-         var checkIn = () => {
+         const checkIn = () => {
             // if we are ready to talk to MCC:
             if (
                this.relayState &&
@@ -493,16 +479,16 @@ class NetworkRelay extends NetworkRest {
               return responses || [];
                   })
                   .then((responses) => {
-                     var all = [];
+                     const all = [];
                      responses.forEach((r) => {
                         all.push(this.processResponse(r));
                      });
                      return Promise.all(all);
                   })
                   .then(() => {
-                     var anyLeft = false;
+                     let anyLeft = false;
                      /* eslint-disable-next-line no-unused-vars */
-                     for (var jt in this.jobTokens) {
+                     for (const jt in this.jobTokens) {
                         anyLeft = true;
                      }
 
@@ -568,13 +554,13 @@ class NetworkRelay extends NetworkRest {
             .then(() => {
                this.jobPackets[response.jobToken] =
                   this.jobPackets[response.jobToken] || [];
-               var packets = this.jobPackets[response.jobToken];
+               const packets = this.jobPackets[response.jobToken];
                packets.push(response);
 
                // now if we have a complete set, combine and resolve:
                if (packets.length >= response.totalPackets) {
                   // not sure what order packets are in so hash them:
-                  var hash = {};
+                  const hash = {};
                   packets.forEach((p) => {
                      hash[p.packet] = p;
                   });
@@ -582,7 +568,7 @@ class NetworkRelay extends NetworkRest {
                   // Sometimes there may be missing packets even in a "complete"
                   // set. Perhaps from some of them being duplicates? Skip the 
                   // process if that's the case here.
-                  for (var i = 0; i < response.totalPackets; i++) {
+                  for (let i = 0; i < response.totalPackets; i++) {
                      if (!hash[i]) {
                         console.warn(
                            `Weird. Missing packet[${i}/${response.totalPackets - 1}]`, 
@@ -591,7 +577,7 @@ class NetworkRelay extends NetworkRest {
 
                         // Compare the duplicate packets.
                         let packetNums = new Set();
-                        for (var j = 0; j < packets.length; j++) {
+                        for (let j = 0; j < packets.length; j++) {
                            let p = packets[j];
                            if (!packetNums.has(p.packet)) {
                               packetNums.add(p.packet);
@@ -600,7 +586,7 @@ class NetworkRelay extends NetworkRest {
                            else {
                               let packetA = p;
                               let packetB;
-                              for (var k = 0; k < j; k++) {
+                              for (let k = 0; k < j; k++) {
                                  if (packets[k].packet == packetA.packet) {
                                     packetB = packets[k];
                                     break;
@@ -635,12 +621,12 @@ class NetworkRelay extends NetworkRest {
                   }
 
                   // then pull off 0 -> packets.length
-                  var encryptedData = "";
-                  for (var i = 0; i < response.totalPackets; i++) {
+                  let encryptedData = "";
+                  for (let i = 0; i < response.totalPackets; i++) {
                      encryptedData += hash[i].data;
                   }
 
-                  var compiledResponse = {
+                  const compiledResponse = {
                      appUUID: response.appUUID,
                      data: encryptedData,
                      jobToken: response.jobToken
@@ -671,8 +657,8 @@ class NetworkRelay extends NetworkRest {
     * @response {Promise}
     */
    resolveJob(response) {
-      var data = null;
-      var error = null;
+      let data = null;
+      let error = null;
       return (
          Promise.resolve()
 
@@ -719,7 +705,7 @@ class NetworkRelay extends NetworkRest {
                return this.getTokens();
             })
             .then((tokens) => {
-               var foundToken = this.jobTokens[response.jobToken];
+               const foundToken = this.jobTokens[response.jobToken];
                if (foundToken) {
                   // indicate an error if one was passed back:
                   if (error) {
@@ -729,7 +715,7 @@ class NetworkRelay extends NetworkRest {
                   // this.emit(foundToken.key, foundToken.context, data);
                   return foundToken;
                } else {
-                  Log.error(
+                  console.error(
                      "!!! Unknown job token in response packet:",
                      response.jobToken,
                      tokens,
@@ -955,8 +941,8 @@ class NetworkRelay extends NetworkRest {
       params.headers["tenant-token"] = config.appbuilder.tenantID;
 
       // ok, the given params, are the DATA we want to send to the RelayServer
-      var data = this.encrypt(params);
-      var jobToken = this.uuid();
+      const data = this.encrypt(params);
+      const jobToken = this.uuid();
 
       // Maybe a UI spinner can listen for this
       this.emit("sending.start");
@@ -965,7 +951,7 @@ class NetworkRelay extends NetworkRest {
       return Promise.resolve()
          .then(() => {
             // Split up large data into smaller packets
-            var packets = [];
+            const packets = [];
             while (data.length >= MAX_PACKET_SIZE) {
                packets.push(data.slice(0, MAX_PACKET_SIZE));
                data = data.slice(MAX_PACKET_SIZE, data.length);

@@ -2,14 +2,14 @@
  * initBootupTimeout.js
  * prepare a timeout for the whole App Bootup process.
  */
-var initTimeout = null;
+let initTimeout = null;
 export default {
    init: (timeoutVal = 10000) => {
       // If app does not init within 10 seconds, something is probably wrong
       initTimeout = setTimeout(() => {
-         var linkText = " ";
-         var isAndroid = navigator.userAgent.match(/Android/);
-         var isCrosswalk = navigator.userAgent.match(/Crosswalk/);
+         let linkText = " ";
+         const isAndroid = navigator.userAgent.match(/Android/);
+         const isCrosswalk = navigator.userAgent.match(/Crosswalk/);
 
          // For Android, provide a link to download the Crosswalk version
          if (isAndroid && !isCrosswalk) {
@@ -37,5 +37,5 @@ export default {
 
    clear: () => {
       clearTimeout(initTimeout);
-   }
+   },
 };

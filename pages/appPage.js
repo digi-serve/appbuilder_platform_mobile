@@ -7,23 +7,19 @@
  */
 "use strict";
 
-import Page from "../../resources/Page.js";
+import Page from "../resources/Page.js";
 
-import ABApplicationList from "../../../applications/applications.js";
-import log from "../../resources/Log.js";
+import ABApplicationList from "../../applications/applications.js";
 import Shake from "shake.js";
-import updater from "../../resources/Updater.js";
-import config from "../../../config/config.js";
+import updater from "../resources/Updater.js";
+import config from "../../config/config.js";
+import appFeedback from "../resources/AppFeedback.js";
 
-import appFeedback from "../../resources/AppFeedback.js";
-
-import NavMenu from "../../../applications/navMenu/app.js";
+import NavMenu from "../../applications/navMenu/app.js";
 const navMenu = new NavMenu();
 
-import Logs from "../../../applications/Logs/app.js";
-const Logger = new Logs();
-
-import settingsComponent from "./components/settings/settingsComponent.js";
+import landingComponent from "./components/landingComponent.js";
+import settingsComponent from "./components/settingsComponent.js";
 
 const MAX_BACK_PRESSES = 3;
 const WAIT_FOR_BUSY = 1000;
@@ -32,7 +28,11 @@ export class AppPage extends Page {
    /**
     */
    constructor() {
-      super("sdc-app", "lib/platform/pages/app/appPage.html");
+      super(
+         "app-page",
+         "lib/platform/pages/appPage.html",
+         "lib/platform/pages/appPage.css"
+      );
 
       // Are the AB Applications in the middle of being reset?
       // TODO (Guy): Refactor this in the future;
@@ -47,7 +47,10 @@ export class AppPage extends Page {
       this.datacollections = [];
       this.updateOnLogin = true;
       this.f7App = null;
-      this.components = {};
+      this.components = {
+         landingComponent,
+         settingsComponent,
+      };
       this.menuView = null;
       this.logView = null;
       this.appView = null;
@@ -74,7 +77,7 @@ export class AppPage extends Page {
             () => {
                this.activateFeedback();
             },
-            false,
+            false
          );
 
          // Android hardware back button
@@ -83,7 +86,7 @@ export class AppPage extends Page {
             () => {
                this.appView.router.back();
             },
-            false,
+            false
          );
          this.AB.network.on("*", (message) => {
             if (this._currentRelayProgressBarTarget == null) return;
@@ -95,7 +98,7 @@ export class AppPage extends Page {
             this.f7App.dialog
                .alert(
                   "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
-                  "<t>No Network Connection</t>",
+                  "<t>No Network Connection</t>"
                )
                .open();
          });
@@ -129,7 +132,7 @@ export class AppPage extends Page {
                      // Import pre-token from the URL. Generate new authToken.
                      await this.AB.account.importCredentials(
                         jrrMatch[1],
-                        hash.match(/tenant=(\w+)/)?.[1],
+                        hash.match(/tenant=(\w+)/)?.[1]
                      );
                   }
                }
@@ -157,7 +160,7 @@ export class AppPage extends Page {
                               "<t>Problem authenticating with server</t>",
                               () => {
                                  resolve();
-                              },
+                              }
                            )
                            .open();
                         break;
@@ -169,7 +172,7 @@ export class AppPage extends Page {
                               "<t>Welcome to conneXted!</t>",
                               () => {
                                  resolve();
-                              },
+                              }
                            )
                            .open();
                         // if we are in chrome, maybe we report no token. Else is expected behavior
@@ -184,7 +187,7 @@ export class AppPage extends Page {
                               "<t>Error</t>",
                               () => {
                                  resolve();
-                              },
+                              }
                            )
                            .open();
                         break;
@@ -195,16 +198,8 @@ export class AppPage extends Page {
             // TODO: Refactor later.
             this.AB.busy.show("Preparing components.");
             const routes = [
-               {
-                  path: "/",
-                  componentUrl:
-                     "./lib/platform/pages/app/components/landing/landingComponent.html",
-               },
-               {
-                  path: "/settings/",
-                  componentUrl:
-                     "./lib/platform/pages/app/components/settings/settingsComponent.html",
-               },
+               this.components.landingComponent.route,
+               this.components.settingsComponent.route,
                {
                   path: "/welcomePage/",
                   componentUrl:
@@ -249,6 +244,7 @@ export class AppPage extends Page {
             // Preparing components.
             try {
                await Promise.all([
+                  this.components.landingComponent.init(this),
                   this.components.settingsComponent.init(this),
                   this.components.welcomeComponent.init(this),
                ]);
@@ -274,7 +270,7 @@ export class AppPage extends Page {
                   dcComponent.datacollections.forEach((dc) => {
                      if (
                         this.datacollections.find(
-                           (existingDC) => existingDC.id === dc.id,
+                           (existingDC) => existingDC.id === dc.id
                         ) == null
                      )
                         this.datacollections.push(dc);
@@ -289,7 +285,7 @@ export class AppPage extends Page {
                   app.datacollections.forEach((dc) => {
                      if (
                         this.datacollections.find(
-                           (existingDC) => existingDC.id === dc.id,
+                           (existingDC) => existingDC.id === dc.id
                         ) == null
                      )
                         this.datacollections.push(dc);
@@ -300,7 +296,7 @@ export class AppPage extends Page {
                      await pendingInitializedApp;
                   } catch (err) {
                      console.error(
-                        `Failed to initialize the app id: ${app.ID}`,
+                        `Failed to initialize the app id: ${app.ID}`
                      );
                      console.error(err.message);
                      this.AB.analytics.logError(err);
@@ -321,7 +317,7 @@ export class AppPage extends Page {
                await this.AB.network.queueFlush();
             } catch (err) {
                this.AB.analytics.log(
-                  'storage.emit("ready"): unable to flush Network Queue',
+                  'storage.emit("ready"): unable to flush Network Queue'
                );
                this.AB.analytics.logError(err);
             }
@@ -336,12 +332,6 @@ export class AppPage extends Page {
             this.menuView = this.f7App.views.create("#left-view", {
                url: "/nav/",
                routes: navMenu.routes,
-            });
-
-            // Log view
-            this.logView = this.f7App.views.create("#right-view", {
-               url: "/log/",
-               routes: Logger.routes,
             });
             this.appView = this.f7App.views.create("#main-view", {
                url: "/",
@@ -381,12 +371,12 @@ export class AppPage extends Page {
             this._relayJobsDone += 1;
          }
          var percentage = Math.round(
-            (this._relayJobsDone / this._relayJobsTotal) * 100 || 0,
+            (this._relayJobsDone / this._relayJobsTotal) * 100 || 0
          );
          this.f7App.progressbar.set(
             `#${this._currentRelayProgressBarTarget} .progressbar`,
             percentage,
-            100,
+            100
          );
       } else if (message) {
          // report of empty inbox can be sent here for some reason?
@@ -450,7 +440,6 @@ export class AppPage extends Page {
                analytics: this.AB.analytics,
                busy: this.AB.busy,
                camera: this.AB.camera,
-               log,
                network: this.AB.network,
                storage: this.AB.storage,
                updater,
@@ -474,16 +463,16 @@ export class AppPage extends Page {
       // TODO (Guy): Refactor these in the future.
       this.applications = ABApplicationList.map((App) => new App());
       const feedbackComponent = this.applications.find(
-         (app) => app.ID === "Feedback",
+         (app) => app.ID === "Feedback"
       );
       const inboxComponent = this.applications.find(
-         (app) => app.ID === "INBOX",
+         (app) => app.ID === "INBOX"
       );
       const profileComponent = this.applications.find(
-         (app) => app.ID === "PROFILE",
+         (app) => app.ID === "PROFILE"
       );
       const welcomeComponent = this.applications.find(
-         (app) => app.ID === "WELCOME",
+         (app) => app.ID === "WELCOME"
       );
       this.applications = this.applications.filter((app) => {
          switch (app.ID) {
@@ -501,12 +490,7 @@ export class AppPage extends Page {
       this.components.feedbackComponent = feedbackComponent;
       this.components.inboxComponent = inboxComponent;
       this.components.profileComponent = profileComponent;
-      this.components.settingsComponent = settingsComponent;
       this.components.welcomeComponent = welcomeComponent;
-
-      // Log function can use F7 to create alert dialogs
-      log.init({ f7App: this.f7App });
-
       if (!this._initializeListener) this.emit("init.listener");
    }
 
@@ -547,7 +531,6 @@ export class AppPage extends Page {
          await this.AB.account.importCredentials(authToken, tenantUUID);
          // await this.fetchApplicationData(true);
       }
-
    }
 
    getApplicationByID(id) {
@@ -608,11 +591,11 @@ export class AppPage extends Page {
          this.f7App.dialog
             .alert(
                "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
-               "<t>Sorry</t>",
+               "<t>Sorry</t>"
             )
             .open();
          this.AB.analytics.log(
-            "Timeout (90 secs) during fetchApplicationData()",
+            "Timeout (90 secs) during fetchApplicationData()"
          );
       }, 90000);
 
@@ -642,7 +625,7 @@ export class AppPage extends Page {
          });
       console.assert(
          targetDC,
-         "appPage.fetchRecordData() could not find the datacollection",
+         "appPage.fetchRecordData() could not find the datacollection"
       );
       return targetDC.reloadData();
    }
@@ -681,7 +664,7 @@ export class AppPage extends Page {
       this.emit("resetComplete");
 
       // wipe the cache and hard reload
-      if(includeLocal) updater.updateNow();
+      if (includeLocal) updater.updateNow();
    }
 
    /**
@@ -694,7 +677,7 @@ export class AppPage extends Page {
          console.log("Feedback error", err);
          this.f7App.dialog.alert(
             "<t>There was a problem sending feedback</t>",
-            "<t>Sorry</t>",
+            "<t>Sorry</t>"
          );
          appFeedback.close();
       }

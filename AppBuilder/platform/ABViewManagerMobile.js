@@ -1,2 +1,3 @@
-// const ABViewManagerMobile = require("../core/ABViewManagerMobileCore");
-module.exports =  {};
+// const ABViewManagerMobileCore = require("../core/ABViewManagerMobileCore");
+// module.exports = class ABViewManagerMobile extends ABViewManagerMobileCore {};
+module.exports = class ABViewManagerMobile {};

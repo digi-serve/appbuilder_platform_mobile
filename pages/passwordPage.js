@@ -4,10 +4,10 @@
  */
 "use strict";
 
-import analytics from "../../resources/Analytics.js";
-import Page from "../../resources/Page.js";
-import { storage } from "../../resources/Storage.js";
-import fileStorage from "../../resources/FileStorage.js";
+import analytics from "../resources/Analytics.js";
+import Page from "../resources/Page.js";
+import { storage } from "../resources/Storage.js";
+import fileStorage from "../resources/FileStorage.js";
 
 // For development only
 const disableEncryption = false;
@@ -18,8 +18,8 @@ class PasswordPage extends Page {
    constructor() {
       super(
          "password-page",
-         "lib/platform/pages/password/password.html",
-         "lib/platform/pages/password/passwordPage.css",
+         "lib/platform/pages/passwordPage.html",
+         "lib/platform/pages/passwordPage.css"
       );
    }
 
@@ -55,7 +55,7 @@ class PasswordPage extends Page {
                this.$("div.chrome-install-instructions").hide();
                this.$("div.safari-install-instructions").show();
             }
-            
+
             // Detects if device is in standalone mode
             const isInStandaloneMode = () =>
                "standalone" in window.navigator && window.navigator.standalone;
@@ -68,7 +68,6 @@ class PasswordPage extends Page {
                // if the user is on iOS and Safari, and it is their first time using the app,
                // show a message explaining that they should use Chrome.
                // class: use-chrome-warning
-               
             }
          } else {
             this.$unlock.show();
@@ -110,7 +109,8 @@ class PasswordPage extends Page {
                })
                .catch((err = {}) => {
                   this.emit("loadingDone");
-                  err.message += "Error setting password passwordPage.js - form submit";
+                  err.message +=
+                     "Error setting password passwordPage.js - form submit";
                   $.alert(err.message || err, "<t>Error</t>");
                   analytics.logError(err);
                });
@@ -128,9 +128,9 @@ class PasswordPage extends Page {
                Promise.all([storage.clearAll(), fileStorage.deleteAll()]).then(
                   () => {
                      document.location.reload();
-                  },
+                  }
                );
-            },
+            }
          );
       });
 
@@ -154,14 +154,14 @@ class PasswordPage extends Page {
          // now, what are we supposed to trigger in order to get our reset started?
          unlockFunction($button);
       });
-      // 
+      //
       /**
        * @function unlockFunction
        * arrow function to keep the context of "this"
        * param {void}
        */
       let unlockFunction = ($button) => {
-         console.error("passwordPage.js unlockFunction()")
+         console.error("passwordPage.js unlockFunction()");
 
          this.$unlock_p1.blur();
          this.$unlock.find(".warning-wrong-pass").hide();
@@ -193,7 +193,7 @@ class PasswordPage extends Page {
                   this.$unlock_p1.removeClass("wrong");
                }, 1000);
             });
-      }
+      };
    }
 
    show() {

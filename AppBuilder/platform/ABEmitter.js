@@ -5,8 +5,7 @@
  *
  */
 
-var EventEmitter = require("eventemitter2");
-
+const EventEmitter = require("eventemitter2");
 module.exports = class ABEmitter extends EventEmitter {
    constructor() {
       super({ maxListeners: 0 });

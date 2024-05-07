@@ -1,5 +1,5 @@
 /**
- * @class ABMobileApp
+ * @class ABAppController
  *
  * Is responsible for managing all the routes/data/templates for a given
  * application shown under an appPage.
@@ -57,7 +57,7 @@ export default class ABAppController extends EventEmitter2 {
       const initTimeout = setTimeout(() => {
          this.appPage.AB.analytics.log(
             "ABApplication timed out during init(): " +
-               this.appPage.application.id,
+               this.appPage.application.id
          );
       }, this.initTimeout);
 
@@ -75,8 +75,10 @@ export default class ABAppController extends EventEmitter2 {
             }
          });
 
-         Promise.all(allInits)
-            .then(() => {
+         (async () => {
+            try {
+               await Promise.all(allInits);
+
                // make sure our site user data has been properly
                // loaded. (1st load this needs to come from server call)
                if (
@@ -99,18 +101,15 @@ export default class ABAppController extends EventEmitter2 {
                   }
                });
 
-               return Promise.all(allLoads);
-            })
-            .then(() => {
                this.status = "ready";
                // NOTE: the setter for .status emits it's value:
 
                clearTimeout(initTimeout);
                resolve();
-            })
-            .catch((err) => {
+            } catch (err) {
                reject(err);
-            });
+            }
+         })();
       });
    }
 
@@ -120,7 +119,7 @@ export default class ABAppController extends EventEmitter2 {
     * @return {bool}
     */
    isReady() {
-      return this.status == "ready";
+      return this.status === "ready";
    }
 
    /**
@@ -150,6 +149,7 @@ export default class ABAppController extends EventEmitter2 {
     * data from the Server.
     */
    clearSystemData() {
+      // TODO:
       return Promise.resolve();
    }
 
@@ -161,7 +161,7 @@ export default class ABAppController extends EventEmitter2 {
     */
    dataCollection(key) {
       return this.datacollections.find(
-         (dc) => dc.id === key || dc.name === key || dc.label == key,
+         (dc) => dc.id === key || dc.name === key || dc.label == key
       );
    }
 
@@ -179,59 +179,31 @@ export default class ABAppController extends EventEmitter2 {
     * @return {array}
     */
    listItems(objKey, fieldKey, langCode = "en") {
-      var results = [];
+      const results = [];
+      const object = this.appPage.AB.objectByID(objKey);
+      if (object == null) return results;
+      const field = object.fields(
+         (f) => f.id === fieldKey || f.columnName === fieldKey
+      )[0];
+      if (field == null) return results;
 
-      var object = this.appPage.AB.objectByID(objKey);
-      if (!object) return results;
-
-      var field = object.fields((f) => {
-         return f.id == fieldKey || f.columnName == fieldKey;
-      })[0];
-      if (!field) return results;
-
-      //// TODO: refactor this to reuse ABFieldListCore.options()
       field.settings.options.forEach((o) => {
-         var item = {
+         const item = {
             id: o.id,
             name: o.text,
          };
-
-         var label = o.text;
-         var properLanguage = (o.translations || []).find((t) => {
+         let label = o.text;
+         const properLanguage = (o.translations || []).find((t) => {
             return t.language_code == langCode;
          });
          if (properLanguage) {
             label = properLanguage.text;
          }
-
          item.label = label;
-
          results.push(item);
       });
 
       return results;
-   }
-
-   /**
-    * listItemID()
-    * return the id (value) of a requested list item option.
-    *
-    * @param {string} objKey  either the ABObject.id or it's .name
-    * @param {string} fieldKey either the ABField.id or it's .name
-    * @param {string} optionText the .label or .text of an option
-    * @param {string} langCode the language translation of the item to return
-    * @return {array}
-    */
-   listItemID(objKey, fieldKey, optionText, langCode = "en") {
-      var statusOptions = this.listItems(objKey, fieldKey, langCode);
-      var requestedOption = statusOptions.find((o) => {
-         return (
-            o.text == optionText ||
-            o.name == optionText ||
-            o.label == optionText
-         );
-      });
-      return requestedOption.id || null;
    }
 
    /**
@@ -242,129 +214,6 @@ export default class ABAppController extends EventEmitter2 {
     */
    object(key) {
       return this.appPage.AB.objectByID(key);
-   }
-
-   /**
-    * objByID()
-    * return an ABObject from a given id.
-    * @param {string} id
-    * @return {ABObject} or {undefined} if not found.
-    */
-   objByID(id) {
-      return this.appPage.application.objects((o) => {
-         return o.id == id;
-      })[0];
-   }
-
-   /**
-    * pathCSS()
-    * return the path to an associated CSS file for this app.
-    *
-    * used in www/index.js bootup process to add in any application specific
-    * css resources.
-    *
-    * if no css file is present, then return null.
-    *
-    * @return {string} path to css file:
-    */
-   pathCSS() {
-      return null;
-   }
-
-   /**
-    * Takes an array produced by lookupData() and indexes the data labels
-    * according to the primary key. If it has multilingual labels, they will
-    * be further indexed by language_code.
-    *
-    * @param {array} dataArray
-    *  [
-    *      { <primary_key>, <string label>, ... },
-    *      { ... },
-    *      ...
-    *  ]
-    *      OR
-    *  [
-    *      { <primary_key>, translations: [ ... ], ... },
-    *      { ... },
-    *      ...
-    *  ]
-    * @param {string} [primaryKeyField]
-    *      Optional. If not specified, the primary key field will be guessed
-    *      automatically from fields named "id" or ending in "id".
-    * @param {string} [labelField]
-    *      Optional. If not specified, the label field will be guessed
-    *      automatically from field names ending in "label".
-    * @return {object}
-    *  {
-    *      <primary_key>: <string label>,
-    *      ...
-    *  }
-    *      OR
-    *  {
-    *      <primary_key>: { <language_code>: <string label>, ... },
-    *      ...
-    *  }
-    */
-   indexLookupData(dataArray, primaryKeyField = null, labelField = null) {
-      var results = {};
-
-      if (dataArray[0]) {
-         // Examine first item for field names
-         var item = dataArray[0];
-         var fieldNames = Object.keys(item);
-
-         // Best guess at what the primary key field is
-         if (!primaryKeyField) {
-            if (item.id) {
-               // Fieldname is literally "id"
-               primaryKeyField = "id";
-            } else {
-               // First fieldname that ends in "id"
-               var keyFields = fieldNames.find((f) => {
-                  return f.match(/id$/);
-               });
-               primaryKeyField = keyFields[0];
-            }
-         }
-
-         if (!labelField && item.translations && item.translations[0]) {
-            // Multilingual labels
-            for (var f in item.translations[0]) {
-               labelField = f;
-               if (f.match(/label$/)) {
-                  labelField = f;
-                  break;
-               }
-            }
-         } else if (!labelField) {
-            // Simple labels
-            /* eslint-disable-next-line no-redeclare */
-            for (var f in item) {
-               labelField = f;
-               if (f.match(/label$/)) {
-                  labelField = f;
-                  break;
-               }
-            }
-         }
-
-         // Convert to indexed array
-         dataArray.forEach((item) => {
-            var label = item[labelField];
-
-            // For multilingual, index the translations
-            if (Array.isArray(item.translations)) {
-               label = {};
-               item.translations.forEach((trans) => {
-                  label[trans.language_code] = trans[labelField];
-               });
-            }
-
-            results[item[primaryKeyField]] = label;
-         });
-      }
-
-      return results;
    }
 
    /**
@@ -386,7 +235,7 @@ export default class ABAppController extends EventEmitter2 {
    }
 
    refStatusKey() {
-      let id = this.id || this?.AB.uuid() || "NA"
-      return id + "-init-status";
+      let id = this.id || this.AB.uuid() || "NA";
+      return `${this.id || this.AB.uuid() || "NA"}-init-status`;
    }
 }

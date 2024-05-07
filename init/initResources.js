@@ -39,5 +39,5 @@ export default {
          backgroundTimeout(config.backgroundTimeout.duration);
 
       return Promise.resolve(); // nothing async, so just return
-   }
+   },
 };

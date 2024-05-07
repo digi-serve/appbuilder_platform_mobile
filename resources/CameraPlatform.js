@@ -20,7 +20,6 @@
 
 import async from "async";
 import EventEmitter from "eventemitter2";
-import Log from "./Log";
 import uuid from "uuid/v1";
 
 import { storage } from "../../platform/resources/Storage.js";
@@ -134,7 +133,7 @@ class CameraPlatform extends EventEmitter {
                   .catch(reject);
             },
             (err) => {
-               Log("CameraPlatform:getCameraPhoto():Error", err);
+               console.error("CameraPlatform:getCameraPhoto():Error", err);
                reject(err);
             },
             {
@@ -179,7 +178,7 @@ class CameraPlatform extends EventEmitter {
                   .catch(reject);
             },
             (err) => {
-               Log("Error", err);
+               console.error("Error", err);
                reject(err);
             },
             {
@@ -249,7 +248,7 @@ class CameraPlatform extends EventEmitter {
                            next();
                         },
                         (err) => {
-                           Log(
+                           console.error(
                               "File not found copying from data directory",
                               err
                            );
@@ -262,7 +261,7 @@ class CameraPlatform extends EventEmitter {
                                  next();
                               },
                               (err) => {
-                                 Log("Error while trying to copy photo");
+                                 console.error("Error while trying to copy photo");
                                  next(err);
                               }
                            );
@@ -379,7 +378,7 @@ class CameraPlatform extends EventEmitter {
                         next();
                      },
                      (err) => {
-                        Log("Unable to get file from URI", imageURI, err);
+                        console.error("Unable to get file from URI", imageURI, err);
                         next(err);
                      }
                   );
@@ -393,7 +392,7 @@ class CameraPlatform extends EventEmitter {
                         next();
                      },
                      (err) => {
-                        Log("Unable to copy file", err);
+                        console.error("Unable to copy file", err);
                         next(err);
                      }
                   );
@@ -408,7 +407,7 @@ class CameraPlatform extends EventEmitter {
                         next();
                      },
                      (err) => {
-                        Log("Unable to find copied file", err);
+                        console.error("Unable to find copied file", err);
                         next(err);
                      }
                   );
@@ -631,7 +630,7 @@ class CameraPlatform extends EventEmitter {
                });
             },
             (err) => {
-               Log("Unable to find photo file", err);
+               console.error("Unable to find photo file", err);
                reject(err);
             }
          );
@@ -750,7 +749,7 @@ class CameraPlatform extends EventEmitter {
                         next();
                      },
                      (err) => {
-                        Log("Error while trying to rename photo");
+                        console.error("Error while trying to rename photo");
                         next(err);
                      }
                   );
@@ -823,7 +822,7 @@ class CameraPlatform extends EventEmitter {
                         next();
                      },
                      (err) => {
-                        Log("Error creating file: " + filename, err);
+                        console.error("Error creating file: " + filename, err);
                         next(err);
                      }
                   );
@@ -836,7 +835,7 @@ class CameraPlatform extends EventEmitter {
                      };
 
                      fileWriter.onerror = (err) => {
-                        Log("Error writing to file: " + filename, err);
+                        console.error("Error writing to file: " + filename, err);
                         next(err);
                      };
 
