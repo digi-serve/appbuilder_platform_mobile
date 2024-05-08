@@ -133,36 +133,10 @@ class CameraPWA extends EventEmitter {
     */
    async _recurseShrink(file, options = {}) {
       if (file.size < MAX_IMAGE_SIZE) return file;
-      let recurseShrinkTimeout;
-      let compressionTimes = 0;
-      const compressFile = async (file) => {
-         compressedFile = await fileStorage.compress(file);
-         compressionTimes++;
-         if (compressedFile.size > MAX_IMAGE_SIZE)
-            return await compressFile(compressedFile);
-         return compressedFile;
-      };
       return await new Promise((resolve, reject) => {
-         if (options.timeout != null)
-            recurseShrinkTimeout = setTimeout(() => {
-               reject(
-                  new Error(
-                     `Timeout compressing image. Try a smaller one? type: ${file?.type} size: ${file?.size} timeout:t} qualityValue: gain: factor:} times:${compressionTimes}`,
-                  ),
-               );
-               recurseShrinkTimeout = null;
-            }, options.timeout);
          const processCompression = async () => {
-            let compressedFile = await fileStorage.compress(file, {
-               convertSize: MAX_IMAGE_SIZE,
-            });
-            compressionTimes++;
-            if (compressedFile.size > MAX_IMAGE_SIZE)
-               compressedFile = await compressFile(compressedFile);
+            let compressedFile = await fileStorage.compress(file);
             resolve(compressedFile);
-            if (recurseShrinkTimeout == null) return;
-            clearTimeout(recurseShrinkTimeout);
-            recurseShrinkTimeout = null;
          };
          processCompression();
       });
