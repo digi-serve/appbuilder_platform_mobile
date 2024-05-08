@@ -134,33 +134,31 @@ class CameraPWA extends EventEmitter {
    async _recurseShrink(file, quality, options = {}) {
       if (file.size < MAX_IMAGE_SIZE) return file;
       let recurseShrinkTimeout;
-      const GAIN_FATOR = 0.1;
-      let qualityValue = quality ?? 1;
-      let qualityGain = (() => {
-         const decimalNum = qualityValue.toString().split(".")[1] || "";
-         let decimalPlaces = 0;
-         for (let i = 0; i < decimalNum.length; i++)
-            if (parseInt(decimalNum[i]) > 0) {
-               decimalPlaces = i + 1;
-               break;
-            }
-         return 1 / Math.pow(10, decimalPlaces);
-      })();
-      let qualityFactor = 0.1 * qualityGain;
-      const modFactor = qualityGain / qualityFactor;
+      // const GAIN_FATOR = 0.1;
+      // let qualityValue = quality ?? 1;
+      // let qualityGain = (() => {
+      //    const decimalNum = qualityValue.toString().split(".")[1] || "";
+      //    let decimalPlaces = 0;
+      //    for (let i = 0; i < decimalNum.length; i++)
+      //       if (parseInt(decimalNum[i]) > 0) {
+      //          decimalPlaces = i + 1;
+      //          break;
+      //       }
+      //    return 1 / Math.pow(10, decimalPlaces);
+      // })();
+      // let qualityFactor = 0.1 * qualityGain;
+      // const modFactor = qualityGain / qualityFactor;
       let compressionTimes = 0;
       const compressFile = async (file) => {
-         let compressedFile = file;
-         if (recurseShrinkTimeout === null) return compressedFile;
-         qualityValue = qualityValue - qualityFactor;
-         if (compressionTimes % modFactor === 0 || qualityValue <= 0) {
-            qualityGain = qualityGain * GAIN_FATOR;
-            qualityFactor = qualityFactor * qualityGain;
-            qualityValue = qualityGain;
-         }
-         compressedFile = await fileStorage.compress(file, {
-            quality: qualityValue,
-         });
+         // let compressedFile = file;
+         // if (recurseShrinkTimeout === null) return compressedFile;
+         // qualityValue = qualityValue - qualityFactor;
+         // if (compressionTimes % modFactor === 0 || qualityValue <= 0) {
+         //    qualityGain = qualityGain * GAIN_FATOR;
+         //    qualityFactor = qualityFactor * qualityGain;
+         //    qualityValue = qualityGain;
+         // }
+         compressedFile = await fileStorage.compress(file);
          compressionTimes++;
          if (compressedFile.size > MAX_IMAGE_SIZE)
             return await compressFile(file);

@@ -113,7 +113,6 @@ export default class Page extends EventEmitter {
       $("body > div.xpage").hide();
       this.$element.show();
       $("body").scrollTop(0);
-      currentPage = this;
       this.emit("show");
    }
 

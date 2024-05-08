@@ -79,17 +79,17 @@ class Analytics extends EventEmitter {
       const monitoringInterval = 5000; // Example interval in milliseconds
 
       function monitorMemoryUsage() {
-         const memoryUsage = getMemoryUsage();
+         var memoryUsage = getMemoryUsage();
 
          if (memoryUsage > memoryPanic) {
             const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env`;
             let memoryError = new Error(alertMessage);
-            console.error("Firing memory error message");
+            console.error("Firing memory error message: ", alertMessage);
             analytics.logError(memoryError);
          } else if (memoryUsage > memoryThreshold) {
             const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env`;
             let memoryError = new Error(alertMessage);
-            console.error("Firing memory error message");
+            console.error("Firing memory error message: ", alertMessage);
             analytics.logError(memoryError);
          }
       }

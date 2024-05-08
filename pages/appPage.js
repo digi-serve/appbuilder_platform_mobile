@@ -146,14 +146,15 @@ export class AppPage extends Page {
                await this._wait(WAIT_FOR_BUSY);
                this.AB.busy.hide();
             } catch (err) {
-               console.error(err);
-               this.AB.analytics.logError(err);
+               // this.AB.analytics.logError(err);
                await this._wait(WAIT_FOR_BUSY);
                this.AB.busy.hide();
                await new Promise((resolve) => {
                   switch (err.code) {
                      case "E_BADAUTHTOKEN":
                      case "E_BADJRRTOKEN":
+                        console.error(err);
+                        this.AB.analytics.logError(err);
                         this.f7App.dialog
                            .alert(
                               "<t>Make sure you have scanned the correct QR code for your account. If the problem persists, please contact an admin for help.</t>",
@@ -166,20 +167,15 @@ export class AppPage extends Page {
                         break;
 
                      case "E_NOJRRTOKEN":
-                        this.f7App.dialog
-                           .alert(
-                              "<t>To start using this app, you should have received a QR code. Use your phone's QR code camera app to scan it.</t>",
-                              "<t>Welcome to conneXted!</t>",
-                              () => {
-                                 resolve();
-                              }
-                           )
-                           .open();
-                        // if we are in chrome, maybe we report no token. Else is expected behavior
-                        // this.AB.analytics.log("App launched with no token");
+                        const resolveFunction = () => {
+                           resolve();
+                        };
+                        resolveFunction()
                         break;
 
                      default:
+                        console.error(err);
+                        this.AB.analytics.logError(err);
                         // Some other problem with the server
                         this.f7App.dialog
                            .alert(
