@@ -131,37 +131,15 @@ class CameraPWA extends EventEmitter {
     * @return {Promise<File>}
     *      Resolves with a file containing the compressed image data.
     */
-   async _recurseShrink(file, quality, options = {}) {
+   async _recurseShrink(file, options = {}) {
       if (file.size < MAX_IMAGE_SIZE) return file;
       let recurseShrinkTimeout;
-      // const GAIN_FATOR = 0.1;
-      // let qualityValue = quality ?? 1;
-      // let qualityGain = (() => {
-      //    const decimalNum = qualityValue.toString().split(".")[1] || "";
-      //    let decimalPlaces = 0;
-      //    for (let i = 0; i < decimalNum.length; i++)
-      //       if (parseInt(decimalNum[i]) > 0) {
-      //          decimalPlaces = i + 1;
-      //          break;
-      //       }
-      //    return 1 / Math.pow(10, decimalPlaces);
-      // })();
-      // let qualityFactor = 0.1 * qualityGain;
-      // const modFactor = qualityGain / qualityFactor;
       let compressionTimes = 0;
       const compressFile = async (file) => {
-         // let compressedFile = file;
-         // if (recurseShrinkTimeout === null) return compressedFile;
-         // qualityValue = qualityValue - qualityFactor;
-         // if (compressionTimes % modFactor === 0 || qualityValue <= 0) {
-         //    qualityGain = qualityGain * GAIN_FATOR;
-         //    qualityFactor = qualityFactor * qualityGain;
-         //    qualityValue = qualityGain;
-         // }
          compressedFile = await fileStorage.compress(file);
          compressionTimes++;
          if (compressedFile.size > MAX_IMAGE_SIZE)
-            return await compressFile(file);
+            return await compressFile(compressedFile);
          return compressedFile;
       };
       return await new Promise((resolve, reject) => {
@@ -169,7 +147,7 @@ class CameraPWA extends EventEmitter {
             recurseShrinkTimeout = setTimeout(() => {
                reject(
                   new Error(
-                     `Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:t} qualityValue: gain: factor:} times:${compressionTimes}`,
+                     `Timeout compressing image. Try a smaller one? type: ${file?.type} size: ${file?.size} timeout:t} qualityValue: gain: factor:} times:${compressionTimes}`,
                   ),
                );
                recurseShrinkTimeout = null;
@@ -228,7 +206,7 @@ class CameraPWA extends EventEmitter {
    async getCameraPhoto(
       width = DEFAULT_WIDTH,
       height = DEFAULT_HEIGHT,
-      timeout = 5000,
+      timeout = 2500,
    ) {
       try {
          const file = await this._getPicture("camera");
@@ -238,7 +216,7 @@ class CameraPWA extends EventEmitter {
          if (!this.validImageTypes.includes(file["type"]))
             throw new Error("Image is not a valid type");
 
-         const compressFile = await this._recurseShrink(file, null, {
+         const compressFile = await this._recurseShrink(file, {
             timeout,
          });
          const imageUUID = uuid();
@@ -272,12 +250,11 @@ class CameraPWA extends EventEmitter {
    async getLibraryPhoto(
       width = DEFAULT_WIDTH,
       height = DEFAULT_HEIGHT,
-      timeout = 10000,
+      timeout = 2500,
    ) {
       try {
          const file = await this._recurseShrink(
             await this._getPicture("library"),
-            null,
             {
                timeout,
             },
