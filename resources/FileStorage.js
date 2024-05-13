@@ -162,7 +162,7 @@ class FileStorage extends EventEmitter {
     */
    async compress(file) {
       return new Promise((resolve, reject) => {
-         new compressAccurately(file, 50).then(compressedFile=>{
+         new compressAccurately(file, 5).then(compressedFile=>{
             //The res in the promise is a compressed Blob type (which can be treated as a File type) file;
             if (compressedFile instanceof Blob) {
                // Convert Blob to File if needed
