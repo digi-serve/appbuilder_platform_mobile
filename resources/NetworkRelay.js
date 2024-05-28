@@ -941,7 +941,7 @@ class NetworkRelay extends NetworkRest {
       params.headers["tenant-token"] = config.appbuilder.tenantID;
 
       // ok, the given params, are the DATA we want to send to the RelayServer
-      const data = this.encrypt(params);
+      var data = this.encrypt(params);
       const jobToken = this.uuid();
 
       // Maybe a UI spinner can listen for this
