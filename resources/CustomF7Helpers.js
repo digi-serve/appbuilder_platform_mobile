@@ -23,7 +23,7 @@ Template7.registerHelper("print", (parent, object, alternateObject) => {
    if (!parent) {
       return "";
    }
-   if(Array.isArray(parent)){
+   if (Array.isArray(parent)) {
       parent = parent[0];
    }
    var result = parent[object] ? parent[object] : parent[alternateObject];
@@ -39,7 +39,7 @@ Template7.registerHelper("printHTML", (parent, object, alternateObject) => {
    if (!parent) {
       return "";
    }
-   if(Array.isArray(parent)){
+   if (Array.isArray(parent)) {
       parent = parent[0];
    }
 
@@ -52,13 +52,13 @@ Template7.registerHelper("printHTML", (parent, object, alternateObject) => {
    return result;
 });
 
-/** global Template7 
+/** global Template7
  * Helper to display text for UI where we need to display SOMETHING if the value is empty
  * @param {string} input
  */
 Template7.registerHelper("printLabel", (input) => {
    let result = "no data";
-   if ( typeof input == "string" && input.length > 0) {
+   if (typeof input == "string" && input.length > 0) {
       // if object is not defined, assume parent is the object itself
       result = input;
    }
@@ -99,7 +99,7 @@ Template7.registerHelper(
       var list = app.listItems(
          obj,
          item,
-         language_code || app.application.languageDefault()
+         language_code || app.application.languageDefault(),
       );
 
       if (selected[item]) {
@@ -114,7 +114,7 @@ Template7.registerHelper(
       } else {
          return "";
       }
-   }
+   },
 );
 
 // Helper to return HTML of a list of items from a field that was a select list
@@ -156,7 +156,7 @@ Template7.registerHelper(
       } else {
          return [];
       }
-   }
+   },
 );
 
 // Translate text that our Translate.js cannot
@@ -207,7 +207,7 @@ Template7.registerHelper("lockDisable", (field) => {
 });
 
 function extractNumber(parent, field) {
-   if(Array.isArray(parent)){
+   if (Array.isArray(parent)) {
       parent = parent[0];
    }
    // check all fields and return 0 if undefined

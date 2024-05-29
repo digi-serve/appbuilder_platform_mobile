@@ -19,7 +19,7 @@ class NetworkRest extends EventEmitter {
       super({
          wildcard: true,
          newListener: false,
-         maxListeners: 0
+         maxListeners: 0,
       });
 
       this.baseURL = null;
@@ -187,7 +187,7 @@ class NetworkRest extends EventEmitter {
     * @param {integer} numRetries Number of times to retry a failed request
     * @return {Promise}
     */
-   _request(params, jobResponse, numRetries=1) {
+   _request(params, jobResponse, numRetries = 1) {
       return new Promise((resolve, reject) => {
          params.url = params.url || "/";
          if (params.url[0] == "/") {
@@ -195,7 +195,8 @@ class NetworkRest extends EventEmitter {
          }
 
          params.headers = params.headers || {};
-         params.headers.Authorization = params.headers.Authorization || account.authToken;
+         params.headers.Authorization =
+            params.headers.Authorization || account.authToken;
          // params.timeout = params.timeout || 6000;
 
          if (this.isNetworkConnected()) {
@@ -217,7 +218,7 @@ class NetworkRest extends EventEmitter {
                   if (text == "timeout" || jqXHR.readyState == 0) {
                      //// Network Error: conneciton refused, access denied, etc...
                      console.error(
-                        "*** NetworkRest._request():network connection error detected."
+                        "*** NetworkRest._request():network connection error detected.",
                      );
                      // analytics.log(
                      //    "NetworkRest._request():network connection error detected."
@@ -225,10 +226,10 @@ class NetworkRest extends EventEmitter {
                      // retry the attempt:
                      if (numRetries > 0) {
                         console.error("Trying again");
-                        this._request(params, jobResponse, numRetries-1)
+                        this._request(params, jobResponse, numRetries - 1)
                            .then((data) => {
                               console.warn(
-                                 "*** NetworkRest._request().then(): attempt resolved."
+                                 "*** NetworkRest._request().then(): attempt resolved.",
                               );
                               resolve(data);
                            })
@@ -248,7 +249,9 @@ class NetworkRest extends EventEmitter {
                      }
                   } else if (jqXHR.readyState == 4) {
                      //// an HTTP error
-                     console.error("HTTP error while communicating with relay server");
+                     console.error(
+                        "HTTP error while communicating with relay server",
+                     );
                      console.error("status code: " + jqXHR.status);
 
                      if (jqXHR.status == 403) {
@@ -265,12 +268,12 @@ class NetworkRest extends EventEmitter {
                      // add it to the queue and retry later
                      this.queue(params, jobResponse);
                      let error = new Error(
-                        "Network error: adding to queue for later retry."
+                        "Network error: adding to queue for later retry.",
                      );
-                     resolve({ status: "queued" })
+                     resolve({ status: "queued" });
                   } else {
                      const error = new Error(
-                        "NetworkRest._request() error with .ajax() command:"
+                        "NetworkRest._request() error with .ajax() command:",
                      );
                      error.response = jqXHR.responseText;
                      error.text = text;
@@ -281,7 +284,7 @@ class NetworkRest extends EventEmitter {
                      // TODO: insert some default error handling for expected
                      // TODO temporarily DO NOT log status 0 errors. Should they be logged?
                      // The most common error is status 0, which is a timeout
-                     if (jqXHR && jqXHR.status != '0') {
+                     if (jqXHR && jqXHR.status != "0") {
                         // Error code 0 usually means a timeout: lets not log that to sentry
                         console.error(error);
                      }
@@ -294,7 +297,7 @@ class NetworkRest extends EventEmitter {
             // Network is not connected
             // now Queue this request params.
             analytics.log(
-               "NetworkRest:_request(): Network is offline. Queuing request."
+               "NetworkRest:_request(): Network is offline. Queuing request.",
             );
             this.queue(params, jobResponse)
                .then(() => {
@@ -367,7 +370,7 @@ class NetworkRest extends EventEmitter {
                console.log(
                   `:::: ${queue.length} request${
                      queue.length > 1 ? "s" : ""
-                  } queued`
+                  } queued`,
                );
                return storage.set(refQueue, queue);
             })
