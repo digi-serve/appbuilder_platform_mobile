@@ -233,7 +233,7 @@ class NetworkRest extends EventEmitter {
                               resolve(data);
                            })
                            .catch((err) => {
-                              console.error.error(
+                              console.error(
                                  "*** NetworkRest._request().catch(): retry failed:",
                               );
                               reject(err);

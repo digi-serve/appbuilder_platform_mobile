@@ -44,7 +44,12 @@ Template7.registerHelper("printHTML", (parent, object, alternateObject) => {
    }
 
    var result = parent[object] ? parent[object] : parent[alternateObject];
-   return typeof result != "undefined" ? result.replace(/ /g, "_") : "";
+   if (result) {
+      if (result == "") result = parent.uuid ?? parent.id;
+      result = result.replace('"', "");
+   }
+   result = typeof result != "undefined" ? result.replace(/ "\\'/g, "_") : "--";
+   return result;
 });
 
 /** global Template7 
