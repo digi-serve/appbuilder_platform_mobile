@@ -3,10 +3,10 @@
  * An implementation of our Netork object that sends it's data across our
  * encrypted relay server.
  */
+import CryptoJS from "crypto-js";
+import JSEncrypt from "jsencrypt";
 import account from "./Account.js";
 import analytics from "./Analytics.js";
-import CryptoJS from "crypto-js";
-import JSEncrypt from "./jsencrypt.js";
 import Lock from "./Lock.js";
 import NetworkRest from "./NetworkRest";
 import { storage } from "./Storage.js";
@@ -49,7 +49,7 @@ class NetworkRelay extends NetworkRest {
    constructor() {
       super();
 
-      this.rsa = new JSEncrypt.JSEncrypt();
+      this.rsa = new JSEncrypt();
       this.rsaPublicKey = null;
       this.aesKey = null;
     this.relayState = null;

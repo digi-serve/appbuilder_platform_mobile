@@ -1,4 +1,5 @@
 import { cloneDeep } from "lodash";
+import jsQR from "jsqr";
 import moment from "moment";
 import { v4 as uuidv4 } from "uuid";
 
@@ -8,12 +9,6 @@ import analytics from "../resources/Analytics.js";
 import buildTimestamp from "../resources/BuildTimestamp.js";
 import busy from "../resources/Busy.js";
 import camera from "../resources/Camera.js";
-
-// TODO move this to an npm module, so it can be updated independently
-// this is the same structure as how we access jsEncrypt
-// jsQR should be imported as an npm module, but there were some issues
-// so for initial release we are including it in the platform
-import jsQR from "../../platform/resources/jsQR.js";
 import network from "../resources/Network.js";
 import { storage } from "../resources/Storage.js";
 import { translate } from "../resources/Translate.js";
