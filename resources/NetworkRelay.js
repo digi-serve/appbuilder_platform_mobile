@@ -13,8 +13,7 @@ import { storage } from "./Storage.js";
 
 const config = require("../../config/config.js");
 const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
-const MAX_JOB_AGE = config.appbuilder.maxJobAge || 1000*60*60*24*7; // 7 days
-
+const MAX_JOB_AGE = config.appbuilder.maxJobAge || 1000 * 60 * 60 * 24 * 7; // 7 days
 
 class NetworkRelay extends NetworkRest {
    /**
@@ -52,13 +51,13 @@ class NetworkRelay extends NetworkRest {
       this.rsa = new JSEncrypt.JSEncrypt();
       this.rsaPublicKey = null;
       this.aesKey = null;
-    this.relayState = null;
+      this.relayState = null;
 
-    this.appUUID = null;
-    this.tenantUUID = null;
+      this.appUUID = null;
+      this.tenantUUID = null;
 
-    this.tokenLock = new Lock();
-    this.jobTokens = null;
+      this.tokenLock = new Lock();
+      this.jobTokens = null;
       this.jobPackets = null;
       this.jobPacketsTimestamps = {};
 
@@ -94,7 +93,7 @@ class NetworkRelay extends NetworkRest {
                      this.emit("online");
                   });
             },
-            false
+            false,
          );
 
          // when the network goes 'offline'
@@ -106,7 +105,7 @@ class NetworkRelay extends NetworkRest {
                // trigger an 'online' event
                this.emit("offline");
             },
-            false
+            false,
          );
 
          this.isListening = true;
@@ -120,35 +119,38 @@ class NetworkRelay extends NetworkRest {
       //
       // make sure our Relay system is properly configured: authToken, aesKey, etc...
       const init = super.init({
-         baseURL: config.appbuilder.urlRelayServer
+         baseURL: config.appbuilder.urlRelayServer,
       });
    }
 
    /**
     * Register a new authToken with the server.
-    * 
+    *
     * Can be called even before init().
     * Used by account.importCredentials().
-    * 
+    *
     * @param {string} preToken
     *    The pre-token used to authenticate.
     * @return {Promise}
     *    Resolves with {string} of the new authToken.
     */
-  async registerAuthToken(preToken) {
-    this.prepare();
-    const authToken = NetworkRelay.randomBytes(64);
+   async registerAuthToken(preToken) {
+      this.prepare();
+      const authToken = NetworkRelay.randomBytes(64);
 
-    // prevent queueing re-attempt, as mobile/register will only work once
-    await super
-      .post({
-         url: "/mobile/register",
-         data: {
-         pre: preToken,
-         new: authToken,
+      // prevent queueing re-attempt, as mobile/register will only work once
+      await super.post(
+         {
+            url: "/mobile/register",
+            data: {
+               pre: preToken,
+               new: authToken,
+            },
          },
-      }, null, false);
-    return authToken;
+         null,
+         false,
+      );
+      return authToken;
    }
 
    init() {
@@ -161,24 +163,24 @@ class NetworkRelay extends NetworkRest {
             this.aesKey = value || null;
          });
 
-      const readSyncStatus = storage.get("relayState").then((value) => {
-        this.relayState = value || {
-          aesKeySent: false,
-          lastSyncDate: null,
-        };
-      });
+         const readSyncStatus = storage.get("relayState").then((value) => {
+            this.relayState = value || {
+               aesKeySent: false,
+               lastSyncDate: null,
+            };
+         });
 
          const readAppUUID = storage.get("appUUID").then((value) => {
             this.appUUID = value || null;
          });
 
-      const readTenantUUID = storage.get("tenantUUID").then((value) => {
-        // "tenantUUID" was set in Account.js :: importCredentials()
-        this.tenantUUID = value || null;
-      });
+         const readTenantUUID = storage.get("tenantUUID").then((value) => {
+            // "tenantUUID" was set in Account.js :: importCredentials()
+            this.tenantUUID = value || null;
+         });
 
-      // FYI:
-      // we need both a authToken and an AES key to communicate to the Relay
+         // FYI:
+         // we need both a authToken and an AES key to communicate to the Relay
          // server.
 
          Promise.all([readAESKey, readSyncStatus, readAppUUID, readTenantUUID])
@@ -192,12 +194,12 @@ class NetworkRelay extends NetworkRest {
                }
             })
 
-        // associate appUUID with analytics
-        .then(() => {
-          analytics.info({
-            id: this.appUUID,
-          });
-        })
+            // associate appUUID with analytics
+            .then(() => {
+               analytics.info({
+                  id: this.appUUID,
+               });
+            })
 
             // skip this process if we are offline:
             .then(() => {
@@ -205,7 +207,7 @@ class NetworkRelay extends NetworkRest {
                if (!this.isNetworkConnected()) {
                   console.log("NetworkRelay: network is offline");
                   const offlineError = new Error(
-                     "NetworkRelay:init(): Skipping init() -> network is off line."
+                     "NetworkRelay:init(): Skipping init() -> network is off line.",
                   );
                   offlineError.code = "E_OFFLINE";
                   throw offlineError;
@@ -245,19 +247,19 @@ class NetworkRelay extends NetworkRest {
                // debugger
                console.log("NetworkRelay: init stage 7");
                if (!this.relayState.aesKeySent) {
-            // - MF contacts PublicServer.mobile/initresolve  { rsa_aes, userUUID, AppID, AppUUID }
+                  // - MF contacts PublicServer.mobile/initresolve  { rsa_aes, userUUID, AppID, AppUUID }
 
-            const aesObj = {
-              aesKey: this.aesKey,
-            };
-            const plaintext = JSON.stringify(aesObj);
-            const encrypted = this.rsa.encrypt(plaintext);
+                  const aesObj = {
+                     aesKey: this.aesKey,
+                  };
+                  const plaintext = JSON.stringify(aesObj);
+                  const encrypted = this.rsa.encrypt(plaintext);
 
                   return storage.get("uuid").then((uuid) => {
                      // prevent offline attempt.
                      if (!this.isNetworkConnected()) {
                         const error = new Error(
-                           "NetworkRelay:init(): prevent initresolve when no network conencted."
+                           "NetworkRelay:init(): prevent initresolve when no network conencted.",
                         );
                         analytics.logError(error);
                         return;
@@ -265,21 +267,21 @@ class NetworkRelay extends NetworkRest {
 
                      const data = {
                         rsa_aes: encrypted,
-                userUUID: uuid,
-                appID: config.appbuilder.maID,
-                appUUID: this.appUUID,
-                tenantUUID: this.tenantUUID,
-              };
+                        userUUID: uuid,
+                        appID: config.appbuilder.maID,
+                        appUUID: this.appUUID,
+                        tenantUUID: this.tenantUUID,
+                     };
 
-              // NOTE: use super.post() here so we don't do our .post()
+                     // NOTE: use super.post() here so we don't do our .post()
                      // which encrypts the data with AES ...
-              return super
-                .post({
-                  url: config.appbuilder.routes.mobileInitResolve,
-                  data: data,
-                })
-                .then(() => {
-                  this.relayState.aesKeySent = true;
+                     return super
+                        .post({
+                           url: config.appbuilder.routes.mobileInitResolve,
+                           data: data,
+                        })
+                        .then(() => {
+                           this.relayState.aesKeySent = true;
                            return storage.set("relayState", this.relayState);
                         });
                   });
@@ -300,7 +302,7 @@ class NetworkRelay extends NetworkRest {
                } else {
                   console.error("init failed", err);
                   err.message += `NetworkRelay:init(): error during init()`;
-                  console.error(err)
+                  console.error(err);
                   analytics.logError(err);
                   reject(err);
                }
@@ -320,20 +322,23 @@ class NetworkRelay extends NetworkRest {
          storage
             .get("rsaPublicKey")
             .then((value) => {
-               console.log("..stored RSA public key length: ", String(value).length);
+               console.log(
+                  "..stored RSA public key length: ",
+                  String(value).length,
+               );
                if (value && String(value).length > 50) {
                   return value;
                } else {
                   console.log("..fetching RSA public key from server");
                   return super
-              .get({
-                url: config.appbuilder.routes.mobileInit, // "/mobile/init",
-                data: {
-                  appID: config.appbuilder.maID,
-                },
-              })
-              .then((data) => {
-                console.log("..got server response");
+                     .get({
+                        url: config.appbuilder.routes.mobileInit, // "/mobile/init",
+                        data: {
+                           appID: config.appbuilder.maID,
+                        },
+                     })
+                     .then((data) => {
+                        console.log("..got server response");
                         // data should be:
                         // {
                         //  userUUID:'<string>',
@@ -342,13 +347,13 @@ class NetworkRelay extends NetworkRest {
                         // }
 
                         // go ahead and save these values:
-                return Promise.all([
-                  storage.set("uuid", data.userUUID),
-                  storage.set("rsaPublicKey", data.rsaPublic),
-                  storage.set("appPolicy", data.appPolicy),
-                ]).then(() => {
-                  console.log("..saved server response");
-                  return data.rsaPublic;
+                        return Promise.all([
+                           storage.set("uuid", data.userUUID),
+                           storage.set("rsaPublicKey", data.rsaPublic),
+                           storage.set("appPolicy", data.appPolicy),
+                        ]).then(() => {
+                           console.log("..saved server response");
+                           return data.rsaPublic;
                         });
                      });
                }
@@ -396,7 +401,7 @@ class NetworkRelay extends NetworkRest {
          const ciphertext = CryptoJS.AES.encrypt(
             plaintext,
             CryptoJS.enc.Hex.parse(this.aesKey),
-            { iv: CryptoJS.enc.Hex.parse(iv) }
+            { iv: CryptoJS.enc.Hex.parse(iv) },
          );
 
          // <base64 encoded cipher text>:::<hex encoded IV>
@@ -426,7 +431,7 @@ class NetworkRelay extends NetworkRest {
             const decrypted = CryptoJS.AES.decrypt(
                ciphertext,
                CryptoJS.enc.Hex.parse(this.aesKey),
-               { iv: CryptoJS.enc.Hex.parse(iv) }
+               { iv: CryptoJS.enc.Hex.parse(iv) },
             );
             plaintext = decrypted.toString(CryptoJS.enc.Utf8);
          } catch (err) {
@@ -441,7 +446,7 @@ class NetworkRelay extends NetworkRest {
             finalData = JSON.parse(plaintext);
          } catch (err) {
             analytics.log(
-               "ABRelay.decrypt(): error trying to JSON.parse() the returned data."
+               "ABRelay.decrypt(): error trying to JSON.parse() the returned data.",
             );
             err.message += `ABRelay.decrypt(): error trying to JSON.parse() the returned data.`;
             analytics.logError(err);
@@ -466,17 +471,17 @@ class NetworkRelay extends NetworkRest {
             // if we are ready to talk to MCC:
             if (
                this.relayState &&
-          this.relayState.aesKeySent &&
-          this.isNetworkConnected()
-        ) {
-          this.emit("receiving.start");
-          super
-            .get({
-              url: config.appbuilder.routes.relayRequest, // "/mobile/relayrequest",
-              data: { appUUID: this.appUUID },
-            })
-            .then((responses) => {
-              return responses || [];
+               this.relayState.aesKeySent &&
+               this.isNetworkConnected()
+            ) {
+               this.emit("receiving.start");
+               super
+                  .get({
+                     url: config.appbuilder.routes.relayRequest, // "/mobile/relayrequest",
+                     data: { appUUID: this.appUUID },
+                  })
+                  .then((responses) => {
+                     return responses || [];
                   })
                   .then((responses) => {
                      const all = [];
@@ -502,14 +507,14 @@ class NetworkRelay extends NetworkRest {
                      }
                   })
                   .then(() => {
-                     this.emit('receiving.stop');
+                     this.emit("receiving.stop");
                      this.pollTimerID = setTimeout(checkIn, this.pollFrequency);
                   })
                   .catch((err) => {
                      console.error(err);
-                     this.emit('receiving.stop');
+                     this.emit("receiving.stop");
                      analytics.log(
-                        "Relay.poll().checkin(): an error was returned:"
+                        "Relay.poll().checkin(): an error was returned:",
                      );
                      // got 1200 errors in a single day from this line, so commenting out for now
                      // analytics.logError(err);
@@ -569,13 +574,15 @@ class NetworkRelay extends NetworkRest {
                   });
 
                   // Sometimes there may be missing packets even in a "complete"
-                  // set. Perhaps from some of them being duplicates? Skip the 
+                  // set. Perhaps from some of them being duplicates? Skip the
                   // process if that's the case here.
                   for (let i = 0; i < response.totalPackets; i++) {
                      if (!hash[i]) {
                         console.warn(
-                           `Weird. Missing packet[${i}/${response.totalPackets - 1}]`, 
-                           packets.map(p => p.packet)
+                           `Weird. Missing packet[${i}/${
+                              response.totalPackets - 1
+                           }]`,
+                           packets.map((p) => p.packet),
                         );
 
                         // Compare the duplicate packets.
@@ -596,15 +603,26 @@ class NetworkRelay extends NetworkRest {
                                  }
                               }
                               if (packetA.data == packetB.data) {
-                                 console.warn(`Duplicate packets for ${packetA.packet} are identical`);
+                                 console.warn(
+                                    `Duplicate packets for ${packetA.packet} are identical`,
+                                 );
                                  console.warn("Dropping one of them");
                                  packets.splice(j, 1);
-                              }
-                              else {
-                                 console.warn(`Duplicate packets for ${packetA.packet} are different!`);
-                                 console.warn(`One of them is corrupted. But which one?`);
-                                 console.warn("packetA", packetA.data.substring(0, 20) + "...");
-                                 console.warn("packetB", packetB.data.substring(0, 20) + "...");
+                              } else {
+                                 console.warn(
+                                    `Duplicate packets for ${packetA.packet} are different!`,
+                                 );
+                                 console.warn(
+                                    `One of them is corrupted. But which one?`,
+                                 );
+                                 console.warn(
+                                    "packetA",
+                                    packetA.data.substring(0, 20) + "...",
+                                 );
+                                 console.warn(
+                                    "packetB",
+                                    packetB.data.substring(0, 20) + "...",
+                                 );
                                  console.warn("Dropping the smaller packet");
                                  if (packetA.length < packetB.length) {
                                     packets.splice(j, 1);
@@ -632,7 +650,7 @@ class NetworkRelay extends NetworkRest {
                   const compiledResponse = {
                      appUUID: response.appUUID,
                      data: encryptedData,
-                     jobToken: response.jobToken
+                     jobToken: response.jobToken,
                   };
 
                   // we can remove these pending job packets now
@@ -722,7 +740,7 @@ class NetworkRelay extends NetworkRest {
                      "!!! Unknown job token in response packet:",
                      response.jobToken,
                      tokens,
-                     data
+                     data,
                   );
                   return null;
                }
@@ -829,6 +847,8 @@ class NetworkRelay extends NetworkRest {
     * saveJobPackets()
     */
    saveJobPackets() {
+      // if (this.__saveTimerID) clearTimeout(this.__saveTimerID);
+      // this.__saveTimerID = setTimeout(() => {
       // save this back to our storage:
       return storage.set("abRelayJobPackets", this.jobPackets).then(() => {
          // update the timestamp info for any new jobs
@@ -839,9 +859,10 @@ class NetworkRelay extends NetworkRest {
          }
          return storage.set(
             "abRelayJobPacketsTimestamps",
-            this.jobPacketsTimestamps
+            this.jobPacketsTimestamps,
          );
       });
+      // }, this.pollFrequency * 1.5);
    }
 
    ///
@@ -934,7 +955,7 @@ class NetworkRelay extends NetworkRest {
       if (!account || !account.authToken) {
          analytics.log(
             "NetworkRelay._createJob(): request without credentials! : " +
-               JSON.stringify(params)
+               JSON.stringify(params),
          );
          console.log("NetworkRelay._createJob():  params:", params);
          return Promise.resolve();
@@ -963,10 +984,10 @@ class NetworkRelay extends NetworkRest {
 
             // Post all the packets in series
             let p = Promise.resolve();
-            for (let i=0; i<packets.length; i++) {
+            for (let i = 0; i < packets.length; i++) {
                p = p.then(() => {
-                  // Can't just pass in a prepared `relayParams` object here 
-                  // because its contents can change by the time the post is 
+                  // Can't just pass in a prepared `relayParams` object here
+                  // because its contents can change by the time the post is
                   // being sent.
                   return super.post({
                      url: config.appbuilder.routes.relayRequest,
@@ -988,7 +1009,7 @@ class NetworkRelay extends NetworkRest {
             analytics.log(
                "NetworkRelay." +
                   params.type +
-                  "(): error communicating with RelayServer"
+                  "(): error communicating with RelayServer",
             );
             this.emit("sending.stop");
             this.emit("error.sending");
@@ -1034,7 +1055,7 @@ class NetworkRelay extends NetworkRest {
    _resend(params /*, jobResponse */) {
       return super.post(params).catch((err = {}) => {
          analytics.log(
-            "NetworkRelay._resend(): error communicating with RelayServer"
+            "NetworkRelay._resend(): error communicating with RelayServer",
          );
          err.message += `NetworkRelay._resend(): error communicating with RelayServer`;
          analytics.logError(err);
