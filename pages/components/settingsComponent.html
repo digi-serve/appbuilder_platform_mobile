@@ -462,7 +462,7 @@
                      self.$root.appPage.fetchApplicationData();
                   })
                   .catch((err) => {
-                     app.dialog
+                     self.$app.dialog
                         .alert("Something went wrong. Please try again.")
                         .open();
                      console.error(err);
