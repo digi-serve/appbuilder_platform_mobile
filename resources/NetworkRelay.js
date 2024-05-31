@@ -496,6 +496,9 @@ class NetworkRelay extends NetworkRest {
                      if (!anyLeft) {
                         this.pollFrequency =
                            config.appbuilder.relayPollFrequencyNormal;
+                     } else {
+                        this.pollFrequency =
+                           config.appbuilder.relayPollFrequencyExpecting;
                      }
                   })
                   .then(() => {
