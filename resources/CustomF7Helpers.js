@@ -20,14 +20,18 @@ if (typeof moment == "undefined") {
 // ex: {{print parent 'object'}}\
 /* global Template7 */
 Template7.registerHelper("print", (parent, object, alternateObject) => {
-   if (!parent) {
-      return "";
+   try {
+      if (!parent || (!object && !alternateObject)) {
+         return "";
+      }
+      if (Array.isArray(parent)) {
+         parent = parent[0];
+      } 
+      var result = parent[object] ? parent[object] : parent[alternateObject];
+      return typeof result != "undefined" ? result : "";
+   } catch (error){
+      console.error(error)
    }
-   if (Array.isArray(parent)) {
-      parent = parent[0];
-   }
-   var result = parent[object] ? parent[object] : parent[alternateObject];
-   return typeof result != "undefined" ? result : "";
 });
 
 // Helper to display object property that have two or more word names

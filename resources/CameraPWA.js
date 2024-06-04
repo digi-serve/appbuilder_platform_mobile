@@ -201,7 +201,7 @@ class CameraPWA extends EventEmitter {
          };
       } catch (err) {
          // User canceled the photo. Not a real error.
-         if (err.message !== "Canceled")
+         if (err.message != "Canceled" && err != "Cancelled")
             console.error("CameraPWA:getCameraPhoto():Error", err);
          throw err;
       }
@@ -242,7 +242,7 @@ class CameraPWA extends EventEmitter {
          };
       } catch (err) {
          // User canceled the photo. Not a real error.
-         if (err.message !== "Canceled")
+         if (err.message !== "Canceled" || err.message !== "Cancelled")
             console.error("CameraPWA:getCameraPhoto():Error", err);
          throw err;
       }
