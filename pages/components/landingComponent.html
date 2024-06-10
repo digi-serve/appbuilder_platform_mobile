@@ -44,20 +44,16 @@
 
 <!-- Framework7 component script -->
 <script>
-   const ROUTE_WELCOM = "/welcomePage/";
+   const ROUTE_WELCOM = "/welcome/";
    return {
       on: {
          pageBeforeIn() {
-            const self = this;
-            const $root = self.$root;
-            const $router = self.$router;
-            if ($root.account.authToken == null) {
-               $router.navigate(ROUTE_WELCOM);
+            if (this.$root.app.resources.account.username == null) {
+               this.$router.navigate(ROUTE_WELCOM);
                return;
             }
 
             // We need to set the locale for moment so we can translate the date picker
-            const langCode = $(document.body).attr("lang");
             switch ($(document.body).attr("lang")) {
                case "zh":
                   moment.locale("zh-cn");
@@ -66,7 +62,7 @@
                   moment.locale("en");
                   break;
             }
-            $router.navigate(ROUTE_WELCOM);
+            this.$router.navigate(ROUTE_WELCOM);
          },
       },
    };

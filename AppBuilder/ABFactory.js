@@ -3,33 +3,10 @@ import moment from "moment";
 import { v4 as uuidv4 } from "uuid";
 
 import ABFactoryCore from "./core/ABFactoryCore";
-import account from "../resources/Account.js";
-import analytics from "../resources/Analytics.js";
-import buildTimestamp from "../resources/BuildTimestamp.js";
-import busy from "../resources/Busy.js";
-import camera from "../resources/Camera.js";
-
-// TODO move this to an npm module, so it can be updated independently
-// this is the same structure as how we access jsEncrypt
-// jsQR should be imported as an npm module, but there were some issues
-// so for initial release we are including it in the platform
-import jsQR from "../../platform/resources/jsQR.js";
-import network from "../resources/Network.js";
-import { storage } from "../resources/Storage.js";
-import { translate } from "../resources/Translate.js";
 
 export default class ABFactory extends ABFactoryCore {
-   constructor(...args) {
-      super(...args);
-      this.account = account;
-      this.analytics = analytics;
-      this.busy = busy;
-      this.camera = camera;
-      this.jsQR = jsQR;
-      this.network = network;
-      this.storage = storage;
-      this.translate = translate;
-
+   constructor(definitions) {
+      super(definitions);
       //
       // Rules
       //
@@ -110,154 +87,12 @@ export default class ABFactory extends ABFactoryCore {
             return moment(date).add(number, unit).toDate();
          },
       };
-      (Object.keys(platformRules) || []).forEach((k) => {
-         this.rules[k] = platformRules[k];
-      });
+      for (const key in platformRules) this.rules[key] = platformRules[key];
+   }
 
-      // Setup a listener for this Object to catch updates from the relay
-      this.network.on("object", async (context, data) => {
-         if (context.error != null) {
-            context.callback?.(context.error);
-            this.analytics.logError(context.error);
-            return;
-         }
-         const obj = this.datacollections(
-            (datacollection) => datacollection.datasource.id === context.id
-         )[0]?.datasource;
-         if (obj == null) {
-            context.callback?.(new Error(data));
-            this.analytics.logError(data);
-            return;
-         }
-         if (obj.name != null) {
-            console.log(":: name:", obj.name, {
-               ":: context:": context,
-               ":: data:": data,
-            });
-         } else {
-            console.log(":: context", context, {
-               ":: data": data,
-            });
-         }
-         console.assert(
-            context,
-            "ABFactory::network.object: context is null!!"
-         );
-         switch (context.verb) {
-            case "create":
-               // we are being alerted of a NEW object instance.
-               // this might come as a result of our own local().create()
-               // or the server might initiate a push of new data.
-
-               // if data does not already exist locally create it
-               await obj.model().local().syncRemoteMaster(data);
-               // alert any DataCollections that are using this
-               // object that there might be new data for them to
-               // use.
-               obj.emit("CREATE", data);
-               break;
-            case "update":
-               // we are being alerted of UPDATED data from the server.
-
-               // response can be in format:
-               // {
-               //     status:"success",
-               //     data:{ data obj }
-               // }
-               // if this is a response to one of our .updates()
-               if (context.jobID) {
-                  // Where is `latestUpdates` set?
-                  // @see ABModelRelay.js maybe?
-                  if (obj.latestUpdates == null) {
-                     context.callback?.(new Error(data));
-                     this.analytics.logError(data);
-                     return;
-                  }
-                  // if this is the last update we sent for this object
-                  else if (context.jobID !== obj.latestUpdates[data.uuid]) {
-                     context.callback?.(new Error(data));
-                     this.analytics.logError(data);
-                     return;
-                  } else delete obj.latestUpdates[data.uuid];
-               }
-               if (data == null) {
-                  context.callback?.(new Error(data));
-                  this.analytics.logError(data);
-               }
-               if (data.status && data.status == "success") {
-                  data = data.data || data;
-               }
-               const modelLocal = obj.model().local();
-
-               // if data does not already exist locally ignore it
-               if (await modelLocal.doesExist(data)) {
-                  await obj.model().local().syncRemoteMaster(data);
-
-                  // alert any DataCollections that are using this
-                  // object that there might be new data for them to
-                  // use.
-                  obj.emit("UPDATE", data);
-               }
-               break;
-            case "delete":
-               // we are being alerted of DELETED data from the server.
-
-               // if we initiated this process, and this is a response,
-               // then data should look like:
-               // {
-               //     numRows: #
-               // }
-
-               // this was a successful delete,
-               // alert our Datacollections:
-               if (data.numRows && data.numRows > 0)
-                  obj.emit("DELETE", context.pk);
-               break;
-            default:
-               break;
-         }
-         const callbackResult = context.callback?.(null, data);
-         if (callbackResult instanceof Promise) await callbackResult;
-      });
-
-      // Setup a listener for this DC to catch updates from the relay
-      this.network.on("datacollection", async (context, data) => {
-         if (context.error != null) {
-            context.callback?.(context.error);
-            this.analytics.logError(context.error);
-            return;
-         }
-         const dc = this.datacollections(
-            (datacollection) => datacollection.id === context.id
-         )[0];
-         if (dc == null) return;
-         if (dc.name) {
-            console.log(":: name:", dc.name, {
-               ":: context:": context,
-               ":: data:": data,
-            });
-         } else {
-            console.log(":: context", context, {
-               ":: data": data,
-            });
-         }
-
-         // if context is from a "uninitialized" state
-         //    OR this datacollection is a Server Centric set of data:
-         //    OR this is a Query based datacollection
-         const isServerPreferred = dc.isServerPreferred();
-         const normalizedData =
-            context?.verb === "uninitialized" ||
-            isServerPreferred ||
-            dc.settings.isQuery
-               ? await dc.datasource.model().local().syncRemoteMaster(data)
-               : await dc.datasource.model().local().syncLocalMaster(data);
-         if (isServerPreferred) dc.reduceCondition(normalizedData);
-         await dc.processIncomingData(normalizedData);
-         const callbackResult = context.callback?.(null, data);
-         if (callbackResult instanceof Promise) await callbackResult;
-         dc.emit("data", normalizedData);
-      });
+   async init(app) {
+      this.app = app;
+      await super.init();
    }
 
    cloneDeep(...args) {
@@ -271,9 +106,5 @@ export default class ABFactory extends ABFactoryCore {
 
    uuid() {
       return uuidv4();
-   }
-
-   get buildTimeStamp() {
-      return buildTimestamp.getBuild_Timestamp();
    }
 }

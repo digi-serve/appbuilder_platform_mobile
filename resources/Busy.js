@@ -8,23 +8,19 @@
 
 import EventEmitter from "eventemitter2";
 
-import { Translate, translate, t } from "./Translate";
-
 class Busy extends EventEmitter {
    constructor() {
       super();
-
-      this.dataReady = $.Deferred();
+      this.app = null;
       this.busyInProgress = false;
-      this.f7App = null;
    }
 
-   setApp(f7App) {
-      this.f7App = f7App;
+   async init(app) {
+      this.app = app;
    }
 
    show(text = "Saving", timeout) {
-      if (this.f7App == null) {
+      if (this.app.pages.appPage.f7App == null) {
          console.error(
             "use of busy.show() before busy.setApp() is initialized.",
          );
@@ -32,14 +28,14 @@ class Busy extends EventEmitter {
       }
       if (this.busyInProgress) this.hide();
       this.busyInProgress = true;
-      this.f7App.dialog.preloader(t(text));
+      this.app.pages.appPage.f7App.dialog.preloader(this.app.resources.translate.t(text));
       if (timeout == null) return;
       setTimeout(() => {
          // Force kill the preloader
-         this.f7App.dialog.close();
+         this.app.pages.appPage.f7App.dialog.close();
 
          // tell user we are still working in the background
-         self.appPage.f7App.toast
+         this.app.pages.appPage.f7App.toast
             .create({
                text: `<center><t data-cy="wip" >working in the background...</t></center>`,
                position: "center",
@@ -49,7 +45,7 @@ class Busy extends EventEmitter {
    }
 
    hide() {
-      if (this.f7App == null) {
+      if (this.app.pages.appPage.f7App == null) {
          console.error(
             "use of busy.hide() before busy.setApp() is initialized.",
          );
@@ -57,7 +53,7 @@ class Busy extends EventEmitter {
       }
 
       if (this.busyInProgress) this.busyInProgress = false;
-      this.f7App.dialog.close();
+      this.app.pages.appPage.f7App.dialog.close();
    }
 }
 
