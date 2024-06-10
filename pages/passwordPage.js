@@ -56,18 +56,25 @@ class PasswordPage extends Page {
                this.$("div.safari-install-instructions").show();
             }
 
-            // Detects if device is in standalone mode
-            const isInStandaloneMode = () =>
-               "standalone" in window.navigator && window.navigator.standalone;
-            // Show install instructions
-            if (isIos() && !isInStandaloneMode()) {
-               this.$("div.ios-instruct").show();
-            } else {
-               this.startChecking();
-               this.$setup.show();
-               // if the user is on iOS and Safari, and it is their first time using the app,
-               // show a message explaining that they should use Chrome.
-               // class: use-chrome-warning
+            // ! Something MUST ALWAYS show on this page!
+            try {
+               // Detects if device is in standalone mode
+               const isInStandaloneMode = () =>
+                  "standalone" in window.navigator && window.navigator.standalone;
+               // Show install instructions
+               if (isIos() && !isInStandaloneMode()) {
+                  this.$("div.ios-instruct").show();
+               } else {
+                  this.startChecking();
+                  this.$setup.show();
+                  // if the user is on iOS and Safari, and it is their first time using the app,
+                  // show a message explaining that they should use Chrome.
+                  // class: use-chrome-warning
+               }
+            } catch (err) {
+               // ? falling back to showing the 'account exists, please login' screen: is this correct?
+               this.$unlock.show();
+               console.error(err);
             }
          } else {
             this.$unlock.show();

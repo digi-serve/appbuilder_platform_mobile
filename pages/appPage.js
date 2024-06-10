@@ -244,8 +244,8 @@ export class AppPage extends Page {
                   this.components.settingsComponent.init(this),
                   this.components.welcomeComponent.init(this),
                ]);
-               if (this.AB.account.authToken == null)
-                  throw new Error("Not found authToken.");
+               // if (this.AB.account.authToken == null)
+               //    throw new Error("Not found authToken.");
 
                // make sure our site user data has been properly
                // loaded. (1st load this needs to come from server call)
