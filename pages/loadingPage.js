@@ -10,9 +10,9 @@
  */
 "use strict";
 
-import Page from "../resources/Page.js";
+import Common from "./classes/Common.js";
 
-class LoadingPage extends Page {
+class LoadingPage extends Common {
    constructor() {
       super(
          "loading-page",
@@ -20,8 +20,6 @@ class LoadingPage extends Page {
          "lib/platform/pages/loadingPage.css"
       );
    }
-
-   async init(AB) {}
 
    show() {
       this.$element.removeClass("overlay");

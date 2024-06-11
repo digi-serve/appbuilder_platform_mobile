@@ -363,7 +363,7 @@
    return {
       data() {
          return {
-            hasAuthToken: Boolean(this.$root.account.authToken),
+            hasAuthToken: Boolean(this.$root.app.resources.account.authToken),
             totalStorage: 0,
             iconOptions: [],
             appName: localStorage.getItem("name") ?? "conneXted",
@@ -372,142 +372,121 @@
       },
       methods: {
          setIcon(e) {
-            const self = this;
             const selectedIcon = e.currentTarget.getAttribute("data-icon-name");
 
-            // Save to local storage
+            // Save to local storage.
             localStorage.setItem("icon", selectedIcon);
 
-            // Update F7 UI
-            self.iconOptions.forEach((o) => {
+            // Update F7 UI.
+            this.iconOptions.forEach((o) => {
                if (o.name == selectedIcon) {
                   o.selected = true;
-                  self.appIconSrc = o.src;
+                  this.appIconSrc = o.src;
                } else o.selected = false;
             });
-            self.$update();
+            this.$update();
          },
       },
       on: {
          pageBeforeIn() {
-            const self = this;
-            self
-               .$(".view-main .navbar")
-               .attr(
-                  "class",
-                  "navbar bg-color-purple text-color-white color-theme-white"
-               );
-            self
-               .$(".view-main .navbar-bg")
-               .attr("class", "navbar-bg bg-color-purple");
+            this.$(".view-main .navbar").attr(
+               "class",
+               "navbar bg-color-purple text-color-white color-theme-white"
+            );
+            this.$(".view-main .navbar-bg").attr(
+               "class",
+               "navbar-bg bg-color-purple"
+            );
          },
 
-         pageInit() {
-            const self = this;
-            fetch("/icons/list").then((res) => {
-               res.json().then((data) => {
-                  const stored = localStorage.getItem("icon");
-                  const selectedOpt =
-                     data.find((o) => o.name == stored) ??
-                     data.find((o) => o.name == "default");
-                  selectedOpt.selected = true;
-                  self.$setState({
-                     iconOptions: data,
-                     appIconSrc: selectedOpt.src,
-                  });
-               });
+         async pageInit() {
+            const data = await (await fetch("/icons/list")).json();
+            const selectedOpt =
+               data.find((o) => o.name == localStorage.getItem("icon")) ||
+               data.find((o) => o.name == "default");
+            selectedOpt.selected = true;
+            this.$setState({
+               iconOptions: data,
+               appIconSrc: selectedOpt.src,
             });
-            const appPage = self.$root.appPage;
-            const updater = self.$root.updater;
-            const settings = self.$root.getComponent("settingsComponent");
-            settings.getStorageSize().then((data) => {
-               self.$setState({
-                  totalStorage: Number(data).toFixed(2),
-               });
+            this.$setState({
+               // TODO: Logic for the local storage size.
+               totalStorage: Number(0).toFixed(2),
             });
-            $("#test-camera").on("click", () => {
-               self.$root.camera
-                  .getCameraPhoto()
-                  .then((photo) => {
-                     // scan photo for QR code
-                     $("#test-camera-result").attr("src", photo.url);
-                  })
-                  .catch((err) => {
-                     console.error(err);
-                  });
+            $("#test-camera").on("click", async () => {
+               try {
+                  const photo =
+                     await this.$root.app.resources.camera.getCameraPhoto();
+                  // Scan photo for QR code.
+                  $("#test-camera-result").attr("src", photo.url);
+               } catch (err) {
+                  console.error(err);
+               }
             });
 
-            // input a JRR token manually
-            $("#codeSubmit").on("click", () => {
-               // get the code from the form
-               const jrrMatch = $("#rawjrrtoken").get(0).value;
-
-               // plug it into the app
-               self.$app.toast
+            // Input a JRR token manually.
+            $("#codeSubmit").on("click", async () => {
+               // Plug it into the app.
+               this.$app.toast
                   .create({
                      text: "<t>Code inputting...</t>",
                      position: "center",
                   })
                   .open();
-               self.$root.appPage
-                  .updateAccount(jrrMatch, "admin")
-                  .then(() => {
-                     // app.dialog.alert('Credentials imported successfully');
-                     self.$app.toast
-                        .create({
-                           text: "<t>Credentials imported successfully</t>",
-                           position: "center",
-                        })
-                        .open();
-                     self.$root.appPage.fetchApplicationData();
-                  })
-                  .catch((err) => {
-                     self.$app.dialog
-                        .alert("Something went wrong. Please try again.")
-                        .open();
-                     console.error(err);
-                  });
+               try {
+                  await this.$root.app.pages.appPage.updateAccount(
+                     // Get the code (JRR) from the form.
+                     $("#rawjrrtoken").get(0).value,
+                     "admin"
+                  );
+                  this.$app.toast
+                     .create({
+                        text: "<t>Credentials imported successfully</t>",
+                        position: "center",
+                     })
+                     .open();
+                  this.$root.app.pages.appPage.fetchApplicationData();
+               } catch (err) {
+                  this.$app.dialog
+                     .alert("Something went wrong. Please try again.")
+                     .open();
+                  console.error(err);
+               }
             });
 
-            // when custom settings is checked reveal or hide advanced settings
+            // When custom settings is checked reveal or hide advanced settings.
             $("#customServerCheckbox").on("change", () => {
-               const isEnabledCustom = $("#customServerCheckbox").prop(
-                  "checked"
-               );
-               if (isEnabledCustom) {
+               if (
+                  // Is custom enabled?
+                  $("#customServerCheckbox").prop("checked")
+               )
                   $("#customServerSettings").show();
-               } else {
-                  $("#customServerSettings").hide();
-               }
-               // if debugging is already enabled auto fire the start operation to enable the new settings
-               if ($("#btnDisableRemoteLogging").is(":visible")) {
+               else $("#customServerSettings").hide();
+
+               // If debugging is already enabled auto fire the start operation to enable the new settings.
+               if ($("#btnDisableRemoteLogging").is(":visible"))
                   $("#btnEnableRemoteLogging").trigger("click");
-               }
             });
 
-            // if debugging is enabled update the settings when custom remote debugging field is blurred
+            // If debugging is enabled update the settings when custom remote debugging field is blurred
             $("#customServerSettings input[type=text]").on("blur", () => {
-               if ($("#btnDisableRemoteLogging").is(":visible")) {
-                  $("#btnEnableRemoteLogging").trigger("click");
-               }
+               if (!$("#btnDisableRemoteLogging").is(":visible")) return;
+               $("#btnEnableRemoteLogging").trigger("click");
             });
 
-            // MS AppCenter CodePush
-            $("#restart-app").on("click", () => {
-               updater.restart();
-            });
-            if (settings.isUpdateReady) {
+            $("#restart-app").on("click", () => {});
+            if (
+               this.$root.app.pages.appPage.components.settingsComponent
+                  .isUpdateReady
+            )
                $("#update-ready").show();
-            }
-            updater.getPackageInfo();
-            settings.renderPackageInfo();
-
+            this.$root.app.pages.appPage.components.settingsComponent.renderPackageInfo();
             let syncing;
 
             // Sync with server
             $("#sync-with-server").on("click", () => {
-               if (!self.$root.appPage.AB.network.isNetworkConnected()) {
-                  self.$app.dialog.alert(
+               if (!navigator.onLine) {
+                  this.$app.dialog.alert(
                      "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
                      "<t>No Network Detected.</t>"
                   );
@@ -518,15 +497,15 @@
                   "<t>This will fetch the latest data from the server without affecting any locally changed data. Continue?</t>",
                   "<t>Update Data</t>",
                   () => {
-                     appPage.fetchApplicationData();
+                     this.$root.app.pages.appPage.fetchApplicationData();
                   }
                );
             });
 
             // Sync with server
             $("#reset-get-server").on("click", () => {
-               if (!self.$root.appPage.AB.network.isNetworkConnected()) {
-                  self.$app.dialog.alert(
+               if (!navigator.onLine) {
+                  this.$app.dialog.alert(
                      "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
                      "<t>No Network Detected.</t>"
                   );
@@ -536,82 +515,76 @@
                const continueSync = self.$app.dialog.confirm(
                   "<t>This will fetch the latest data from the server, clearing all local data. Continue?</t>",
                   `<t data-cy="confirmReset" >Reset Data</t>`,
-                  // TODO
                   () => {
-                     // reset local data
-                     // settings.resetLocalData();
-                     appPage.forceApplicationReset();
-                     updater.updateNow();
+                     this.$root.app.pages.appPage.forceApplicationReset();
                   }
                );
             });
 
-            // Delete local documents
+            // Delete local documents.
             $("#delete-documents").on("click", () => {
-               self.$app.dialog.confirm(
+               this.$app.dialog.confirm(
                   "<t>This will delete all local files from your device. Continue?</t>",
                   "<t>Delete</t>",
-                  () => {
-                     settings.deleteLocalImages().then(() => {
-                        settings.getStorageSize().then((data) => {
-                           self.$setState({
-                              totalStorage: Number(data).toFixed(2),
-                           });
-                        });
+                  async () => {
+                     await this.$root.app.pages.appPage.components.settingsComponent.deleteLocalImages();
+                     this.$setState({
+                        // TODO: Logic for the local storage size.
+                        totalStorage: Number(0).toFixed(2),
                      });
                   }
                );
             });
 
-            if (self.$root.appPage.authToken) {
+            if (this.$root.app.pages.appPage.authToken) {
                $("#sync-data").show();
             }
             $("#updateOnLoginCheckbox").prop(
                "checked",
-               self.$root.appPage.updateOnLogin
+               this.$root.app.pages.appPage.updateOnLogin
             );
             $("#updateOnLoginCheckbox").change(function () {
                if ($(self).is(":checked")) {
                   localStorage.setItem("updateOnLogin", "true");
-                  self.$root.appPage.updateOnLogin = true;
+                  this.$root.app.pages.appPage.updateOnLogin = true;
                } else {
                   localStorage.setItem("updateOnLogin", "false");
-                  self.$root.appPage.updateOnLogin = false;
+                  this.$root.app.pages.appPage.updateOnLogin = false;
                }
             });
 
             $(".edit-customization").click(() => {
-               self.$app.sheet.open(".modal-cusomization");
+               this.$app.sheet.open(".modal-cusomization");
             });
 
             $("#app-name").on("change", () => {
                const appName = $("#app-name").val();
                localStorage.setItem("name", appName);
-               self.$setState({ appName });
+               this.$setState({ appName });
             });
-            self.$app.off("ptrRefresh");
-            self.$app.on("ptrRefresh", () => {
+            this.$app.off("ptrRefresh");
+            this.$app.on("ptrRefresh", () => {
                // user has pulled to refresh,
                // they may want to know the status of auth token, and whether we are fetching data
                // is network connected?
-               self.$app.toast
+               this.$app.toast
                   .create({
                      text:
                         "Auth Token Status: " +
-                        (self.$root.account.authToken ? "Valid" : "Invalid") +
+                        (this.$root.app.resources.account.authToken
+                           ? "Valid"
+                           : "Invalid") +
                         "<br>Fetching Data: " +
                         (syncing ? "Yes" : "No") +
                         "<br>Network: " +
-                        (self.$root.appPage.AB.network.isNetworkConnected()
-                           ? "Connected"
-                           : "Disconnected"),
+                        (navigator.onLine ? "Connected" : "Disconnected"),
                      position: "center",
                      closeTimeout: 2000,
                   })
                   .open();
                // they may want to clear a render issue, refresh the page
-               self.$app.router.refreshPage();
-               self.$app.ptr.get(".ptr-content").done();
+               this.$app.router.refreshPage();
+               this.$app.ptr.get(".ptr-content").done();
             });
          },
       },
