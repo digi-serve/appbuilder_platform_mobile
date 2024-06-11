@@ -2,7 +2,7 @@
  * @class ABAppController
  *
  * Is responsible for managing all the routes/data/templates for a given
- * application shown under an appPage.
+ * application shown under an page.
  *
  * Is an EventEmitter.
  */
@@ -17,7 +17,7 @@ export default class ABAppController extends EventEmitter2 {
       super({
          wildcard: true,
       });
-      this.appPage = null;
+      this.page = null;
       this.routes = routes;
       this._status = "constructor";
       this.datacollections = []; //this.application.datacollectionsIncluded();
@@ -37,76 +37,60 @@ export default class ABAppController extends EventEmitter2 {
     *      "loading"           loading datacollection data
     *      "ready"             ready for operation.
     *
-    * @param {AppPage} appPage
+    * @param {PageObject} page
     *        the live instance of the Application Page Controller that
     *        displays this application.
     * @param {Array<String>} dcIDs
     * @return {Promise}
     */
-   async init(appPage, dcIDs) {
-      // save a reference to the lib/platform/pages/appPage/appPage.js object.
-      this.appPage = appPage;
-      this.application = this.appPage.application;
+   async init(page, dcIDs) {
+      // save a reference to the lib/platform/pages/...Page.js object.
+      this.page = page;
       if (dcIDs?.length > 0)
-         this.datacollections =
-            this.appPage.application.datacollectionsIncluded((dc) => {
+         this.datacollections = this.page.app.abApp.datacollectionsIncluded(
+            (dc) => {
                return dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1;
-            });
+            }
+         );
 
       // Emit a message if init doesn't complete within 25 seconds
       const initTimeout = setTimeout(() => {
-         this.appPage.AB.analytics.log(
-            "ABApplication timed out during init(): " +
-               this.appPage.application.id
+         console.error(
+            "ABApplication timed out during init(): " + this.page.app.abApp.id
          );
       }, this.initTimeout);
 
       return new Promise((resolve, reject) => {
          this.status = "init";
 
+         // make sure our site user data has been properly
+         // loaded. (1st load this needs to come from server call)
+         if (
+            this.page.app.resources.account.authToken == null &&
+            this.page.app.resources.account.username == null
+         )
+            throw new Error("Not found authToken and username.");
+
          // make sure each of our Datacollections have loaded their data:
          const allInits = [];
          this.datacollections.forEach((dc) => {
-            if (dc) {
-               dc.init();
-               allInits.push(dc.platformInit());
-            } else {
+            if (dc == null) {
                console.error("Could not find data collection for key:" + dc);
+               return;
             }
+            allInits.push(dc.init());
          });
 
          (async () => {
             try {
-               await Promise.all(allInits);
-
-               // make sure our site user data has been properly
-               // loaded. (1st load this needs to come from server call)
-               if (
-                  this.appPage.AB.account.authToken == null &&
-                  this.appPage.AB.account.username == null
-               )
-                  throw new Error("Not found authToken and username.");
                this.status = "loading";
-
-               const allLoads = [];
-               this.datacollections.forEach((dc) => {
-                  if (dc) {
-                     if (
-                        dc.settings?.populate === "0" ||
-                        dc.settings?.populate === false
-                     ) {
-                        dc.settings.preventPopulate = "1";
-                     }
-                     allLoads.push(dc.loadData());
-                  }
-               });
-
+               await Promise.all(allInits);
                this.status = "ready";
-               // NOTE: the setter for .status emits it's value:
-
                clearTimeout(initTimeout);
                resolve();
             } catch (err) {
+               this.status = "ready";
+               clearTimeout(initTimeout);
                reject(err);
             }
          })();
@@ -180,7 +164,7 @@ export default class ABAppController extends EventEmitter2 {
     */
    listItems(objKey, fieldKey, langCode = "en") {
       const results = [];
-      const object = this.appPage.AB.objectByID(objKey);
+      const object = this.page.app.AB.objectByID(objKey);
       if (object == null) return results;
       const field = object.fields(
          (f) => f.id === fieldKey || f.columnName === fieldKey
@@ -213,7 +197,7 @@ export default class ABAppController extends EventEmitter2 {
     * @return {ABDataCollection}
     */
    object(key) {
-      return this.appPage.AB.objectByID(key);
+      return this.page.app.AB.objectByID(key);
    }
 
    /**
@@ -223,19 +207,12 @@ export default class ABAppController extends EventEmitter2 {
     * @return {Promise}
     */
    async reset() {
-      await this.appPage.AB.storage.set(this.refStatusKey(), null);
       // make sure each of our Datacollections have resset their
       // data:
       const allResets = [];
       this.datacollections.forEach((dc) => {
-         allResets.push(dc.platformReset());
+         allResets.push(dc.reset());
       });
       await Promise.all(allResets);
-      await this.init();
-   }
-
-   refStatusKey() {
-      let id = this.id || this.AB.uuid() || "NA";
-      return `${this.id || this.AB.uuid() || "NA"}-init-status`;
    }
 }

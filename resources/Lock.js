@@ -20,25 +20,12 @@
  *          lock.release();
  *      });
  */
-(function(root, factory) {
-   /* eslint-disable */
-   if (typeof define === "function" && define.amd) {
-      // AMD
-      define([], factory);
-   } else if (typeof module === "object" && module.exports) {
-      // Node
-      module.exports = factory();
-   } else {
-      // Browser globals
-      root.Lock = factory();
-   }
-   /* eslint-enable */
-})(typeof self !== "undefined" ? self : this, function() {
-   "use strict";
+"use strict";
 
    class Lock {
-      constructor() {
+      constructor(key) {
          // "Private" properties
+         this._key = key;
          this._promise = null;
          this._resolve = null;
       }
@@ -62,6 +49,7 @@
             }
             // Nothing is pending.
             else {
+               console.log(this._key)
                this._promise = new Promise((_resolve) => {
                   this._resolve = _resolve;
                });
@@ -80,5 +68,4 @@
       }
    }
 
-   return Lock;
-});
+   export default Lock;
