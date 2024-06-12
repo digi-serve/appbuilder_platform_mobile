@@ -6,141 +6,106 @@
  */
 
 const ABModelCore = require("../core/ABModelCore");
-const ABModelLocal = require("./ABModelLocal");
-const ABModelRelay = require("./ABModelRelay");
 
 module.exports = class ABModel extends ABModelCore {
    /**
-    * @method _reloadAffectedDC
-    * Reload affected datacollections.
+    * @method _processRequest
+    * process remote request.
+    * @param {string} method the http request method (get, post, put or delete).
+    * @param {Object} params  request parameters.
+    * @param {Object} responseContext  context parameters.
     * @return {Promise}
     */
-   async _reloadAffectedDC() {
-      const affectedOBJs = this.object
-         .connectFields()
-         .map((field) => field.datasourceLink.id)
-         .concat(this.object.id);
-      await Promise.all(
-         this.AB.datacollections((datacollection) =>
-            affectedOBJs.includes(datacollection.datasource.id)
-         ).map((datacollection) => datacollection.loadData())
-      );
-   }
-
-   /**
-    * @method local
-    * get a ABModelLocal instance.
-    * @return {ABModelLocal}
-    */
-   local() {
-      const newModel = new ABModelLocal(this.object);
-      newModel.contextKey(this.responseContext.key);
-      newModel.contextValues(this.responseContext.context);
-      return newModel;
-   }
-
-   /**
-    * @method relay
-    * get a ABModelRelay instance.
-    * @return {ABModelRelay}
-    */
-   relay() {
-      const newModel = new ABModelRelay(this.object);
-      newModel.contextKey(this.responseContext.key);
-      newModel.contextValues(this.responseContext.context);
-      return newModel;
-   }
-
-   /**
-    * @method remote
-    * get a ABModelRelay instance.
-    * @return {ABModelRelay}
-    */
-   remote() {
-      // TODO: look at project settings and determine which
-      // type of remote link we will use:
-      return this.relay();
+   _processRequest(method, params, responseContext) {
+      const copiedResponseContext = structuredClone(responseContext);
+      return new Promise((resolve, reject) => {
+         copiedResponseContext.context.callback = async (err, result) => {
+            if (err != null) {
+               err["info"] = {
+                  method,
+                  params,
+                  responseContext,
+                  result,
+               };
+               reject(new Error(err.message));
+               return;
+            }
+            resolve(result);
+         };
+         (async () => {
+            await this.AB.app.resources.network[method](params, copiedResponseContext);
+         })();
+      });
    }
 
    /**
     * @method create
     * update model values on the server.
-    * @param {obj} values  the values to create.
-    * @return {Promise}
     */
-   async create(values) {
-      const copiedValues = structuredClone(values) || {};
-      this.prepareMultilingualData(copiedValues);
-
-      // make sure any values we create have a UUID field set:
-      const UUID = this.object.fieldUUID(copiedValues);
-      if (copiedValues[UUID] == null) copiedValues[UUID] = this.AB.uuid();
-      await this.remote().create(copiedValues);
-      await this.local().create(copiedValues);
-      this.object.emit("CREATE", copiedValues);
-      await this._reloadAffectedDC();
-   }
-   /**
-    * @method createLocalPriority
-    * create model values locally, then send to server without waiting.
-    * @param {obj} values  the values to create.
-    * @return {Promise}
-    */
-   async createLocalPriority(values) {
-      const copiedValues = structuredClone(values) || {};
-      this.prepareMultilingualData(copiedValues);
-
-      // make sure any values we create have a UUID field set:
-      const UUID = this.object.fieldUUID(copiedValues);
-      if (copiedValues[UUID] == null) copiedValues[UUID] = this.AB.uuid();
-
-      // we'll return before the remote call is complete.
-      await this.remote().create(copiedValues);
-      await this.local().create(copiedValues);
-      this.object.emit("CREATE", copiedValues);
-      await this._reloadAffectedDC();
+   create(value) {
+      this.prepareMultilingualData(value);
+      return this._processRequest(
+         "post",
+         this.urlParamsCreate(value),
+         this.responseContext
+      );
    }
 
    /**
     * @method delete
-    * remove this model instance from from our local and remote storage
-    * @param {string} id  the .uuid of the instance to remove.
+    * remove this model instance from the server
+    * @param {integer} id  the .id of the instance to remove.
     * @return {Promise}
     */
-   async delete(id) {
-      await this.remote().delete(id);
-
-      // delete from our local storage
-      await this.local().delete(id);
-      this.object.emit("DELETE", id);
-      await this._reloadAffectedDC();
+   delete(id) {
+      // The data returned from a .delete operation doesn't contain the .id
+      // for the item being deleted.  So store it as part of the context
+      // and the ABObject will know to use that if it is available.
+      this.responseContext.context.pk = id;
+      return this._processRequest(
+         "delete",
+         this.urlParamsDelete(id),
+         this.responseContext
+      );
    }
 
    /**
     * @method findAll
     * performs a data find with the provided condition.
-    * @return {Promise}
     */
    findAll(cond) {
-      return this.local().findAll(cond);
+      const copiedCond = structuredClone(cond);
+      copiedCond.where = copiedCond.where || { glue: "and", rules: [] };
+      copiedCond.where.glue = copiedCond.where.glue || "and";
+      copiedCond.where.rules =
+         (Array.isArray(copiedCond.where.rules) && copiedCond.where.rules) ||
+         [];
+
+      // Tell the server to get the fully populated relation data
+      // This the old format, no longer giving by default for performance reasons
+      copiedCond.disableMinifyRelation = true;
+      return this._processRequest(
+         "get",
+         this.urlParamsFind(copiedCond),
+         this.responseContext
+      );
    }
 
    /**
     * @method update
     * update model values on the server.
-    * @return {Promise}
     */
-   async update(id, values) {
-      const copiedValues = structuredClone(values) || {};
-      this.prepareMultilingualData(copiedValues);
+   update(id, value) {
+      const copidData = structuredClone(value);
 
       // remove empty properties
-      Object.keys(copiedValues).forEach((key) => {
-         if (key.includes("__relation") || copiedValues[key] == null)
-            delete copiedValues[key];
-      });
-      await this.remote().update(id, copiedValues);
-      await this.local().update(id, copiedValues);
-      this.object.emit("UPDATE", copiedValues);
+      for (const key in copidData)
+         if (copidData[key] == null) delete copidData[key];
+      this.prepareMultilingualData(copidData);
+      return this._processRequest(
+         "put",
+         this.urlParamsUpdate(id, copidData),
+         this.responseContext
+      );
    }
 };

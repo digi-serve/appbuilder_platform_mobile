@@ -12,7 +12,7 @@
 //import $ from 'jquery';
 import EventEmitter from "eventemitter2";
 
-export default class Page extends EventEmitter {
+class CommonPage extends EventEmitter {
    /**
     * @param {string} pageID
     *      The DOM element ID of the page div
@@ -31,11 +31,11 @@ export default class Page extends EventEmitter {
       this.css = css;
       this.pageID = pageID;
       this.$element = $("#" + pageID);
-      this.AB = null;
+      this.app = null;
    }
 
-   async init(AB) {
-      this.AB = AB;
+   async init(app) {
+      this.app = app;
       await this.render();
    }
 
@@ -126,3 +126,5 @@ export default class Page extends EventEmitter {
       return this.$element.find(pattern);
    }
 }
+
+export default CommonPage;
