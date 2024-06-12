@@ -102,6 +102,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
    async init() {
       super.init();
+      await this.platformReset();
+      await this.loadData(null, null, true);
+   }
 
       // TODO (Guy): Refactor.
       await this.reset();
