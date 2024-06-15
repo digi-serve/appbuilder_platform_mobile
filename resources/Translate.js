@@ -28,6 +28,7 @@ import analytics from "./Analytics.js";
 class Translate extends EventEmitter {
    constructor() {
       super();
+      this.app = null;
       this.langCode = "en";
       this.counter = 2;
       this.data = {
@@ -59,7 +60,7 @@ class Translate extends EventEmitter {
          });
          this.observer.observe(document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
          });
       } catch (err) {
          console.log(err);
@@ -84,6 +85,10 @@ class Translate extends EventEmitter {
       this.translateDOM();
    }
 
+   async init(app) {
+      this.app = app;
+   }
+
    loadData(langCode = null) {
       if (langCode) {
          this.langCode = langCode;
@@ -104,7 +109,7 @@ class Translate extends EventEmitter {
 
       $.ajax({
          url: "languages/" + this.langCode + ".json",
-         dataType: "json"
+         dataType: "json",
       })
          .done((data /*, status, xhr */) => {
             this.data = data;
@@ -160,7 +165,7 @@ class Translate extends EventEmitter {
             $nodes = $(target);
          }
 
-         $nodes.find("t,[translate]").each(function() {
+         $nodes.find("t,[translate]").each(function () {
             var $node = $(this);
             var text = this.innerHTML;
             var counter = $node.attr("translate") || 0;
@@ -176,7 +181,7 @@ class Translate extends EventEmitter {
             }
          });
 
-         $nodes.find("[placeholder]").each(function() {
+         $nodes.find("[placeholder]").each(function () {
             var $node = $(this);
             var text = $node.attr("placeholder");
             var counter = $node.attr("translate") || 0;
@@ -192,7 +197,7 @@ class Translate extends EventEmitter {
             }
          });
 
-         $nodes.find(".dialog-button, .popup-close").each(function() {
+         $nodes.find(".dialog-button, .popup-close").each(function () {
             var $node = $(this);
             var text = this.innerHTML;
             var counter = $node.attr("translate") || 0;
@@ -207,25 +212,8 @@ class Translate extends EventEmitter {
                $node.attr("translate", self.counter);
             }
          });
-
-         // The translations cause the UI shift because of the difference in
-         // word widths, we need to trigger a resize as if the window was
-         // resized to fix the layout
-
-         // if the timeout has already started lets reset it
-         // this means that other translations are happening
-         // so we can wait before calling it
-         // clearTimeout(fixNavbar);
-         // fixNavbar = setTimeout(() => {
-         //     this.emit("recenterTitle");
-         // }, 300);
       });
    }
 }
 
-var translate = new Translate();
-var t = (text) => {
-   return translate.t(text);
-};
-
-export { Translate, translate, t };
+export default new Translate();

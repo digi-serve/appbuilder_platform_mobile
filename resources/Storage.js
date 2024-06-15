@@ -6,171 +6,75 @@
  */
 "use strict";
 
-import analytics from "./Analytics.js";
 import EventEmitter from "eventemitter2";
+import { compressAccurately } from "image-conversion";
 import CryptoJS from "crypto-js";
 import Lock from "./Lock.js";
-import PBKDF2async from "./PBKDF2-async.js";
 
-const config = require("../../config/config.js");
-
-const disableEncryption = !config.platform.encryptedStorage; // false;
-const storeName = "key_value_data";
+const DEFAULT_FILE_SLICESIZE = 512;
+const NETWORK_EVENT_KEY_DOWNLOAD_FILE = "file.base64.download";
+const NETWORK_EVENT_KEY_UPLOAD_FILE = "file.base64.upload";
+const NETWORK_EVENT_PATH = "resources.storage";
+const defaultTableKeys = ["file", "user"];
 
 class Storage extends EventEmitter {
-   constructor(name = "sdc", label = "SDC", version = "1.0", sizeInMB = 2) {
+   constructor() {
       super();
-      this.secret = null; // passphrase
-      this.key = null; // 256-bit key
-      this.salt = null;
-
+      this._config = {
+         encrypt: false,
+         key: null, // 256-bit key
+      };
+      this._db = null;
+      this._isInitializedListener = false;
+      this._pendingNetworkCallbacks = {
+         downloadFile: null,
+         uploadFile: null,
+      };
       this._queueLocks = {
          // a constant reference to available Synchronization Locks.
          /* key : Lock() */
       };
-
-      // IndexedDB is standard on modern browsers
-      try {
-         const request = indexedDB.open(name);
-         request.onerror = (event) => {
-            console.error("IndexedDB failure on init", request.error);
-            analytics.logError(request.error);
+      this.app = null;
+      this.on(NETWORK_EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
+         const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
+         const downloadFile = pendingNetworkCallbacks.downloadFile;
+         const data = res.data;
+         if (downloadFile == null) {
+            if (context.error != null) console.error(context.error);
+            else this.downloadFile(null, data);
+            return;
          }
-         request.onsuccess = (event) => {
-            this.db = request.result;
-            this.db.onerror = (event) => {
-               console.error("IndexedDB error", event.target.errorCode);
-            }
-            // Test if the `key_value_data` object store is present
-            const transaction = this.db.transaction(storeName, "readonly");
-            transaction.onerror = (event) => {
-               console.log('IndexedDB store not found?', transaction.error);
-               // Store was not found. Try to create it now.
-               if (transaction.error.name == "NotFoundError") {
-                  this.db.createObjectStore(storeName);
-               }
-            }
+         if (context.error != null) downloadFile(context.error);
+         else downloadFile(null, data);
+         pendingNetworkCallbacks.downloadFile = null;
 
-         }
-         // On first time, set up the obect store
-         request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            const objectStore = db.createObjectStore(storeName);
-         }
-      } 
-      // IndexedDB not supported on this device?
-      catch (err) {
-         console.error(err);
-         alert(
-            "Error initializing the storage system:\n" +
-               (err.message || "") +
-               "\n" +
-               (err.stack || "")
-         );
-         analytics.logError(err);
-      }
-   }
-
-   wait(time = 650) {
-      return new Promise((ok) => {
-         setTimeout(ok, time);
+         // if (context.callback == null) return;
+         // const callbackResult =
+         //    (context.error != null && context.callback(context.error)) ||
+         //    (!this.validFileTypes.includes(data.type) &&
+         //       context.callback(
+         //          new Error(`This file type is invalid: ${data.type}`)
+         //       )) ||
+         //    context.callback(null, {
+         //       uuid: data.uuid,
+         //       filename: data.file,
+         //       type: data.type,
+         //       fileEntry: this.convertBase64DataToFile(
+         //          data.file,
+         //          data.contents,
+         //          {
+         //             type: data.type,
+         //          }
+         //       ),
+         //    });
+         // if (callbackResult instanceof Promise) {
+         //    try {
+         //       await callbackResult;
+         //    } catch (err) {
+         //       console.error(err);
+         //    }
+         // }
       });
-   }
-
-   /** 
-    * Set the password that will be used to encrypt/decrypt data.
-    * 
-    * The password is passed through a key derivation function (PBKDF2)
-    * to generate the actual crypto key.
-    *
-    * @param {string} secret
-    *   Password
-    * @param {boolean} [resetSalt]
-    *   A salt is automatically generated the first time a password is set.
-    *   You may optionally choose to force reset to a new salt. This will
-    *   premanently lose the old password and all data that was stored.
-    * @return {Promise}
-    */
-   setPassword(secret, resetSalt = false) {
-      return new Promise((resolve, reject) => {
-         const startTime = Date.now();
-         this.secret = secret;
-
-         Promise.resolve()
-            .then(() => {
-               if (resetSalt) {
-                  return null;
-               } else {
-                  return this.get("__sdc_salt", {
-                     resetAppOnFailure: false,
-                     deserialize: false
-                  });
-               }
-            })
-            .then((salt) => {
-               if (!salt) {
-                  // Generate new salt
-                  // (any old encrypted data will be lost)
-                  this.salt = CryptoJS.lib.WordArray.random(16);
-                  // Save the new salt
-                  return this.set("__sdc_salt", this.salt.toString(), {
-                     serialize: false,
-                     forcePlainText: true
-                  });
-               } else {
-                  // Use existing salt
-                  this.salt = CryptoJS.enc.Hex.parse(salt);
-                  return null;
-               }
-            })
-            .then(() => {
-               // Allow any animations to start before beginning KDF
-               return this.wait(10);
-            })
-            .then(() => {
-               // Async (crashes debugger)
-               const fn = PBKDF2async;
-               return fn(this.secret, this.salt, {
-                  keySize: 256 / 32,
-                  iterations: 10000,
-                  iterationMode: "semi",
-                  semiCount: 2000
-               });
-            })
-            .then((key) => {
-               this.key = key;
-
-               // If the KDF was too fast, wait some more
-               const endTime = Date.now();
-               const diff = endTime - startTime;
-               if (diff > 650) {
-                  return null;
-               } else {
-                  return this.wait(diff);
-               }
-            })
-            .then(() => {
-               resolve();
-            })
-            .catch((err) => {
-               console.error("Password error", err);
-               analytics.logError(err);
-               reject(err);
-            });
-      });
-   }
-
-   /**
-    * Encrypt a string with AES, using the key from `setPassword()`.
-    *
-    * @param {string} plaintext
-    * @return {string}
-    *      Ciphertext with embedded IV.
-    */
-   encrypt(plaintext) {
-      const iv = CryptoJS.lib.WordArray.random(16);
-      const ciphertext = CryptoJS.AES.encrypt(plaintext, this.key, { iv: iv });
-      return `${ciphertext}:::${iv}`;
    }
 
    /**
@@ -180,48 +84,84 @@ class Storage extends EventEmitter {
     *      An encoded string produced by `encrypt()`.
     * @return {string}
     */
-   decrypt(encoded) {
+   _decrypt(encoded) {
+      if (encoded == null) return null;
       const [ciphertext, ivHex] = encoded.split(":::");
+      if (ciphertext == null || ivHex == null) return null;
       const iv = CryptoJS.enc.Hex.parse(ivHex);
-      const decrypted = CryptoJS.AES.decrypt(ciphertext, this.key, { iv }).toString(CryptoJS.enc.Utf8);
+      const decrypted = CryptoJS.AES.decrypt(ciphertext, this._config.key, {
+         iv,
+      }).toString(CryptoJS.enc.Utf8);
       return decrypted;
    }
 
    /**
-    * Test whether the secret given through `setPassword()` is valid.
+    * Encrypt a string with AES, using the key from `setPassword()`.
+    *
+    * @param {string} plaintext
+    * @return {string}
+    *      Ciphertext with embedded IV.
     */
-   testCrypto() {
-      analytics.event("testing password");
-
-      return new Promise((resolve, reject) => {
-         if (!this.secret) reject();
-         else {
-            this.get("__sdc_password", {
-               resetAppOnFailure: false,
-               deserialize: false
-            })
-               .then((value) => {
-                  // Compare against previously set password
-                  const hash = CryptoJS.SHA256(this.secret).toString();
-                  if (value === null) {
-                     // No previous password. Save hash now.
-                     this.set("__sdc_password", hash, {
-                        serialize: false
-                     });
-                     resolve();
-                     this.emit("ready");
-                  } else if (value == hash) {
-                     resolve();
-                     this.emit("ready");
-                  } else {
-                     reject();
-                  }
-               })
-               .catch((err) => {
-                  reject(err);
-               });
-         }
+   _encrypt(plaintext) {
+      const iv = CryptoJS.lib.WordArray.random(16);
+      const ciphertext = CryptoJS.AES.encrypt(plaintext, this._config.key, {
+         iv: iv,
       });
+      return `${ciphertext}:::${iv}`;
+   }
+
+   async init(app) {
+      this.app = app;
+      const dcs = this.app.abApp.datacollectionsIncluded();
+      // IndexedDB is standard on modern browsers
+      const _db =
+         this._db ||
+         (this._db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open("app");
+            request.onerror = (event) => {
+               reject(event.target.error);
+            };
+            request.onsuccess = (event) => {
+               resolve(event.target.result);
+            };
+
+            // On first time, set up the obect store
+            request.onupgradeneeded = (event) => {
+               const db = event.target.result;
+               defaultTableKeys.forEach((defaultTableKey) => {
+                  db.createObjectStore(defaultTableKey);
+               });
+               dcs.forEach((dc) => {
+                  db.createObjectStore(dc.refStorage());
+               });
+            };
+         }));
+      if (this._isInitializedListener) return;
+      _db.onerror = (event) => {
+         console.error("IndexedDB error", event.target.errorCode);
+      };
+      this.app.resources.network.on(
+         NETWORK_EVENT_KEY_UPLOAD_FILE,
+         async (context, data) => {
+            if (context.callback == null) return;
+            const callbackResult =
+               (context.error != null && context.callback(context.error)) ||
+               context.callback(null, {
+                  uuid: data.uuid,
+                  filename: data.file,
+                  type: data.type,
+                  fileEntry: context.data.fileEntry,
+               });
+            if (callbackResult instanceof Promise) {
+               try {
+                  await callbackResult;
+               } catch (err) {
+                  console.error(err);
+               }
+            }
+         }
+      );
+      this._isInitializedListener = true;
    }
 
    /**
@@ -231,62 +171,69 @@ class Storage extends EventEmitter {
     *      Name of thing to save.
     * @param {string/object} value
     *      Value of thing to save.
-    * @param {object} [options]
-    * @param {boolean} [options.forcePlainText]
-    *      Bypass encryption and save as plain text?
-    *      Default false.
-    * @param {boolean} [options.serialize]
-    *      Serialize `value` with JSON.stringify().
-    *      Default true.
     * @return {Promise}
     */
-   set(key, value, options = {}) {
-      const defaults = {
-         forcePlainText: false,
-         serialize: true
-      };
-      if (disableEncryption) {
-         defaults.forcePlainText = true;
-      }
-      options = $.extend({}, defaults, options);
-      let isEncrypted = 0;
+   set(tableKey, key, value) {
+      const parsedValue =
+         (this._config.encrypt &&
+            (() => {
+               const circularItems = [];
+               return this._encrypt(
+                  (typeof value === "object" &&
+                     // Fix circular objects.
+                     JSON.stringify(value, (key, value) => {
+                        if (typeof value === "object" && value !== null) {
+                           // Duplicate reference found, discard key
+                           if (circularItems.includes(value)) return;
 
-      // Serialize
-      if (options.serialize) {
-         const circularItems = []
-         value = JSON.stringify(value, (key, value) => {
-            if (typeof value === "object" && value !== null) {
-               // Duplicate reference found, discard key
-               if (circularItems.includes(value)) return;
-
-               // Store value in our collection
-               circularItems.push(value);
-            }
-            return value;
-         })
-      }
-
-      // Encrypt
-      if (!options.forcePlainText && this.secret) {
-         value = this.encrypt(value);
-         isEncrypted = 1;
-      }
-
+                           // Store value in our collection
+                           circularItems.push(value);
+                        }
+                        return value;
+                     })) ||
+                     value
+               );
+            })()) ||
+         value;
       return new Promise((resolve, reject) => {
-         const transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this._db.transaction(tableKey, "readwrite");
          transaction.oncomplete = (event) => {
             resolve();
-         }
+         };
          transaction.onerror = (event) => {
-            console.error("DB error during set", transaction.error)
+            console.error("DB error during set", transaction.error);
             reject(transaction.error);
-         }
+         };
+         transaction.objectStore(tableKey).put(parsedValue, key);
+      });
+   }
 
-         const store = transaction.objectStore(storeName);
-         const req = store.put({
-            value: value,
-            isEncrypted: isEncrypted
-         }, key);
+   /**
+    * Load something from persistent storage.
+    *
+    * @param {string} key
+    *      Name of thing to load.
+    * @return {Promise}
+    */
+   get(tableKey, key) {
+      return new Promise((resolve, reject) => {
+         const transaction = this._db.transaction(tableKey, "readonly");
+         transaction.onerror = (event) => {
+            console.error("DB error during get", transaction.error);
+            reject(transaction.error);
+         };
+         const store = transaction.objectStore(tableKey);
+         const req = store.get(key);
+         req.onsuccess = (event) => {
+            const result = req.result;
+            const value =
+               (this._config.encrypt && this._decrypt(result)) || result;
+            try {
+               resolve(JSON.parse(value));
+            } catch (err) {
+               resolve(value);
+            }
+         };
       });
    }
 
@@ -296,160 +243,248 @@ class Storage extends EventEmitter {
     * @param {string} key
     *      Name of thing to load.
     * @param {object} [options]
-    * @param {boolean} [resetAppOnFailure]
-    *      Reload the app on failure to decrypt?
-    *      Default true.
     * @param {boolean} [deserialize]
     *      Deserialize loaded value with JSON.parse().
     *      Default true.
     * @return {Promise}
     */
-   get(key, options = {}) {
-      if (!this.db) {
-         console.warn("DB not available yet. retrying...");
-         return this.wait(50)
-            .then(() => {
-               return this.get(key, options);
-            });
-      }
-
-      const defaults = {
-         resetAppOnFailure: true,
-         deserialize: true
-      };
-      if (disableEncryption) {
-         defaults.resetAppOnFailure = false;
-      }
-      options = $.extend({}, defaults, options);
-
+   getAll(tableKey, query) {
       return new Promise((resolve, reject) => {
-         const transaction = this.db.transaction(storeName, "readonly");
+         const transaction = this._db.transaction(tableKey, "readonly");
          transaction.onerror = (event) => {
-            console.error("DB error during get", transaction.error)
+            console.error("DB error during get", transaction.error);
             reject(transaction.error);
-         }
-
-         const store = transaction.objectStore(storeName);
-         const req = store.get(key);
+         };
+         const store = transaction.objectStore(tableKey);
+         const req = store.getAll(query);
          req.onsuccess = (event) => {
-            const row = req.result;
-            let value, isEncrypted;
-            // Parse results
-            if (row) {
-               value = row.value;
-               isEncrypted = row.isEncrypted;
-            }
-            // No results found for this key
-            else {
-               value = null;
-               isEncrypted = false;
-            }
-
-            // Decrypt
-            if (isEncrypted && this.secret) {
-               try {
-                  value = this.decrypt(value);
-               } catch (err) {
-                  // Unable to decrypt
-                  if (options.resetAppOnFailure) {
-                     document.location.reload();
-                  } else {
-                     console.error("Incorrect password");
-                     reject(new Error("Incorrect password"));
+            resolve(
+               req.result.map((e) => {
+                  const result = this._decrypt(e);
+                  try {
+                     return JSON.parse(result);
+                  } catch (err) {
+                     return result;
                   }
-                  return;
-               }
-            } 
-            // No password was given
-            else if (isEncrypted) {
-               if (options.resetAppOnFailure) {
-                  document.location.reload();
-               } else {
-                  console.error("Missing password");
-                  reject(new Error("Missing password"));
-               }
-               return;
-            }
-
-            // Deserialize
-            if (options.deserialize) {
-               try {
-                  value = JSON.parse(value);
-               } catch (err) {
-                  console.log("Bad saved data?", key, value);
-                  value = null;
-               }
-            }
-
-            resolve(value);            
-         }
-
+               })
+            );
+         };
       });
    }
 
    /**
-    * gets the data from localstorage, then wipes that record on localstorage. Then returns the data
-    *
-    * @param {string} key
-    * @return {object}
-    */
-   fetchAndClear(key, options = {}) {
-      return this.get(key, options).then((parsedData) => {
-         return this.clear(key).then(() => {
-            return parsedData;
-         });
-      });
-   }
-
-   /** 
     * Delete the specified record from storage.
     * Note that the 'record' is the whole object stored under the key.
     * @param {string} key
     * @return {Promise}
     */
-   clear(key) {
+   clear(tableKey, key) {
       return new Promise((resolve, reject) => {
-         const transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this._db.transaction(tableKey, "readwrite");
          transaction.onerror = (event) => {
             console.error("DB error during clear", event.error);
             err.message += `DB Error clearing record: ${key}`;
-            analytics.logError(event.error);
             reject(event.error);
-         }
-         const store = transaction.objectStore(storeName);
+         };
+         const store = transaction.objectStore(tableKey);
          const req = store.delete(key);
          req.onsuccess = (event) => {
             resolve();
-         }
+         };
       });
    }
-
 
    /**
     * Delete all records from storage.
     *
     * @return {Promise}
     */
-   clearAll(keyRange) {
+   clearAll(tableKey, keyRange) {
       return new Promise((resolve, reject) => {
-         const transaction = this.db.transaction(storeName, "readwrite");
+         const transaction = this._db.transaction(tableKey, "readwrite");
          transaction.onerror = (event) => {
             console.error("DB error during clearAll", event.error);
-            analytics.logError(event.error);
             reject(event.error);
-         }
-         const store = transaction.objectStore(storeName);
+         };
+         const store = transaction.objectStore(tableKey);
          if (keyRange) {
             const req = store.delete(keyRange);
             req.onsuccess = (event) => {
                resolve();
-            }
+            };
          } else {
             const req = store.clear();
             req.onsuccess = (event) => {
                resolve();
-            }
+            };
          }
+      });
+   }
+
+   /**
+    * Compress a file using the browser's built-in compression.
+    * * @param {Blob} file
+    */
+   async compressFile(file) {
+      return new Promise((resolve, reject) => {
+         new compressAccurately(file, 100).then((compressedFile) => {
+            //The res in the promise is a compressed Blob type (which can be treated as a File type) file;
+            if (compressedFile instanceof Blob) {
+               // Convert Blob to File if needed
+               const compressedFileFromBlob = new File(
+                  [compressedFile],
+                  file.name,
+                  {
+                     type: compressedFile.type,
+                  }
+               );
+               resolve(compressedFileFromBlob);
+            } else {
+               reject(new Error("Invalid compressed file format"));
+            }
+         });
+      });
+   }
+
+   /**
+    * Convert base64 data to a File object.
+    *
+    * @param {string} filename
+    * @param {string} base64Data
+    * @param {Object} options
+    *    endings - {string} How to interpret newline characters (\n) within the contents,
+    *       if the data is text.
+    *    lastModified - {number} A number representing the number of milliseconds
+    *       between the Unix time epoch and when the file was last modified.
+    *    sliceSize - {number} SliceSize to process the byteCharacters
+    *    type - {string} the content type of the file i.e (image/jpeg - image/png - text/plain)
+    * @return {File}
+    */
+   convertBase64DataToFile(filename, base64Data, options = {}) {
+      /**
+       * Convert a base64 string in a Blob according to the data.
+       * @see http://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
+       */
+      const sliceSize = options.sliceSize || DEFAULT_FILE_SLICESIZE;
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
+      for (
+         let offset = 0;
+         offset < byteCharacters.length;
+         offset += sliceSize
+      ) {
+         const slice = byteCharacters.slice(offset, offset + sliceSize);
+         const byteNumbers = new Array(slice.length);
+         for (let i = 0; i < slice.length; i++)
+            byteNumbers[i] = slice.charCodeAt(i);
+         byteArrays.push(new Uint8Array(byteNumbers));
+      }
+
+      // Convert a Blob object to a File object.
+      const copiedOptions = structuredClone(options);
+      delete copiedOptions.sliceSize;
+      return new File([new Blob(byteArrays)], filename, copiedOptions);
+   }
+
+   /**
+    * Convert a File object to a base64 string.
+    *
+    * @param {File} file
+    *      Blob to convert
+    * @return {Promise}
+    *      Resolves with {string}
+    */
+   convertFileToBase64Data(file) {
+      return new Promise((resolve) => {
+         const reader = new FileReader();
+         reader.onloadend = function () {
+            const base64 = reader.result.split(",")[1]; // Remove data URL prefix
+            resolve(base64);
+         };
+         reader.readAsDataURL(file);
+      });
+   }
+
+   async downloadFile(uuid, data) {
+      return data || (await new Promise((resolve, reject) => {
+         (async () => {
+            this._pendingNetworkCallbacks.downloadFile = async (
+               err,
+               result
+            ) => {
+               if (err != null) reject(new Error(err.message));
+               if (err != null || result.uuid == null)
+                  reject(new Error(`No file data (${uuid})`));
+               resolve(result);
+            };
+
+            // image was not found on device you need to fetch it
+            const network = this.app.resources.network;
+            await network.get(
+               {
+                  url: network.validRoutes.fileBase64Download.replace(
+                     ":uuid",
+                     uuid
+                  ),
+               },
+               {
+                  key: network.validRoutes.fileBase64Download,
+                  context: {
+                     targetEventKey: NETWORK_EVENT_KEY_DOWNLOAD_FILE,
+                     targetEventPath: NETWORK_EVENT_PATH,
+                     callback: async (err, result) => {
+                        if (err != null) reject(new Error(err.message));
+                        if (err != null || result.uuid == null)
+                           reject(new Error(`No file data (${uuid})`));
+                        resolve(result);
+                     },
+                  },
+               }
+            );
+         })();
+      }));
+   }
+
+   uploadFile(objID, fieldID, data) {
+      if (data.fileEntry.type)
+         throw new Error(`This file type is invalid: ${type}`);
+      return new Promise((resolve, reject) => {
+         (async () => {
+            await this.app.resources.network.post(
+               {
+                  url: `/file/upload/base64/${objID}/${fieldID}`,
+                  data: {
+                     fieldID,
+                     file: data.file,
+                     fileID: data.uuid,
+                     fileName: data.filename,
+                     objID,
+                     type: data.fileEntry.type,
+                     uploadedBy: data.user,
+                  },
+               },
+               {
+                  key: NETWORK_EVENT_KEY_UPLOAD_FILE,
+                  context: {
+                     targetEventKey: NETWORK_EVENT_KEY_UPLOAD_FILE,
+                     targetEventPath: NETWORK_EVENT_PATH,
+                     data: {
+                        fileEntry: data.fileEntry,
+                     },
+                     callback: async (err, result) => {
+                        if (err != null) reject(new Error(err.message));
+                        if (result.uuid == null)
+                           reject(
+                              new Error(
+                                 `Failed to upload the file! (${data.filename})`
+                              )
+                           );
+                        resolve(data);
+                     },
+                  },
+               }
+            );
+         })();
       });
    }
 
@@ -462,11 +497,27 @@ class Storage extends EventEmitter {
     */
    Lock(key) {
       if (!this._queueLocks[key]) {
-         this._queueLocks[key] = new Lock();
+         this._queueLocks[key] = new Lock(key);
       }
       return this._queueLocks[key];
    }
+
+   get config() {
+      return structuredClone(this._config);
+   }
+
+   set config(values = {}) {
+      this._config.encrypt = values.encrypt ?? this._config.encrypt;
+      this._config.key = values.encrypt || this._config.key;
+   }
+
+   get validFileTypes() {
+      return ["image/jpg", "image/jpeg", "image/png", "image/gif", "image/bmp"];
+   }
+
+   get validStorageKeys() {
+      return structuredClone(this._db.objectStoreNames);
+   }
 }
 
-const storage = new Storage();
-export { storage, Storage };
+export default new Storage();

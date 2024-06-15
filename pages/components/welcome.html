@@ -1,0 +1,472 @@
+<!-- Framework7 component template -->
+<template>
+   <div class="page" id="welcome-page">
+      <div class="navbar">
+         <div class="navbar-bg"></div>
+         <div class="navbar-inner">
+            <div class="left">
+               <a
+                  href="#"
+                  class="link icon-only panel-open"
+                  data-panel="left"
+                  data-cy="leftWelcome"
+               >
+                  <i class="fa fa-bars"></i>
+               </a>
+            </div>
+            <div class="sliding title" data-cy="welcomeTitle">
+               <t>Welcome</t>
+            </div>
+         </div>
+      </div>
+
+      <div
+         class="page-content ptr-content"
+         ptr-data-ptr-distance="55"
+         ptr-data-ptr-mousewheel="true"
+      >
+         <!-- Default pull to refresh preloader-->
+         <div class="ptr-preloader">
+            <div class="preloader"></div>
+            <div class="ptr-arrow"></div>
+         </div>
+         <div class="block-title"></div>
+         <div class="card" id="sync-data" style="display: none">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
+               Announcement
+            </div>
+            <div class="card-content card-content-padding">
+               <t>Use the menu on the left to navigate</t><br />
+               <br />
+               <t>Local code built at: {{buildTimestamp}}</t>
+               {{#js_if "this.systemInfo != null"}}
+               <br />
+               <br />
+               <t>sysInfo: {{systemInfo}}</t>
+               {{/js_if}}
+            </div>
+         </div>
+         <!-- if has auth token, hide this option -->
+         <div id="jsqr-storage-panel" class="card">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
+               Scan a QR code from the secure website to begin setup
+            </div>
+            <div class="card-content card-content-padding">
+               <div id="loadingMessage">
+                  🎥 Unable to access video stream (please make sure you have a
+                  webcam enabled)
+               </div>
+               <canvas id="canvas" hidden></canvas>
+               <div id="output" hidden>
+                  <div hidden><b>Data:</b> <span id="outputData"></span></div>
+               </div>
+               <button
+                  id="qr-scan-refresh"
+                  class="button button-large button-outline color-purple"
+               >
+                  <i class="fa fa-qrcode"></i>
+                  <t id="outputMessage">No QR code detected.</t>
+               </button>
+            </div>
+         </div>
+         <div class="card">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
+               Refresh App
+            </div>
+            <div class="card-content card-content-padding">
+               <t
+                  >Tap below to remove all locally stored data, except the
+                  authToken.</t
+               ><br />
+               <br />
+               <button
+                  id="refresh-app"
+                  data-cy="reset-get-server"
+                  class="button button-large button-outline color-purple"
+               >
+                  <i class="fa fa-sync"></i>
+                  <t>Refresh Now</t>
+               </button>
+            </div>
+         </div>
+      </div>
+   </div>
+   <style>
+      body {
+         font-family: "Ropa Sans", sans-serif;
+         color: #333;
+         max-width: 640px;
+         margin: 0 auto;
+         position: relative;
+      }
+
+      #githubLink {
+         position: absolute;
+         right: 0;
+         top: 12px;
+         color: #2d99ff;
+      }
+
+      h1 {
+         margin: 10px 0;
+         font-size: 40px;
+      }
+
+      #loadingMessage {
+         text-align: center;
+         padding: 40px;
+         background-color: #eee;
+      }
+
+      #canvas {
+         width: 100%;
+      }
+
+      #output {
+         margin-top: 20px;
+         background: #eee;
+         padding: 10px;
+         padding-bottom: 0;
+      }
+
+      #output div {
+         padding-bottom: 10px;
+         word-wrap: break-word;
+      }
+
+      #noQRFound {
+         text-align: center;
+      }
+   </style>
+</template>
+<!-- <script src="../jsQR.js"></script> -->
+<!-- Framework7 component script -->
+<script>
+   /**
+    * The Welcome page presents a simple text view
+    * This page is only active when the user navigates to it.
+    */
+   const DELAY_REFRESH = 3000;
+   const IMPORT_CREDENTIALS_TIMEOUT = 30000;
+   const cachedState = {
+      buildTimestamp: new Date().toLocaleDateString("en-US", {
+         year: "numeric",
+         month: "2-digit",
+         day: "2-digit",
+         hour: "2-digit",
+         minute: "2-digit",
+      }),
+      systemInfo: null,
+   };
+   return {
+      async data() {
+         const app = this.$root.app;
+         cachedState.buildTimestamp = app.buildTimeStamp;
+         cachedState.systemInfo =
+            app.pages.appPage.components.welcome.getSystemInfo();
+         return cachedState;
+      },
+      on: {
+         pageBeforeIn() {
+            this.$(".view-main .navbar").attr(
+               "class",
+               "navbar bg-color-purple text-color-white color-theme-white"
+            );
+            this.$(".view-main .navbar-bg").attr(
+               "class",
+               "navbar-bg bg-color-purple"
+            );
+         },
+         async pageInit() {
+            const $app = this.$app;
+            $app.off("ptrRefresh");
+            $app.on("ptrRefresh", (dom, done) => {
+               // User may want to see QR scan option?
+               // user may want to see force an update from the server?
+               // user may expect to see a refresh of the page?
+               // TODO
+               done();
+            });
+            // get the system info, such as used memory, free memory, etc
+            this.$update();
+            const $syncData = $("#sync-data");
+            const $jsQRStoragePanel = $("#jsqr-storage-panel");
+            const app = this.$root.app;
+
+            // Sync with server
+            const resources = app.resources;
+            const busy = resources.busy;
+            const appPage = app.pages.appPage;
+            const dialog = $app.dialog;
+            $("#refresh-app").on("click", () => {
+               if (!navigator.onLine) {
+                  dialog.alert(
+                     "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
+                     "<t>No Network Detected.</t>"
+                  );
+                  return;
+               }
+               dialog.confirm(
+                  "<t>This will fetch the latest data from the server, clearing all local data. Continue?</t>",
+                  `<t data-cy="confirmReset" >Reset Data</t>`,
+                  // TODO
+                  async () => {
+                     busy.show("Refreshing data");
+                     try {
+                        // show loading ui
+                        await appPage.forceApplicationReset(true);
+                     } catch (error) {
+                        console.error(error);
+                     }
+                     busy.hide();
+                  }
+               );
+            });
+            const username = resources.account.username;
+            if (username != null) {
+               $syncData.show();
+               $jsQRStoragePanel.hide();
+               return;
+            } else {
+               $syncData.hide();
+               $jsQRStoragePanel.show();
+            }
+            $syncData.hide();
+            $jsQRStoragePanel.show();
+            const video = document.createElement("video");
+            const canvasElement = $("#canvas").get(0);
+            const canvas = canvasElement.getContext("2d");
+            const loadingMessage = $("#loadingMessage").get(0);
+            const outputContainer = $("#output").get(0);
+            const outputMessage = $("#outputMessage").get(0);
+            const outputData = $("#outputData").get(0);
+            const drawLine = (begin, end, color) => {
+               canvas.beginPath();
+               canvas.moveTo(begin.x, begin.y);
+               canvas.lineTo(end.x, end.y);
+               canvas.lineWidth = 4;
+               canvas.strokeStyle = color;
+               canvas.stroke();
+            };
+            let pendingLoadData = null;
+            const tick = async () => {
+               loadingMessage.innerText = "⌛ Loading video...";
+               if (
+                  video.readyState !== video.HAVE_ENOUGH_DATA ||
+                  pendingLoadData != null
+               ) {
+                  requestAnimationFrame(tick);
+                  return;
+               }
+               loadingMessage.hidden = true;
+               canvasElement.hidden = false;
+               outputContainer.hidden = false;
+               canvasElement.height = video.videoHeight;
+               canvasElement.width = video.videoWidth;
+               canvas.drawImage(
+                  video,
+                  0,
+                  0,
+                  canvasElement.width,
+                  canvasElement.height
+               );
+               const imageData = canvas.getImageData(
+                  0,
+                  0,
+                  canvasElement.width,
+                  canvasElement.height
+               );
+               try {
+                  const qrCode = this.$root.app.utils.jsQR(
+                     imageData.data,
+                     imageData.width,
+                     imageData.height,
+                     {
+                        inversionAttempts: "dontInvert",
+                     }
+                  );
+                  if (qrCode?.data == null) {
+                     outputMessage.hidden = false;
+                     outputMessage.textContent = "No QR code detected.";
+                     outputData.parentElement.hidden = true;
+                     requestAnimationFrame(tick);
+                     return;
+                  }
+
+                  // we need to pause the tick function, as it will continue to scan the QR code
+                  // and we only want to scan it once: running it multiple times will only overload the client and the server for no reason
+                  // we can resume the tick function once the user clicks the refresh button, or if the try fails
+                  // stopping the video stream should do the trick
+                  video.pause();
+                  outputMessage.hidden = true;
+                  outputData.parentElement.hidden = false;
+                  outputData.innerText = qrCode.data;
+
+                  // check if the QR code is valid
+                  const hash = qrCode.data;
+                  const jrrMatch = hash.match(/JRR=(\w+)/)?.[1];
+                  const tenantMatch = hash.match(/tenant=(\w+)/)?.[1];
+                  drawLine(
+                     qrCode.location.topLeftCorner,
+                     qrCode.location.topRightCorner,
+                     "#FF3B58"
+                  );
+                  drawLine(
+                     qrCode.location.topRightCorner,
+                     qrCode.location.bottomRightCorner,
+                     "#FF3B58"
+                  );
+                  drawLine(
+                     qrCode.location.bottomRightCorner,
+                     qrCode.location.bottomLeftCorner,
+                     "#FF3B58"
+                  );
+                  drawLine(
+                     qrCode.location.bottomLeftCorner,
+                     qrCode.location.topLeftCorner,
+                     "#FF3B58"
+                  );
+
+                  // this is some basic validation, we should probably do more
+                  if (
+                     jrrMatch == null ||
+                     tenantMatch == null ||
+                     !tenantMatch.includes("admin")
+                  ) {
+                     outputMessage.hidden = false;
+                     outputMessage.textContent = "invalid QR Code";
+                     outputData.parentElement.hidden = true;
+                     video.play();
+                     requestAnimationFrame(tick);
+                     return;
+                  }
+                  busy.show("Importing credentials");
+                  const toast = $app.toast;
+                  toast
+                     .create({
+                        text: "<t>Token found! Attempting to import credentials</t>",
+                        position: "center",
+                     })
+                     .open();
+
+                  // timeout, wait at least thirty seconds before reloading
+                  // the login token should be set by now
+                  pendingLoadData = setTimeout(() => {
+                     // give the user an option to refresh
+                     dialog
+                        .create({
+                           title: "<t>Importing credentials is taking too long.</t>",
+                           text: "<t>Would you like to reload the app, or try scanning the code again?</t>",
+                           buttons: [
+                              {
+                                 text: "<t>Try Again</t>",
+                                 onClick: () => {
+                                    clearTimeout(pendingLoadData);
+                                    pendingLoadData = null;
+                                    dialog.close();
+                                    video.play();
+                                    requestAnimationFrame(tick);
+                                 },
+                              },
+                              {
+                                 text: "<t>Reload</t>",
+                                 onClick: () => {
+                                    location.reload(true);
+                                 },
+                              },
+                           ],
+                        })
+                        .open();
+
+                     setTimeout(() => {
+                        location.reload(true);
+                     }, DELAY_REFRESH);
+                  }, IMPORT_CREDENTIALS_TIMEOUT);
+                  await appPage.updateAccount(jrrMatch, tenantMatch);
+                  toast
+                     .create({
+                        text: "<t>Credentials imported successfully! reloading</t>",
+                        position: "center",
+                     })
+                     .open();
+                  busy.hide();
+
+                  // we have to reload the app and re-login after syncing the credentials
+                  busy.show("Refreshing...")
+                  setTimeout(() => {
+                     toast
+                     .create({
+                        text: "<t>Finished!</t>",
+                        position: "center",
+                     })
+                     .open();
+                     busy.hide();
+                     appPage.emit("ready");
+                     // location.reload(true);
+                  }, DELAY_REFRESH);
+                  clearTimeout(pendingLoadData);
+                  pendingLoadData = null;
+               } catch (error) {
+                  console.error(error);
+                  outputMessage.hidden = false;
+                  outputMessage.textContent = error.message;
+                  outputData.parentElement.hidden = true;
+                  video.pause();
+                  video.currentTime = 0;
+                  video.srcObject.getTracks().forEach((track) => {
+                     track.stop();
+                  });
+               }
+            };
+            try {
+               video.srcObject = await navigator.mediaDevices.getUserMedia({
+                  video: { facingMode: "environment" },
+               });
+               video.setAttribute("playsinline", true);
+               video.play();
+               requestAnimationFrame(tick);
+            } catch (error) {
+               console.error(error);
+               video.pause();
+               video.currentTime = 0;
+               video.srcObject.getTracks().forEach((track) => {
+                  track.stop();
+               });
+            }
+            $("#qr-scan-refresh").on("click", async () => {
+               // Stop the current stream (if any)
+               if (video.srcObject != null)
+                  video.srcObject.getTracks().forEach((track) => track.stop());
+
+               try {
+                  // Ask the browser for permissions again
+                  // Update the video element with the new stream
+                  video.srcObject = await navigator.mediaDevices.getUserMedia({
+                     video: { facingMode: "environment" },
+                  });
+                  video.setAttribute("playsinline", true);
+                  video.currentTime = 0;
+                  video.play();
+                  requestAnimationFrame(tick);
+               } catch (error) {
+                  console.error(error);
+                  if (navigator.mediaDevices?.getUserMedia == null)
+                     dialog
+                        .alert("We are not able to scan a QR in this browser")
+                        .open();
+                  dialog.alert("QR should be supported on this browser").open();
+               }
+            });
+         },
+      },
+   };
+</script>
