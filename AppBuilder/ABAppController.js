@@ -48,6 +48,7 @@ export default class ABAppController extends EventEmitter2 {
       this.page = page;
       const app = this.page.app;
       const abApp = app.abApp;
+      this.abApp = app.abApp;
       if (dcIDs?.length > 0)
          this._datacollections = abApp.datacollectionsIncluded((dc) => {
             return dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1;

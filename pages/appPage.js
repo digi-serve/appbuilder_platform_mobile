@@ -10,7 +10,7 @@
 import Common from "./classes/Common.js";
 
 import ABApplicationList from "../../applications/applications.js";
-import appFeedback from "../resources/AppFeedback.js";
+// import appFeedback from "../resources/AppFeedback.js";
 
 import inbox from "./components/inbox.js";
 import landing from "./components/landing.js";
@@ -108,13 +108,6 @@ class AppPage extends Common {
             components.settings.route,
             components.welcome.route,
             {
-               path: "/feedback/",
-               popup: {
-                  componentUrl:
-                     "./lib/applications/feedback/templates/feedback.html",
-               },
-            },
-            {
                path: "/profile/",
                componentUrl:
                   "./lib/applications/profile/templates/profile-landing.html",
@@ -143,7 +136,6 @@ class AppPage extends Common {
 
             // TODO (Guy): Refactor these in the future.
             await Promise.all([
-               components.feedback.init(this),
                components.profile.init(this),
             ]);
 
@@ -188,7 +180,7 @@ class AppPage extends Common {
          });
 
          // TODO (Guy): Refactor this later.
-         appFeedback.init(appView.router);
+         // appFeedback.init(appView.router);
          this.appView = appView;
          busy.hide();
       });
@@ -236,11 +228,9 @@ class AppPage extends Common {
 
       // TODO (Guy): Refactor these in the future.
       let applications = ABApplicationList.map((App) => new App());
-      const feedback = applications.find((app) => app.ID === "Feedback");
       const profile = applications.find((app) => app.ID === "PROFILE");
       applications = applications.filter((app) => {
          switch (app.ID) {
-            case "Feedback":
             case "PROFILE":
                return false;
             default:
@@ -251,7 +241,7 @@ class AppPage extends Common {
 
       // Component objects that will be referenced by F7 component code
       const components = this.components;
-      components.feedback = feedback;
+      // components.feedback = feedback;
       components.profile = profile;
    }
 
@@ -398,22 +388,6 @@ class AppPage extends Common {
 
       // wipe the cache and hard reload
       this._pendingApplicationReset = false;
-   }
-
-   /**
-    * Activate the feedback form
-    */
-   activateFeedback() {
-      try {
-         appFeedback.open();
-      } catch (err) {
-         console.log("Feedback error", err);
-         this.f7App.dialog.alert(
-            "<t>There was a problem sending feedback</t>",
-            "<t>Sorry</t>"
-         );
-         appFeedback.close();
-      }
    }
 }
 
