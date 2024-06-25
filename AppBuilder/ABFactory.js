@@ -253,7 +253,12 @@ export default class ABFactory extends ABFactoryCore {
                ? await dc.datasource.model().local().syncRemoteMaster(data)
                : await dc.datasource.model().local().syncLocalMaster(data);
          if (isServerPreferred) dc.reduceCondition(normalizedData);
-         await dc.processIncomingData(normalizedData);
+
+         // NOTE: .processIncomingData() wants the data in the expanded format:
+         // { data, pos, total_count }
+         // we need to insert normalizedData back into the original packet:
+         data.data = normalizedData;
+         await dc.processIncomingData(data);
          const callbackResult = context.callback?.(null, data);
          if (callbackResult instanceof Promise) await callbackResult;
          dc.emit("data", normalizedData);

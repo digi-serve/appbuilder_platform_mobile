@@ -630,13 +630,13 @@ module.exports = class ABModelLocal extends ABModelCore {
    /**
     * dataVerify()
     * make sure we are always working with an array of data
-    * Network does not always send us an array 
+    * Network does not always send us an array
     * @param {array} allData
     * @return {array}
     */
    dataVerify(allData) {
       // TODO this should be unnecessary
-      if (allData.data?.length) {
+      if (Array.isArray(allData.data)) {
          allData = allData.data;
       }
       if (!Array.isArray(allData)) {

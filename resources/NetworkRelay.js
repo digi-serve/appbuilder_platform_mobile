@@ -706,7 +706,7 @@ class NetworkRelay extends NetworkRest {
                 * @returns {any} usedful data
                 */
                function findNested(input) {
-                  if (input.data) {
+                  if (input.data && typeof input.total_count == "undefined") {
                      return findNested(input.data);
                   } else {
                      return input;
