@@ -49,6 +49,6 @@ module.exports = class ABMLClass extends ABMLClassCore {
     * @return {string}
     */
    languageDefault() {
-      return this.AB.translate.langCode || "en";
+      return this.AB.app.resources.translate.langCode || "en";
    }
 };

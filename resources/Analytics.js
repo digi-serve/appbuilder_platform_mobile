@@ -8,7 +8,8 @@
 "use strict";
 
 import EventEmitter from "eventemitter2";
-//import "./Countly.js"; // copied from Countly cordova plugin
+import countly from "countly-sdk-web";
+const sentry = require("@sentry/browser");
 let version;
 try {
    version = VERSION;
@@ -19,45 +20,39 @@ try {
 }
 
 // console.log("Sentry.io plugin begin require/init");
-var sentry = require("@sentry/browser");
-var Countly = require("countly-sdk-web");
-
-var config = require("../../config/config.js");
+const config = require("../../config/config.js");
 
 class Analytics extends EventEmitter {
    // class Analytics {
    constructor() {
       super();
-      this.username = null
-      // this.sentry = sentry;
+      this.app = null;
+      this.username = null;
+      this.sentry = null;
       this.ready = $.Deferred();
    }
 
-   init() {
-      // this.sentry = this.sentry || Sentry || null;
-      // Sentry.io for crash reporting
-      if (sentry && process.env.NODE_ENV == "production") {
+   async init(app) {
+      this.app = app;
+      if (process.env.NODE_ENV == "production") {
          try {
-            // console.log("Sentry.io plugin required, now init");
-            sentry.init({
+            this.sentry = sentry;
+            this.sentry.init({
                dsn: config.sentryio.dsn, // "https://9df6fd4623934fadb4a9ee6bb6ec887f@sentry.io/1186956",
                debug: true,
                release: version,
             });
-            // console.log("Sentry.io plugin initilized");
-            this.sentry = sentry;
          } catch (err) {
-            // Sentry.io plugin not installed
             console.warn("Sentry.io plugin not installed");
             this.sentry = sentry;
          }
       }
-      const userAgent = window?.navigator?.userAgent?.toLowerCase();
+      const userAgent = navigator.userAgent?.toLowerCase();
       const isIos = () => {
          return /iphone|ipad|ipod/.test(userAgent);
       };
       // detect if in chrome
-      var chromeFlag = "non-ios";
+      let chromeFlag = "non-ios";
       if (/crios/.test(userAgent)) {
          // set a logging flag for crios
          chromeFlag = "crios";
@@ -65,57 +60,49 @@ class Analytics extends EventEmitter {
          // Set a non-crios flag
          chromeFlag = "notcrios";
       }
-      function getMemoryUsage() {
+      const getMemoryUsage = () => {
          const memoryInfo = performance.memory || {};
          return memoryInfo.usedJSHeapSize; // Memory used by JavaScript in bytes
-      }
-      function sendMessage(message) {
-         // console.error("Analytics memory useage alert",message);
-         // window.postMessage({ type: 'memoryAlert', message }, '*');
-         analytics.logError(message);
       }
       const memoryThreshold = 450000000; // ios threshold in bytes
       const memoryPanic = 500000000; // ios threshold in bytes
       const monitoringInterval = 5000; // Example interval in milliseconds
 
-      function monitorMemoryUsage() {
-         var memoryUsage = getMemoryUsage();
-
+      const monitorMemoryUsage = () => {
+         const memoryUsage = getMemoryUsage();
          if (memoryUsage > memoryPanic) {
             const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env`;
             let memoryError = new Error(alertMessage);
             console.error("Firing memory error message: ", alertMessage);
-            analytics.logError(memoryError);
+            this.logError(memoryError);
          } else if (memoryUsage > memoryThreshold) {
             const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env`;
             let memoryError = new Error(alertMessage);
             console.error("Firing memory error message: ", alertMessage);
-            analytics.logError(memoryError);
+            this.logError(memoryError);
          }
       }
       // Set up the monitoring interval
       setInterval(monitorMemoryUsage, monitoringInterval);
 
-      getMemoryUsage()
+      getMemoryUsage();
 
       // Countly for everything else
-      if (Countly && process.env.NODE_ENV == "production") {
-         Countly.q = Countly.q || [];
+      if (countly && process.env.NODE_ENV == "production") {
+         countly.q = countly.q || [];
          // Track sessions automatically (recommended)
-         Countly.q.push(["track_sessions"]);
+         countly.q.push(["track_sessions"]);
 
          //track web page views automatically (recommended)
-         Countly.q.push(["track_pageview"]);
+         countly.q.push(["track_pageview"]);
 
          // const features = ["sessions", "views", "crashes", "events"];
          try {
-            Countly.init({
+            countly.init({
                url: config.countly.url,
                app_key: config.countly.appKey,
                debug: true,
             });
-            // Countly.start();
-            // console.log("analytics init()");
             this.ready.resolve();
          } catch (err) {
             console.error("Analytics init error", err);
@@ -141,10 +128,9 @@ class Analytics extends EventEmitter {
    info(data) {
       data = data || {};
       this.ready.then(() => {
-         if (Countly) {
-            // Countly.setUserData(data);
-            Countly.q.push(["userData.set", "data", data]); //set custom property
-            Countly.q.push(["userData.save"]); 
+         if (countly) {
+            countly.q.push(["userData.set", "data", data]); //set custom property
+            countly.q.push(["userData.save"]);
          }
 
          if (this.sentry) {
@@ -175,8 +161,8 @@ class Analytics extends EventEmitter {
     * @param {string} pageName
     */
    pageView(pageName) {
-      if (Countly && process.env.NODE_ENV == "production") {
-         Countly.q.push(["track_pageview", pageName]);
+      if (countly && process.env.NODE_ENV == "production") {
+         countly.q.push(["track_pageview", pageName]);
       }
 
       if (this.sentry) {
@@ -203,26 +189,19 @@ class Analytics extends EventEmitter {
    tag(key, value) {
       this.ready.then(() => {
          if (!this.sentry) return;
-
-         var tags = {};
+         let tags = {};
 
          // Single tag. key & value
-         if (typeof key == "string") {
-            tags[key] = value;
-         }
+         if (typeof key === "string") tags[key] = value;
          // Multiple tags passed in as JSON
-         else if (typeof key == "object") {
-            tags = key;
-         }
+         else if (typeof key === "object") tags = key;
          // Syntax error
          else {
             throw new SyntaxError("Wrong parameters for analytics.tag()");
          }
 
          this.sentry.configureScope((scope) => {
-            for (var key in tags) {
-               scope.setTag(key, tags[key]);
-            }
+            for (const key in tags) scope.setTag(key, tags[key]);
          });
       });
    }
@@ -234,8 +213,8 @@ class Analytics extends EventEmitter {
     */
    event(name, data) {
       data = data || {};
-      if (Countly) {
-         Countly.q.push([
+      if (countly) {
+         countly.q.push([
             "add_event",
             {
                key: name,
@@ -273,19 +252,17 @@ class Analytics extends EventEmitter {
          // console.error(err)
          // err = new Error("Empty error object");
       }
-      var name = err.name || "Error";
-      var data = {
+      const name = err.name || "Error";
+      const data = {
          message: err.message || err._message || err,
       };
-      if (err.stack) {
-         data.stack = err.stack;
-      }
+      if (err.stack) data.stack = err.stack;
 
       this.ready.then(() => {
          if (this.sentry && process.env.NODE_ENV == "production") {
             this.sentry.captureException(err);
          } else {
-            // ?? 
+            // ??
             console.error(err);
          }
 
@@ -294,7 +271,7 @@ class Analytics extends EventEmitter {
       });
 
       return {
-         name: name,
+         name,
          message: data.message,
       };
    }
@@ -316,7 +293,6 @@ class Analytics extends EventEmitter {
     * @param {String} message
     */
    log(message) {
-      
       this.ready.then(() => {
          if (this.sentry && process.env.NODE_ENV == "production") {
             this.sentry.captureMessage(message);
@@ -325,5 +301,4 @@ class Analytics extends EventEmitter {
    }
 }
 
-var analytics = new Analytics();
-export default analytics;
+export default new Analytics();

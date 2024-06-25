@@ -1,8 +1,5 @@
 /**
  * @class LandingComponent
- *
- * Manages the data processing for the Settings component.
- * This is a component of the AppPage.
  */
 "use strict";
 
@@ -13,17 +10,15 @@ class LandingComponent extends EventEmitter {
       super({
          wildcard: true,
       });
-      this.id = "landing-component";
+      this.page = null;
       this.route = {
          path: "/",
-         componentUrl:
-            "./lib/platform/pages/components/landingComponent.html",
+         componentUrl: "./lib/platform/pages/components/landingComponent.html",
       };
-      this.appPage = null;
    }
 
-   async init (appPage) {
-      this.appPage = appPage;
+   async init(page) {
+      this.page = page;
    }
 }
 
