@@ -115,7 +115,6 @@ module.exports = class ABModelLocal extends ABModelCore {
       return this.AB.storage.clear(this.refStorage());
    }
 
-
    /**
     * fetchAndClear()
     * return all the local entries for this model's object.
@@ -146,7 +145,7 @@ module.exports = class ABModelLocal extends ABModelCore {
                   console.log(
                      "ABModelLocal.js: localStorageDestroy(): quickly removing entry::",
                      id,
-                     allObjects[id]
+                     allObjects[id],
                   );
                   delete allObjects[id];
                } else {
@@ -195,7 +194,7 @@ module.exports = class ABModelLocal extends ABModelCore {
    localStorageStore(allData) {
       console.error(
          "who is calling ABModelLocal.localStorageStore()?",
-         allData
+         allData,
       );
       // only keep if newer
       return this.updateNewer(allData);
@@ -208,8 +207,7 @@ module.exports = class ABModelLocal extends ABModelCore {
       // we can't resolve this entry if it doesn't have our UUID
       if (!data[UUID]) return Promise.resolve();
 
-
-      // if we marked this object as 'toBeConfirmed' 
+      // if we marked this object as 'toBeConfirmed'
       // usually in some app.js
       // then set the awaitingServerConfirmation flag
       if (this.object["toBeConfirmed"]) {
@@ -270,7 +268,7 @@ module.exports = class ABModelLocal extends ABModelCore {
       var UUID = this.object.fieldUUID(values);
       if (!values[UUID]) values[UUID] = this.AB.uuid();
 
-      // if we marked this object as 'toBeConfirmed' 
+      // if we marked this object as 'toBeConfirmed'
       // usually in some app.js
       // then set the awaitingServerConfirmation flag
       if (this.object["toBeConfirmed"]) {
@@ -354,8 +352,7 @@ module.exports = class ABModelLocal extends ABModelCore {
       // ensure values date_updated is set
       values["updated_at"] = new Date();
 
-
-      // if we marked this object as 'toBeConfirmed' 
+      // if we marked this object as 'toBeConfirmed'
       // usually in some app.js
       // then set the awaitingServerConfirmation flag
       if (this.object["toBeConfirmed"]) {
@@ -577,7 +574,7 @@ module.exports = class ABModelLocal extends ABModelCore {
                   console.error(
                      "!!! error trying to store object: data.updated_at is undefined",
                      data,
-                     this
+                     this,
                   );
                   // assume we keep the local copy
                   return;
@@ -591,7 +588,7 @@ module.exports = class ABModelLocal extends ABModelCore {
                   if (!oldDate) {
                      console.error(
                         "ABModelLocal.js: updateNewer(): missing updated_at:: ",
-                        allObjects[data[UUID]]
+                        allObjects[data[UUID]],
                      );
                      return;
                   }
@@ -603,7 +600,7 @@ module.exports = class ABModelLocal extends ABModelCore {
                      // use lodash merge
                      allObjects[data[UUID]] = merge(
                         allObjects[data[UUID]],
-                        data
+                        data,
                      );
                   }
                } else {

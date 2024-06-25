@@ -122,7 +122,7 @@ export default class ABFactory extends ABFactoryCore {
             return;
          }
          const obj = this.datacollections(
-            (datacollection) => datacollection.datasource.id === context.id
+            (datacollection) => datacollection.datasource.id === context.id,
          )[0]?.datasource;
          if (obj == null) {
             context.callback?.(new Error(data));
@@ -141,7 +141,7 @@ export default class ABFactory extends ABFactoryCore {
          }
          console.assert(
             context,
-            "ABFactory::network.object: context is null!!"
+            "ABFactory::network.object: context is null!!",
          );
          switch (context.verb) {
             case "create":
@@ -228,7 +228,7 @@ export default class ABFactory extends ABFactoryCore {
             return;
          }
          const dc = this.datacollections(
-            (datacollection) => datacollection.id === context.id
+            (datacollection) => datacollection.id === context.id,
          )[0];
          if (dc == null) return;
          if (dc.name) {
