@@ -159,7 +159,7 @@ class Storage extends EventEmitter {
                   console.error(err);
                }
             }
-         }
+         },
       );
       this._isInitializedListener = true;
    }
@@ -191,7 +191,7 @@ class Storage extends EventEmitter {
                         }
                         return value;
                      })) ||
-                     value
+                     value,
                );
             })()) ||
          value;
@@ -266,7 +266,7 @@ class Storage extends EventEmitter {
                   } catch (err) {
                      return result;
                   }
-               })
+               }),
             );
          };
       });
@@ -347,7 +347,7 @@ class Storage extends EventEmitter {
                   file.name,
                   {
                      type: compressedFile.type,
-                  }
+                  },
                );
                resolve(compressedFileFromBlob);
             } else {
@@ -423,7 +423,7 @@ class Storage extends EventEmitter {
             (async () => {
                this._pendingNetworkCallbacks.downloadFile = async (
                   err,
-                  result
+                  result,
                ) => {
                   if (err != null) reject(new Error(err.message));
                   if (err != null || result.uuid == null)
@@ -437,7 +437,7 @@ class Storage extends EventEmitter {
                   {
                      url: network.validRoutes.fileBase64Download.replace(
                         ":uuid",
-                        uuid
+                        uuid,
                      ),
                   },
                   {
@@ -449,7 +449,7 @@ class Storage extends EventEmitter {
                            reject(new Error(`No file data (${uuid})`));
                         resolve(result);
                      },
-                  }
+                  },
                );
             })();
          }))
@@ -485,12 +485,12 @@ class Storage extends EventEmitter {
                      if (result.uuid == null)
                         reject(
                            new Error(
-                              `Failed to upload the file! (${data.filename})`
-                           )
+                              `Failed to upload the file! (${data.filename})`,
+                           ),
                         );
                      resolve(data);
                   },
-               }
+               },
             );
          })();
       });

@@ -43,7 +43,7 @@ class NetworkRest extends EventEmitter {
          (await this.app.resources.storage.get("user", refQueue)) || [];
       queue.push({ data, jobResponse });
       console.log(
-         `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`
+         `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`,
       );
       await this.app.resources.storage.set("user", refQueue, queue);
    }
@@ -84,7 +84,7 @@ class NetworkRest extends EventEmitter {
                if (text === "timeout" || jqXHR.readyState === 0) {
                   //// Network Error: conneciton refused, access denied, etc...
                   console.error(
-                     "*** NetworkRest._request():network connection error detected."
+                     "*** NetworkRest._request():network connection error detected.",
                   );
                   // retry the attempt:
                   if (numRetries > 0) {
@@ -94,8 +94,8 @@ class NetworkRest extends EventEmitter {
                            await this._request(
                               params,
                               jobResponse,
-                              numRetries - 1
-                           )
+                              numRetries - 1,
+                           ),
                         );
                      } catch (err) {
                         reject(err);
@@ -111,7 +111,7 @@ class NetworkRest extends EventEmitter {
                } else if (jqXHR.readyState == 4) {
                   //// an HTTP error
                   console.error(
-                     "HTTP error while communicating with relay server"
+                     "HTTP error while communicating with relay server",
                   );
                   console.error(`status code: ${jqXHR.status}`);
                }
@@ -121,14 +121,14 @@ class NetworkRest extends EventEmitter {
                   // add it to the queue and retry later
                   this._queue(params, jobResponse);
                   let error = new Error(
-                     "Network error: adding to queue for later retry."
+                     "Network error: adding to queue for later retry.",
                   );
                   resolve({ status: "queued" });
                   return;
                }
 
                const error = new Error(
-                  "NetworkRest._request() error with .ajax() command:"
+                  "NetworkRest._request() error with .ajax() command:",
                );
                error.response = jqXHR.responseText;
                error.text = text;
@@ -395,7 +395,7 @@ class NetworkRelay extends NetworkRest {
             // trigger an 'online' event
             this.emit("offline");
          },
-         false
+         false,
       );
       document.addEventListener(
          "online",
@@ -411,7 +411,7 @@ class NetworkRelay extends NetworkRest {
             // trigger an 'online' event
             this.emit("online");
          },
-         false
+         false,
       );
       this.on(EVENT_KEY_OFFLINE, () => {
          // TODO (Guy):
@@ -421,13 +421,14 @@ class NetworkRelay extends NetworkRest {
       });
       this.on(EVENT_KEY_CALLBACK, (jobResponse, res) => {
          let instance = this.app;
-         try{
-            const pathKeys = jobResponse.key || jobResponse.targetEventPath.split(".");
+         try {
+            const pathKeys =
+               jobResponse.key || jobResponse.targetEventPath.split(".");
             for (const pathKey of pathKeys) {
                if (Array.isArray(instance)) {
                   const [objKey, objValue] = pathKey.split("=");
                   instance = instance.find(
-                     (e) => e instanceof Object && e[objKey] === objValue
+                     (e) => e instanceof Object && e[objKey] === objValue,
                   );
                } else instance = instance[pathKey];
                if (instance == null) return;
@@ -437,7 +438,7 @@ class NetworkRelay extends NetworkRest {
             (res.status === "error" &&
                instance.emit(jobResponse.targetEventKey, data)) ||
                instance.emit(jobResponse.targetEventKey, null, data);
-         }catch(err){
+         } catch (err) {
             console.error("Error in NetworkRelay.js: ", err);
          }
       });
@@ -502,7 +503,7 @@ class NetworkRelay extends NetworkRest {
                      data: packets[i],
                      tenant: config.appbuilder.tenantUUID,
                   },
-               })
+               }),
             );
          }
          return mccRes;
@@ -527,7 +528,7 @@ class NetworkRelay extends NetworkRest {
          const decrypted = CryptoJS.AES.decrypt(
             dataParts[0],
             CryptoJS.enc.Hex.parse(this._relayState.aesKey),
-            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) }
+            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) },
          );
 
          // Parse JSON to plantext.
@@ -551,7 +552,7 @@ class NetworkRelay extends NetworkRest {
       return `${CryptoJS.AES.encrypt(
          JSON.stringify(data),
          CryptoJS.enc.Hex.parse(aesKey),
-         { iv: CryptoJS.enc.Hex.parse(iv) }
+         { iv: CryptoJS.enc.Hex.parse(iv) },
       ).toString()}:::${iv}`;
    }
 
@@ -653,7 +654,7 @@ class NetworkRelay extends NetworkRest {
       // prevent offline attempt.
       if (!navigator.onLine)
          throw new Error(
-            "NetworkRelay:init(): prevent initresolve when no network conencted."
+            "NetworkRelay:init(): prevent initresolve when no network conencted.",
          );
 
       // NOTE: use super.post() here so we don't do our .post()
@@ -664,7 +665,7 @@ class NetworkRelay extends NetworkRest {
             rsa_aes: rsa.encrypt(
                JSON.stringify({
                   aesKey: relayState.aesKey,
-               })
+               }),
             ),
             userUUID: await storage.get("user", "uuid"),
             appID: config.appbuilder.maID,
@@ -745,7 +746,7 @@ class NetworkRelay extends NetworkRest {
                   if (packets.length < e.totalPackets) {
                      await this._saveJobPackets(
                         jobPackets,
-                        jobPacketsTimestamps
+                        jobPacketsTimestamps,
                      );
                      return;
                   }
@@ -762,7 +763,7 @@ class NetworkRelay extends NetworkRest {
                      if (hash[i] != null) continue;
                      console.warn(
                         `Weird. Missing packet[${i}/${e.totalPackets - 1}]`,
-                        packets.map((p) => p.packet)
+                        packets.map((p) => p.packet),
                      );
 
                      // Compare the duplicate packets.
@@ -783,24 +784,24 @@ class NetworkRelay extends NetworkRest {
                            }
                         if (p.data === duplicatedPacket.data) {
                            console.warn(
-                              `Duplicate packets for ${p.packet} are identical`
+                              `Duplicate packets for ${p.packet} are identical`,
                            );
                            console.warn("Dropping one of them");
                            packets.splice(j, 1);
                         } else {
                            console.warn(
-                              `Duplicate packets for ${p.packet} are different!`
+                              `Duplicate packets for ${p.packet} are different!`,
                            );
                            console.warn(
-                              `One of them is corrupted. But which one?`
+                              `One of them is corrupted. But which one?`,
                            );
                            console.warn(
                               "the packet",
-                              p.data.substring(0, 20) + "..."
+                              p.data.substring(0, 20) + "...",
                            );
                            console.warn(
                               "The duplicated packet",
-                              duplicatedPacket.data.substring(0, 20) + "..."
+                              duplicatedPacket.data.substring(0, 20) + "...",
                            );
                            console.warn("Dropping the smaller packet");
                            if (p.length < duplicatedPacket.length)
@@ -815,7 +816,7 @@ class NetworkRelay extends NetworkRest {
                      // set.
                      await this._saveJobPackets(
                         jobPackets,
-                        jobPacketsTimestamps
+                        jobPacketsTimestamps,
                      );
                      return;
                   }
@@ -833,7 +834,7 @@ class NetworkRelay extends NetworkRest {
                      jobToken: e.jobToken,
                   });
                   await this._saveJobPackets(jobPackets, jobPacketsTimestamps);
-               })
+               }),
             );
          } catch (err) {
             console.error(err);
@@ -877,14 +878,14 @@ class NetworkRelay extends NetworkRest {
          await this.app.resources.storage.set(
             "user",
             "abRelayJobToken",
-            jobResponses
+            jobResponses,
          );
       } else
          console.error(
             "!!! Unknown job token in response packet:",
             response.jobToken,
             jobResponses,
-            data
+            data,
          );
       delete jobResponses[response.jobToken];
    }
@@ -957,7 +958,7 @@ class NetworkRelay extends NetworkRest {
                },
             },
             null,
-            false
+            false,
          );
          await storage.set("user", "authToken", newAuthToken);
          this._authToken = newAuthToken;

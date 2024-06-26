@@ -25,7 +25,7 @@ class AppPage extends Common {
       super(
          "app-page",
          "lib/platform/pages/appPage.html",
-         "lib/platform/pages/appPage.css"
+         "lib/platform/pages/appPage.css",
       );
 
       // Are the AB Applications in the middle of being reset?
@@ -58,7 +58,7 @@ class AppPage extends Common {
             const hash = String(document.location.hash);
             await network.importCredentials(
                hash.match(/JRR=(\w+)/)?.[1],
-               hash.match(/tenant=(\w+)/)?.[1]
+               hash.match(/tenant=(\w+)/)?.[1],
             );
 
             // Remove tokens from current URL, for bookmarkability
@@ -80,7 +80,7 @@ class AppPage extends Common {
                            "<t>Problem authenticating with server</t>",
                            () => {
                               resolve();
-                           }
+                           },
                         )
                         .open();
                      break;
@@ -92,7 +92,7 @@ class AppPage extends Common {
                            "<t>Error</t>",
                            () => {
                               resolve();
-                           }
+                           },
                         )
                         .open();
                      break;
@@ -125,27 +125,25 @@ class AppPage extends Common {
             const components = this.components;
             let pendingPromises = [];
             try {
-            // components isn't fully iterable, so we need to use a for loop.
-            for (const key in components) {
-               if (Object.hasOwnProperty.call(components, key)) {
-                  pendingPromises.push(components[key].init(this));
-                  const routes = components[key].routes;
-                  if(routes.mainRoutes != null  )
-                     mainRoutes.push(...routes.mainRoutes);
-                  if (routes.menuRoutes != null)
-                     menuRoutes.push(...routes.menuRoutes);
-               }
+               // components isn't fully iterable, so we need to use a for loop.
+               for (const key in components) {
+                  if (Object.hasOwnProperty.call(components, key)) {
+                     pendingPromises.push(components[key].init(this));
+                     const routes = components[key].routes;
+                     if (routes.mainRoutes != null)
+                        mainRoutes.push(...routes.mainRoutes);
+                     if (routes.menuRoutes != null)
+                        menuRoutes.push(...routes.menuRoutes);
+                  }
                }
                await Promise.all(pendingPromises);
-               pendingPromises = []; 
+               pendingPromises = [];
             } catch (err) {
                console.error("appPage.js: Error trying to init routes: ", err);
             }
 
             // TODO (Guy): Refactor these in the future.
-            await Promise.all([
-               components.profile.init(this),
-            ]);
+            await Promise.all([components.profile.init(this)]);
 
             // This relies on the account object from the previous step.
             if (account.userData?.user.username == null)
@@ -178,7 +176,7 @@ class AppPage extends Common {
                      } catch (err) {
                         console.error(err);
                      }
-                  })
+                  }),
                );
                this._checkForUpdate(true);
             })();
@@ -372,7 +370,7 @@ class AppPage extends Common {
          this.f7App.dialog
             .alert(
                "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
-               "<t>Sorry</t>"
+               "<t>Sorry</t>",
             )
             .open();
       }, 90000);
@@ -403,7 +401,7 @@ class AppPage extends Common {
          });
       console.assert(
          targetDC,
-         "appPage.fetchRecordData() could not find the datacollection"
+         "appPage.fetchRecordData() could not find the datacollection",
       );
       return targetDC.reloadData();
    }
