@@ -339,6 +339,9 @@ class NetworkRest extends EventEmitter {
  */
 const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
 const MAX_JOB_AGE = config.appbuilder.maxJobAge || 1000 * 60 * 60 * 24 * 7; // 7 days
+const EVENT_KEY_CALLBACK = "callback";
+const EVENT_KEY_OFFLINE = "offline";
+const EVENT_KEY_ONLINE = "online";
 
 class NetworkRelay extends NetworkRest {
    /**
@@ -376,7 +379,7 @@ class NetworkRelay extends NetworkRest {
       this._isPolling = false;
 
       // TODO (Guy): Storage won't save string encryption for callback functions. I will fix it later.
-      this._jobTokens = {};
+      this._jobResponses = {};
       this._relayRequestRoute = null;
       this._relayState = null;
       this._tenantUUID = null;
@@ -384,6 +387,7 @@ class NetworkRelay extends NetworkRest {
          config: "/config",
          fileBase64Download: "/file/:uuid/base64?mobile=true",
          fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
+         data: "/app_builder/model/:objID/:id",
       };
       document.addEventListener(
          "offline",
@@ -409,21 +413,30 @@ class NetworkRelay extends NetworkRest {
          },
          false
       );
-      this.on("offline", () => {
+      this.on(EVENT_KEY_OFFLINE, () => {
          // TODO (Guy):
       });
-      this.on("online", async () => {
+      this.on(EVENT_KEY_ONLINE, async () => {
          // TODO (Guy):
       });
-      const validRoutes = this._validRoutes;
-      for (const key in validRoutes)
-         this.on(validRoutes[key], (context, res) => {
-            let instance = this.app;
-            context.targetEventPath.split(".").forEach((e) => {
-               instance = instance[e];
-            });
-            instance.emit(context.targetEventKey, context, res);
-         });
+      this.on(EVENT_KEY_CALLBACK, (jobResponse, res) => {
+         let instance = this.app;
+         const pathKeys = jobResponse.targetEventPath.split(".");
+         for (const pathKey of pathKeys) {
+            if (Array.isArray(instance)) {
+               const [objKey, objValue] = pathKey.split("=");
+               instance = instance.find(
+                  (e) => e instanceof Object && e[objKey] === objValue
+               );
+            } else instance = instance[pathKey];
+            if (instance == null) return;
+         }
+         if (!(instance instanceof EventEmitter)) return;
+         const data = res.data;
+         (res.status === "error" &&
+            instance.emit(jobResponse.targetEventKey, data)) ||
+            instance.emit(jobResponse.targetEventKey, null, data);
+      });
    }
 
    /**
@@ -449,15 +462,15 @@ class NetworkRelay extends NetworkRest {
       let data = this._encrypt(params);
       const app = this.app;
       const storage = app.resources.storage;
-      const jobToken = app.AB.uuid();
-      const jobTokens =
-         this._jobTokens ||
+      const jobToken = app.utils.uuidv4();
+      const jobResponses =
+         this._jobResponses ||
          (await storage.get("user", "abRelayJobToken")) ||
          {};
 
       // add our jobToken to the local data:
-      jobTokens[jobToken] = jobResponse;
-      await storage.set("user", "abRelayJobToken", jobTokens);
+      jobResponses[jobToken] = jobResponse;
+      await storage.set("user", "abRelayJobToken", jobResponses);
 
       // Split up large data into smaller packets
       const packets = [];
@@ -549,8 +562,8 @@ class NetworkRelay extends NetworkRest {
       // or alterations to jobPackets inbetween these times would be overwritten
       // by these new values, so make sure jobPackets are included in this chain:
       const [jobPackets, jobPacketsTimestamps] = await Promise.all([
-         (await storage.get("user", "abRelayJobPackets")) || {},
-         (await storage.get("abRelayJobPacketsTimestamps")) || {},
+         storage.get("user", "abRelayJobPackets") || Promise.resolve({}),
+         storage.get("abRelayJobPacketsTimestamps") || Promise.resolve({}),
       ]);
       return { jobPackets, jobPacketsTimestamps };
    }
@@ -564,13 +577,13 @@ class NetworkRelay extends NetworkRest {
       const storage = app.resources.storage;
       await Promise.all([
          (async () => {
-            const jobTokens = await storage.get("user", "abRelayJobToken");
-            if (jobTokens != null) {
-               this._jobTokens = jobTokens;
+            const jobResponses = await storage.get("user", "abRelayJobToken");
+            if (jobResponses != null) {
+               this._jobResponses = jobResponses;
                return;
             }
             await storage.set("user", "abRelayJobToken", {});
-            this._jobTokens = {};
+            this._jobResponses = {};
          })(),
          (async () => {
             const relayState = (await storage.get("user", "relayState")) || {
@@ -592,7 +605,7 @@ class NetworkRelay extends NetworkRest {
          (async () => {
             let appUUID = await storage.get("user", "appUUID");
             if (appUUID == null) {
-               appUUID = app.AB.uuid();
+               appUUID = app.utils.uuidv4();
                await storage.set("user", "appUUID", appUUID);
             }
             this._appUUID = appUUID;
@@ -839,8 +852,7 @@ class NetworkRelay extends NetworkRest {
     * @response {Promise}
     **/
    async _resolveJob(response) {
-      let data = this._decrypt(response.data);
-      let error = null;
+      const data = this._decrypt(response.data);
 
       // we expect a fully wrapped data packet back:
       // {
@@ -848,19 +860,15 @@ class NetworkRelay extends NetworkRest {
       //  data:[]
       // }
 
-      // remember if this is an error
-      if (data.status === "error") error = data;
-
       // find the jobToken
       // trigger the registered .key callback
-      const jobTokens =
-         this._jobTokens ||
+      const jobResponses =
+         this._jobResponses ||
          (await this.app.resources.storage.get("user", "abRelayJobToken")) ||
          {};
-      const foundToken = jobTokens[response.jobToken];
-      if (foundToken != null) {
-         if (error != null) foundToken.context.error = error;
-         this.emit(foundToken.key, foundToken.context, data);
+      const jobResponse = jobResponses[response.jobToken];
+      if (jobResponse != null) {
+         this.emit(EVENT_KEY_CALLBACK, jobResponse, data);
          delete jobTokens[response.jobToken];
          await this.app.resources.storage.set(
             "user",

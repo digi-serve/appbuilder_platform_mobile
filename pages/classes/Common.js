@@ -1,5 +1,5 @@
 /**
- * @class Page
+ * @class Common
  *
  * Base class for page controllers in the mobile framework.
  * Is an EventEmitter.

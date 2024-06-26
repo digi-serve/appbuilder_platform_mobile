@@ -3,22 +3,22 @@
  */
 "use strict";
 
-import EventEmitter from "eventemitter2";
+import Common from "./classes/Common.js";
 
-class Landing extends EventEmitter {
+class Landing extends Common {
    constructor() {
-      super({
-         wildcard: true,
-      });
-      this.page = null;
-      this.route = {
-         path: "/",
-         componentUrl: "./lib/platform/pages/components/landing.html",
-      };
-   }
-
-   async init(page) {
-      this.page = page;
+      super(
+         [
+            {
+               path: "/",
+               componentUrl: "./lib/platform/pages/components/landing.html",
+            },
+         ],
+         null,
+         {
+            wildcard: true,
+         }
+      );
    }
 }
 

@@ -14,12 +14,13 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this._model = null;
 
       // Setup a listener for this DC to catch updates from the remote request.
+      this.on("", () => {});
       this.AB.app.resources.network.on(
          this.refStorage(),
-         async (context, data) => {
+         async (context, res) => {
             console.log(":: name:", this.name, {
                ":: context:": context,
-               ":: data:": data,
+               ":: data:": res.data,
             });
             if (context.callback == null) return;
             const callbackResult =
@@ -32,6 +33,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             }
          }
       );
+      this.on("xx", () => {
+         debugger;
+      });
    }
 
    /**
@@ -59,11 +63,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          if (!dc.___AD.onDataRequestEvent) {
             dc.___AD.onDataRequestEvent = dc.attachEvent(
                "onDataRequest",
-               async (start, count) => {
+               async () => {
                   if (start < 0) start = 0;
 
                   // load more data to the data collection
-                  await this.loadData(start, count);
+                  await this.loadData();
 
                   return false; // <-- prevent the default "onDataRequest"
                }
@@ -96,7 +100,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                .map((field) => field.datasourceLink.id)
                .concat(this.datasource.id)
                .includes(dc.datasource.id)
-         ).map((dc) => dc.loadData(null, null, true))
+         ).map((dc) => dc.loadData(true))
       );
    }
 
@@ -105,11 +109,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
       // TODO (Guy): Refactor.
       await this.reset(true);
-      await this.loadData(null, null, true);
+      await this.loadData(true);
       // await this.reloadData();
    }
 
-   async loadData(start, limit, sync = false) {
+   async loadData(sync = false) {
       if (
          this._dataStatus === this.dataStatusFlag.initializing ||
          this._dataStatus === this.dataStatusFlag.initialized
@@ -207,8 +211,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          if (this.datacollectionFollow.settings.isQuery)
             PK = `BASE_OBJECT.${PK}`;
          if (followCursor) {
-            start = 0;
-            limit = null;
             wheres = {
                glue: "and",
                rules: [
@@ -247,15 +249,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       // set query condition
       const cond = {
          where: wheres || {},
-         // limit: limit || 20,
-         skip: start || 0,
+         // limit: 100,
+         skip: 0,
          sort: sorts,
          populate: this.shouldPopulate,
       };
-
-      // NOTE: we no longer set a default limit on loadData() but
-      // require the platform.loadData() to pass in a default limit.
-      if (limit != null) cond.limit = limit;
 
       // if settings specify loadAll, then remove the limit
       if (this.settings.loadAll && !this.isCursorFollow) delete cond.limit;
@@ -344,9 +342,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this.__totalCount--;
    }
 
-   async reloadData(start, limit) {
+   async reloadData() {
       await this.reset();
-      await this.loadData(start, limit);
+      await this.loadData();
    }
 
    /**
@@ -371,7 +369,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       if (id == null) {
          const pendingSyncData = this.model.create(copidData);
          const newValue =
-            (waitForSync && (await pendingSyncData)) ||
+            (waitForSync && (await pendingSyncData).data) ||
             (() => {
                copidData["created_at"] = new Date();
                copidData["updated_at"] = new Date();
@@ -385,7 +383,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
       const pendingSyncData = this.model.update(id, copidData);
       const newValue =
-         (waitForSync && (await pendingSyncData)) ||
+         (waitForSync && (await pendingSyncData).data) ||
          (() => {
             copidData["updated_at"] = new Date();
             this.model.prepareMultilingualData(copidData);
@@ -395,23 +393,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this.__dataCollection.updateItem(id, newValue);
    }
 
-   // this.QL().value() is the same as this.getAllRecords(). Unnecessary if we aren't actually using QL to do anything.
-   // If we need it should switch to the new ABQL
-   // Mock QL so that the current calls still work.
-   QL() {
-      console.warn(
-         `Depreciating ABDatacollection.QL(). Try ABDatacollection.getAllRecords() instead?`
-      );
-      return {
-         value: (...args) => {
-            if (args.length > 0)
-               console.warn(
-                  `ABDatacollection.QL().value() called with args`,
-                  args
-               );
-            return this.getData();
-         },
-      };
+   async updateSyncData() {
+
    }
 
    /**

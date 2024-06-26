@@ -12,9 +12,9 @@ import CryptoJS from "crypto-js";
 import Lock from "./Lock.js";
 
 const DEFAULT_FILE_SLICESIZE = 512;
-const NETWORK_EVENT_KEY_DOWNLOAD_FILE = "file.base64.download";
-const NETWORK_EVENT_KEY_UPLOAD_FILE = "file.base64.upload";
-const NETWORK_EVENT_PATH = "resources.storage";
+const EVENT_KEY_DOWNLOAD_FILE = "download.file";
+const EVENT_KEY_UPLOAD_FILE = "upload.file";
+const EVENT_PATH = "resources.storage";
 const defaultTableKeys = ["file", "user"];
 
 class Storage extends EventEmitter {
@@ -35,7 +35,7 @@ class Storage extends EventEmitter {
          /* key : Lock() */
       };
       this.app = null;
-      this.on(NETWORK_EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
+      this.on(EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
          const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
          const downloadFile = pendingNetworkCallbacks.downloadFile;
          const data = res.data;
@@ -112,7 +112,7 @@ class Storage extends EventEmitter {
 
    async init(app) {
       this.app = app;
-      const dcs = this.app.abApp.datacollectionsIncluded();
+      const dcs = this.app.abDCs;
       // IndexedDB is standard on modern browsers
       const _db =
          this._db ||
@@ -141,7 +141,7 @@ class Storage extends EventEmitter {
          console.error("IndexedDB error", event.target.errorCode);
       };
       this.app.resources.network.on(
-         NETWORK_EVENT_KEY_UPLOAD_FILE,
+         EVENT_KEY_UPLOAD_FILE,
          async (context, data) => {
             if (context.callback == null) return;
             const callbackResult =
@@ -406,43 +406,43 @@ class Storage extends EventEmitter {
    }
 
    async downloadFile(uuid, data) {
-      return data || (await new Promise((resolve, reject) => {
-         (async () => {
-            this._pendingNetworkCallbacks.downloadFile = async (
-               err,
-               result
-            ) => {
-               if (err != null) reject(new Error(err.message));
-               if (err != null || result.uuid == null)
-                  reject(new Error(`No file data (${uuid})`));
-               resolve(result);
-            };
+      return (
+         data ||
+         (await new Promise((resolve, reject) => {
+            (async () => {
+               this._pendingNetworkCallbacks.downloadFile = async (
+                  err,
+                  result
+               ) => {
+                  if (err != null) reject(new Error(err.message));
+                  if (err != null || result.uuid == null)
+                     reject(new Error(`No file data (${uuid})`));
+                  resolve(result);
+               };
 
-            // image was not found on device you need to fetch it
-            const network = this.app.resources.network;
-            await network.get(
-               {
-                  url: network.validRoutes.fileBase64Download.replace(
-                     ":uuid",
-                     uuid
-                  ),
-               },
-               {
-                  key: network.validRoutes.fileBase64Download,
-                  context: {
-                     targetEventKey: NETWORK_EVENT_KEY_DOWNLOAD_FILE,
-                     targetEventPath: NETWORK_EVENT_PATH,
+               // image was not found on device you need to fetch it
+               const network = this.app.resources.network;
+               await network.get(
+                  {
+                     url: network.validRoutes.fileBase64Download.replace(
+                        ":uuid",
+                        uuid
+                     ),
+                  },
+                  {
+                     targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
+                     targetEventPath: EVENT_PATH,
                      callback: async (err, result) => {
                         if (err != null) reject(new Error(err.message));
                         if (err != null || result.uuid == null)
                            reject(new Error(`No file data (${uuid})`));
                         resolve(result);
                      },
-                  },
-               }
-            );
-         })();
-      }));
+                  }
+               );
+            })();
+         }))
+      );
    }
 
    uploadFile(objID, fieldID, data) {
@@ -464,23 +464,20 @@ class Storage extends EventEmitter {
                   },
                },
                {
-                  key: NETWORK_EVENT_KEY_UPLOAD_FILE,
-                  context: {
-                     targetEventKey: NETWORK_EVENT_KEY_UPLOAD_FILE,
-                     targetEventPath: NETWORK_EVENT_PATH,
-                     data: {
-                        fileEntry: data.fileEntry,
-                     },
-                     callback: async (err, result) => {
-                        if (err != null) reject(new Error(err.message));
-                        if (result.uuid == null)
-                           reject(
-                              new Error(
-                                 `Failed to upload the file! (${data.filename})`
-                              )
-                           );
-                        resolve(data);
-                     },
+                  targetEventKey: KEY_UPLOAD_FILE,
+                  targetEventPath: EVENT_PATH,
+                  data: {
+                     fileEntry: data.fileEntry,
+                  },
+                  callback: async (err, result) => {
+                     if (err != null) reject(new Error(err.message));
+                     if (result.uuid == null)
+                        reject(
+                           new Error(
+                              `Failed to upload the file! (${data.filename})`
+                           )
+                        );
+                     resolve(data);
                   },
                }
             );
