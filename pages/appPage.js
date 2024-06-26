@@ -10,6 +10,7 @@
 import Common from "./classes/Common.js";
 
 import ABApplicationList from "../../applications/applications.js";
+// import appFeedback from "../resources/AppFeedback.js";
 
 import inbox from "./components/inbox.js";
 import landing from "./components/landing.js";
@@ -105,11 +106,18 @@ class AppPage extends Common {
          const mainRoutes = [
             // TODO (Guy): Refactor.
             {
-               path: "/feedback/",
-               popup: {
-                  componentUrl:
-                     "./lib/applications/feedback/templates/feedback.html",
-               },
+               path: "/profile/",
+               componentUrl:
+                  "./lib/applications/profile/templates/profile-landing.html",
+               routes: [
+                  {
+                     path: "details/:uuid",
+                     popup: {
+                        componentUrl:
+                           "./lib/applications/profile/templates/profile-details.html",
+                     },
+                  },
+               ],
             },
          ];
          const menuRoutes = [];
@@ -126,7 +134,9 @@ class AppPage extends Common {
             pendingPromises = [];
 
             // TODO (Guy): Refactor these in the future.
-            await components.feedback.init(this);
+            await Promise.all([
+               components.profile.init(this),
+            ]);
 
             // This relies on the account object from the previous step.
             if (account.userData?.user.username == null)
@@ -189,6 +199,14 @@ class AppPage extends Common {
             url: "/nav/",
             routes: menuRoutes,
          });
+         const appView = f7AppViews.create("#main-view", {
+            url: "/",
+            routes: routes,
+         });
+
+         // TODO (Guy): Refactor this later.
+         // appFeedback.init(appView.router);
+         this.appView = appView;
          busy.hide();
          if (callback == null) return;
          const callbackResult = callback();
@@ -252,10 +270,10 @@ class AppPage extends Common {
 
       // TODO (Guy): Refactor these in the future.
       let applications = ABApplicationList.map((App) => new App());
-      const feedback = applications.find((app) => app.ID === "Feedback");
+      const profile = applications.find((app) => app.ID === "PROFILE");
       applications = applications.filter((app) => {
          switch (app.ID) {
-            case "Feedback":
+            case "PROFILE":
                return false;
             default:
                return true;
@@ -265,7 +283,8 @@ class AppPage extends Common {
 
       // Component objects that will be referenced by F7 component code
       const components = this.components;
-      components.feedback = feedback;
+      // components.feedback = feedback;
+      components.profile = profile;
    }
 
    /**

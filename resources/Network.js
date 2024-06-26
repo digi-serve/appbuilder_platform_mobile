@@ -421,21 +421,25 @@ class NetworkRelay extends NetworkRest {
       });
       this.on(EVENT_KEY_CALLBACK, (jobResponse, res) => {
          let instance = this.app;
-         const pathKeys = jobResponse.targetEventPath.split(".");
-         for (const pathKey of pathKeys) {
-            if (Array.isArray(instance)) {
-               const [objKey, objValue] = pathKey.split("=");
-               instance = instance.find(
-                  (e) => e instanceof Object && e[objKey] === objValue
-               );
-            } else instance = instance[pathKey];
-            if (instance == null) return;
+         try{
+            const pathKeys = jobResponse.key || jobResponse.targetEventPath.split(".");
+            for (const pathKey of pathKeys) {
+               if (Array.isArray(instance)) {
+                  const [objKey, objValue] = pathKey.split("=");
+                  instance = instance.find(
+                     (e) => e instanceof Object && e[objKey] === objValue
+                  );
+               } else instance = instance[pathKey];
+               if (instance == null) return;
+            }
+            if (!(instance instanceof EventEmitter)) return;
+            const data = res.data;
+            (res.status === "error" &&
+               instance.emit(jobResponse.targetEventKey, data)) ||
+               instance.emit(jobResponse.targetEventKey, null, data);
+         }catch(err){
+            console.error("Error in NetworkRelay.js: ", err);
          }
-         if (!(instance instanceof EventEmitter)) return;
-         const data = res.data;
-         (res.status === "error" &&
-            instance.emit(jobResponse.targetEventKey, data)) ||
-            instance.emit(jobResponse.targetEventKey, null, data);
       });
    }
 
@@ -869,20 +873,20 @@ class NetworkRelay extends NetworkRest {
       const jobResponse = jobResponses[response.jobToken];
       if (jobResponse != null) {
          this.emit(EVENT_KEY_CALLBACK, jobResponse, data);
-         delete jobTokens[response.jobToken];
+         delete jobResponses[response.jobToken];
          await this.app.resources.storage.set(
             "user",
             "abRelayJobToken",
-            jobTokens
+            jobResponses
          );
       } else
          console.error(
             "!!! Unknown job token in response packet:",
             response.jobToken,
-            jobTokens,
+            jobResponses,
             data
          );
-      delete jobTokens[response.jobToken];
+      delete jobResponses[response.jobToken];
    }
 
    /**

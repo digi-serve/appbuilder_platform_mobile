@@ -46,6 +46,7 @@ export default class ABAppController extends EventEmitter2 {
       // save a reference to the lib/platform/pages/...Page.js object.
       this.page = page;
       const app = this.page.app;
+      this.abApp = app.abApp;
       if (dcIDs?.length > 0)
          this._datacollections = app.abDCs.filter(
             (dc) => dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1
