@@ -124,14 +124,23 @@ class AppPage extends Common {
          try {
             const components = this.components;
             let pendingPromises = [];
+            try {
+            // components isn't fully iterable, so we need to use a for loop.
             for (const key in components) {
-               pendingPromises.push(components[key].init(this));
-               const routes = components[key].routes;
-               mainRoutes.push(...routes.mainRoutes);
-               menuRoutes.push(...routes.menuRoutes);
+               if (Object.hasOwnProperty.call(components, key)) {
+                  pendingPromises.push(components[key].init(this));
+                  const routes = components[key].routes;
+                  if(routes.mainRoutes != null  )
+                     mainRoutes.push(...routes.mainRoutes);
+                  if (routes.menuRoutes != null)
+                     menuRoutes.push(...routes.menuRoutes);
+               }
+               }
+               await Promise.all(pendingPromises);
+               pendingPromises = []; 
+            } catch (err) {
+               console.error("appPage.js: Error trying to init routes: ", err);
             }
-            await Promise.all(pendingPromises);
-            pendingPromises = [];
 
             // TODO (Guy): Refactor these in the future.
             await Promise.all([
