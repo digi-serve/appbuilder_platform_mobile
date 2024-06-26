@@ -208,14 +208,14 @@ class AppPage extends Common {
             url: "/nav/",
             routes: menuRoutes,
          });
-         const appView = f7AppViews.create("#main-view", {
-            url: "/",
-            routes: routes,
-         });
+         // const appView = f7AppViews.create("#main-view", {
+         //    url: "/",
+         //    routes: routes,
+         // });
 
          // TODO (Guy): Refactor this later.
          // appFeedback.init(appView.router);
-         this.appView = appView;
+         // this.appView = appView;
          busy.hide();
          if (callback == null) return;
          const callbackResult = callback();
@@ -233,7 +233,10 @@ class AppPage extends Common {
       const app = this.app;
       setTimeout(async () => {
          await Promise.all([app.resources.account.loadUserData(true)]);
-         this.components.profile.loadProfileData();
+         // TODO:
+         // loadProfileData() is no longer a thing?  How do we initialize the
+         // Profile Display?
+         // this.components.profile.loadProfileData();
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
    }
