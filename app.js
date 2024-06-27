@@ -55,6 +55,7 @@ class App extends EventEmitter {
          jsQR,
          pbkdf2,
          uuidv4,
+         languageDefault: this.languageDefault,
       };
    }
 
