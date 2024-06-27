@@ -147,7 +147,9 @@ export default class ABAppController extends EventEmitter2 {
     */
    listItems(objKey, fieldKey, langCode = "en") {
       const results = [];
-      const object = this.page.app.getABObjectByID(objKey);
+      const object = this.page.app.abObjs.find(
+         (abObj) => abObj.id === objKey || abObj.name === objKey
+      );
       if (object == null) return results;
       const field = object.fields(
          (f) => f.id === fieldKey || f.columnName === fieldKey
