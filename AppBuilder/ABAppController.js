@@ -46,9 +46,10 @@ export default class ABAppController extends EventEmitter2 {
       // save a reference to the lib/platform/pages/...Page.js object.
       this.page = page;
       const app = this.page.app;
+      this.abApp = app.abApp;
       if (dcIDs?.length > 0)
          this._datacollections = app.abDCs.filter(
-            (dc) => dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1
+            (dc) => dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1,
          );
 
       return new Promise((resolve, reject) => {
@@ -128,7 +129,7 @@ export default class ABAppController extends EventEmitter2 {
     */
    dataCollection(key) {
       return this._datacollections.find(
-         (dc) => dc.id === key || dc.name === key || dc.label == key
+         (dc) => dc.id === key || dc.name === key || dc.label == key,
       );
    }
 
@@ -152,7 +153,7 @@ export default class ABAppController extends EventEmitter2 {
       );
       if (object == null) return results;
       const field = object.fields(
-         (f) => f.id === fieldKey || f.columnName === fieldKey
+         (f) => f.id === fieldKey || f.columnName === fieldKey,
       )[0];
       if (field == null) return results;
 
@@ -186,7 +187,7 @@ export default class ABAppController extends EventEmitter2 {
          (obj) =>
             obj.id === key ||
             // TODO (Guy): Refactor this to use only id.
-            obj.name === key
+            obj.name === key,
       );
    }
 

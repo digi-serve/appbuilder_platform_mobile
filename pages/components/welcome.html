@@ -400,15 +400,17 @@
                   outputData.parentElement.hidden = true;
                   video.pause();
                   video.currentTime = 0;
-                  video.srcObject.getTracks().forEach((track) => {
+                  (video.srcObject?.getTracks() ?? []).forEach((track) => {
                      track.stop();
                   });
                }
             };
             try {
-               video.srcObject = await navigator.mediaDevices.getUserMedia({
-                  video: { facingMode: "environment" },
-               });
+               if (navigator.mediaDevices) {
+                  video.srcObject = await navigator.mediaDevices?.getUserMedia({
+                     video: { facingMode: "environment" },
+                  });
+               }
                video.setAttribute("playsinline", true);
                video.play();
                requestAnimationFrame(tick);
@@ -416,7 +418,7 @@
                console.error(error);
                video.pause();
                video.currentTime = 0;
-               video.srcObject.getTracks().forEach((track) => {
+               (video.srcObject?.getTracks() ?? []).forEach((track) => {
                   track.stop();
                });
             }
@@ -428,9 +430,11 @@
                try {
                   // Ask the browser for permissions again
                   // Update the video element with the new stream
-                  video.srcObject = await navigator.mediaDevices.getUserMedia({
-                     video: { facingMode: "environment" },
-                  });
+                  if (navigator.mediaDevices) {
+                     video.srcObject = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" },
+                     });
+                  }
                   video.setAttribute("playsinline", true);
                   video.currentTime = 0;
                   video.play();

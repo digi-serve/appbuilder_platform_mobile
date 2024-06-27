@@ -186,7 +186,7 @@ class Storage extends EventEmitter {
                         }
                         return value;
                      })) ||
-                     value
+                     value,
                );
             })()) ||
          value;
@@ -261,7 +261,7 @@ class Storage extends EventEmitter {
                   } catch (err) {
                      return result;
                   }
-               })
+               }),
             );
          };
       });
@@ -296,22 +296,33 @@ class Storage extends EventEmitter {
     */
    clearAll(tableKey, keyRange) {
       return new Promise((resolve, reject) => {
-         const transaction = this._db.transaction(tableKey, "readwrite");
-         transaction.onerror = (event) => {
-            console.error("DB error during clearAll", event.error);
-            reject(event.error);
-         };
-         const store = transaction.objectStore(tableKey);
-         if (keyRange) {
-            const req = store.delete(keyRange);
-            req.onsuccess = (event) => {
-               resolve();
+         try {
+            const transaction = this._db.transaction(tableKey, "readwrite");
+            transaction.onerror = (event) => {
+               console.error("DB error during clearAll", event.error);
+               reject(event.error);
             };
-         } else {
-            const req = store.clear();
-            req.onsuccess = (event) => {
+            const store = transaction.objectStore(tableKey);
+            if (keyRange) {
+               const req = store.delete(keyRange);
+               req.onsuccess = (event) => {
+                  resolve();
+               };
+            } else {
+               const req = store.clear();
+               req.onsuccess = (event) => {
+                  resolve();
+               };
+            }
+         } catch (e) {
+            if (e.toString().indexOf("not found") > -1) {
+               // sometimes we get back a strange # value
                resolve();
-            };
+               return;
+            }
+            console.error(e);
+            console.warn("tableKey:" + tableKey);
+            reject();
          }
       });
    }
@@ -331,7 +342,7 @@ class Storage extends EventEmitter {
                   file.name,
                   {
                      type: compressedFile.type,
-                  }
+                  },
                );
                resolve(compressedFileFromBlob);
             } else {
@@ -407,7 +418,7 @@ class Storage extends EventEmitter {
             (async () => {
                this._pendingNetworkCallbacks.downloadFile = async (
                   err,
-                  result
+                  result,
                ) => {
                   if (err != null) reject(new Error(err.message));
                   if (err != null || result.uuid == null)
@@ -421,7 +432,7 @@ class Storage extends EventEmitter {
                   {
                      url: network.validRoutes.fileBase64Download.replace(
                         ":uuid",
-                        uuid
+                        uuid,
                      ),
                   },
                   {
@@ -433,7 +444,7 @@ class Storage extends EventEmitter {
                            reject(new Error(`No file data (${uuid})`));
                         resolve(result);
                      },
-                  }
+                  },
                );
             })();
          }))
@@ -469,12 +480,12 @@ class Storage extends EventEmitter {
                      if (result.uuid == null)
                         reject(
                            new Error(
-                              `Failed to upload the file! (${data.filename})`
-                           )
+                              `Failed to upload the file! (${data.filename})`,
+                           ),
                         );
                      resolve(data);
                   },
-               }
+               },
             );
          })();
       });
@@ -508,7 +519,15 @@ class Storage extends EventEmitter {
    }
 
    get validStorageKeys() {
-      return structuredClone(this._db.objectStoreNames);
+      try {
+         return structuredClone(this._db.objectStoreNames);
+      } catch (e) {
+         let vals = [];
+         for (var e in this._db.objectStoreNames) {
+            vals.push(this._db.objectStoreNames[e]);
+         }
+         return vals;
+      }
    }
 }
 
