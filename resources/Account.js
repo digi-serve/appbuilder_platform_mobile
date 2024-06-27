@@ -9,30 +9,30 @@
 
 import EventEmitter from "eventemitter2";
 
-const EVENT_KEY_LOAD_USER_DATA = "load.user.data";
+const EVENT_KEY_LOAD_USER_DATA = "loadUserData";
 const EVENT_PATH = "resources.account";
 const TIME_WAIT_FOR_USER_DATA = 1000;
 class Account extends EventEmitter {
    constructor() {
       super();
       this._importInProgress = false;
-      this._isInitializedListener = false;
       this._pendingNetworkCallbacks = {
          loadUserData: null,
       };
       this._userData = null;
       this.app = null;
-      this.on(EVENT_KEY_LOAD_USER_DATA, (err, data) => {
+      this.on(EVENT_KEY_LOAD_USER_DATA, (context, res) => {
          const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
          const loadUserData = pendingNetworkCallbacks.loadUserData;
 
          // This is in case we reload and still receive a job response from MCC.
+         const isError = res.status === "error";
+         const data = res.data;
          if (loadUserData == null) {
-            (err != null && console.error(err)) ||
-               this.loadUserData(true, data);
+            (isError && console.error(data)) || this.loadUserData(true, data);
             return;
          }
-         (err != null && loadUserData(err)) || loadUserData(null, data);
+         (isError && loadUserData(data)) || loadUserData(null, data);
          pendingNetworkCallbacks.loadUserData = null;
       });
    }
@@ -49,25 +49,28 @@ class Account extends EventEmitter {
       this.app = app;
    }
 
-   async loadUserData(sync = false, data) {
+   async loadUserData(sync = false, backupUserData) {
       const resources = this.app.resources;
       const storage = resources.storage;
       const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
 
       // If this method has already been called, just wait for a response.
-      await new Promise((resolve) => {
-         const waitForUserData = () => {
-            const loadUserData = pendingNetworkCallbacks.loadUserData;
-            if (loadUserData == null) {
-               resolve();
-               return;
-            }
-            setTimeout(() => {
-               waitForUserData();
-            }, TIME_WAIT_FOR_USER_DATA);
-         };
-         waitForUserData();
-      });
+      if (pendingNetworkCallbacks.loadUserData != null) {
+         await new Promise((resolve) => {
+            const waitForLoadingUserData = () => {
+               const loadUserData = pendingNetworkCallbacks.loadUserData;
+               if (loadUserData == null) {
+                  resolve();
+                  return;
+               }
+               setTimeout(() => {
+                  waitForLoadingUserData();
+               }, TIME_WAIT_FOR_USER_DATA);
+            };
+            waitForLoadingUserData();
+         });
+         return;
+      }
       if (
          !sync &&
          (this._userData ||
@@ -77,7 +80,7 @@ class Account extends EventEmitter {
          return;
       const network = resources.network;
       const userData =
-         data ||
+         backupUserData ||
          (await new Promise((resolve, reject) => {
             (async () => {
                pendingNetworkCallbacks.loadUserData = (err, result) => {
@@ -90,8 +93,10 @@ class Account extends EventEmitter {
                await network.get(
                   { url: network.validRoutes.config },
                   {
-                     targetEventKey: EVENT_KEY_LOAD_USER_DATA,
-                     targetEventPath: EVENT_PATH,
+                     context: {
+                        targetEventKey: EVENT_KEY_LOAD_USER_DATA,
+                        targetEventPath: EVENT_PATH,
+                     },
                   }
                );
             })();

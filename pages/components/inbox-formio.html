@@ -281,7 +281,7 @@
                   },
                });
             });
-            $app.router.on.off("photoDownloaded");
+            $app.router.off("photoDownloaded");
             $app.router.on("photoDownloaded", (photo) => {
                children.forEach((child) => {
                   child.send({

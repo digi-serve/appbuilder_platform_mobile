@@ -339,10 +339,6 @@ class NetworkRest extends EventEmitter {
  */
 const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
 const MAX_JOB_AGE = config.appbuilder.maxJobAge || 1000 * 60 * 60 * 24 * 7; // 7 days
-const EVENT_KEY_CALLBACK = "callback";
-const EVENT_KEY_OFFLINE = "offline";
-const EVENT_KEY_ONLINE = "online";
-
 class NetworkRelay extends NetworkRest {
    /**
     * Generate random bytes in hex format.
@@ -383,12 +379,6 @@ class NetworkRelay extends NetworkRest {
       this._relayRequestRoute = null;
       this._relayState = null;
       this._tenantUUID = null;
-      this._validRoutes = {
-         config: "/config",
-         fileBase64Download: "/file/:uuid/base64?mobile=true",
-         fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
-         data: "/app_builder/model/:objID/:id",
-      };
       document.addEventListener(
          "offline",
          () => {
@@ -413,34 +403,29 @@ class NetworkRelay extends NetworkRest {
          },
          false,
       );
-      this.on(EVENT_KEY_OFFLINE, () => {
+      this.on(this.defaultEventKeys.offline, () => {
          // TODO (Guy):
       });
-      this.on(EVENT_KEY_ONLINE, async () => {
+      this.on(this.defaultEventKeys.online, async () => {
          // TODO (Guy):
       });
-      this.on(EVENT_KEY_CALLBACK, (jobResponse, res) => {
+      this.on(this.defaultEventKeys.callback, (context, res) => {
          let instance = this.app;
-         try {
-            const pathKeys =
-               jobResponse.key || jobResponse.targetEventPath.split(".");
+         const targetEventPath = context.targetEventPath;
+         if (targetEventPath != null) {
+            const pathKeys = targetEventPath.split(".");
             for (const pathKey of pathKeys) {
                if (Array.isArray(instance)) {
                   const [objKey, objValue] = pathKey.split("=");
                   instance = instance.find(
-                     (e) => e instanceof Object && e[objKey] === objValue,
+                     (e) => e instanceof Object && e[objKey] === objValue
                   );
                } else instance = instance[pathKey];
                if (instance == null) return;
             }
             if (!(instance instanceof EventEmitter)) return;
-            const data = res.data;
-            (res.status === "error" &&
-               instance.emit(jobResponse.targetEventKey, data)) ||
-               instance.emit(jobResponse.targetEventKey, null, data);
-         } catch (err) {
-            console.error("Error in NetworkRelay.js: ", err);
          }
+         instance.emit(context.targetEventKey, context, res, instance);
       });
    }
 
@@ -469,13 +454,11 @@ class NetworkRelay extends NetworkRest {
       const storage = app.resources.storage;
       const jobToken = app.utils.uuidv4();
       const jobResponses =
-         this._jobResponses ||
-         (await storage.get("user", "abRelayJobToken")) ||
-         {};
+         this._jobResponses || (await storage.get("user", "jobResponse")) || {};
 
       // add our jobToken to the local data:
       jobResponses[jobToken] = jobResponse;
-      await storage.set("user", "abRelayJobToken", jobResponses);
+      await storage.set("user", "jobResponse", jobResponses);
 
       // Split up large data into smaller packets
       const packets = [];
@@ -582,12 +565,12 @@ class NetworkRelay extends NetworkRest {
       const storage = app.resources.storage;
       await Promise.all([
          (async () => {
-            const jobResponses = await storage.get("user", "abRelayJobToken");
+            const jobResponses = await storage.get("user", "jobResponse");
             if (jobResponses != null) {
                this._jobResponses = jobResponses;
                return;
             }
-            await storage.set("user", "abRelayJobToken", {});
+            await storage.set("user", "jobResponse", {});
             this._jobResponses = {};
          })(),
          (async () => {
@@ -846,6 +829,19 @@ class NetworkRelay extends NetworkRest {
    }
 
    /**
+    * _resend()
+    * processes messages that were queued due to network connectivity
+    * issues.  Our initial run would have already converted the params to
+    * the encrypted packet and made our jobToken.  So we just try to send
+    * it again now.
+    * @param {obj} params  the jQuery.ajax() formatted params
+    * @return {Promise}
+    */
+   async _resend(params /*, jobResponse */) {
+      await super.post(params);
+   }
+
+   /**
     * take the response from the Public Relay Server, and publish it to
     * the jobResponse that was requested for it.
     * @param {obj} response  the response packet from the server:
@@ -869,23 +865,27 @@ class NetworkRelay extends NetworkRest {
       // trigger the registered .key callback
       const jobResponses =
          this._jobResponses ||
-         (await this.app.resources.storage.get("user", "abRelayJobToken")) ||
+         (await this.app.resources.storage.get("user", "jobResponse")) ||
          {};
       const jobResponse = jobResponses[response.jobToken];
       if (jobResponse != null) {
-         this.emit(EVENT_KEY_CALLBACK, jobResponse, data);
+         this.emit(
+            jobResponse.key || this.defaultEventKeys.callback,
+            jobResponse.context,
+            data
+         );
          delete jobResponses[response.jobToken];
          await this.app.resources.storage.set(
             "user",
-            "abRelayJobToken",
-            jobResponses,
+            "jobResponse",
+            jobResponses
          );
       } else
          console.error(
             "!!! Unknown job token in response packet:",
             response.jobToken,
             jobResponses,
-            data,
+            data
          );
       delete jobResponses[response.jobToken];
    }
@@ -1059,17 +1059,12 @@ class NetworkRelay extends NetworkRest {
       return this._createJob(params, jobResponse);
    }
 
-   /**
-    * _resend()
-    * processes messages that were queued due to network connectivity
-    * issues.  Our initial run would have already converted the params to
-    * the encrypted packet and made our jobToken.  So we just try to send
-    * it again now.
-    * @param {obj} params  the jQuery.ajax() formatted params
-    * @return {Promise}
-    */
-   async _resend(params /*, jobResponse */) {
-      await super.post(params);
+   get defaultEventKeys() {
+      return {
+         callback: "callback",
+         offline: "offline",
+         online: "online",
+      };
    }
 
    get relayRequestRoute() {
@@ -1081,7 +1076,12 @@ class NetworkRelay extends NetworkRest {
    }
 
    get validRoutes() {
-      return structuredClone(this._validRoutes);
+      return {
+         config: "/config",
+         fileBase64Download: "/file/:uuid/base64?mobile=true",
+         fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
+         data: "/app_builder/model/:objID/:id",
+      };
    }
 }
 

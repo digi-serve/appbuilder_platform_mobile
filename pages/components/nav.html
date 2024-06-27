@@ -268,7 +268,6 @@
    return {
       async data() {
          const storage = this.$root.app.resources.storage;
-         console.log(await storage.get("user", "siteUserData"));
          return cachedState;
       },
       on: {

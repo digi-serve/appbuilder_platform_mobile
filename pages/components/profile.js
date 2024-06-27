@@ -46,9 +46,10 @@ class Profile extends Common {
    }
 
    loadProfileData() {
+      const app = this._app || (this._app = this.page.app);
       this._userProfile = (
          this._dc ||
-         (this._dc = this._app.abDCs.find(
+         (this._dc = app.abDCs.find(
             (dc) =>
                dc.id === "User Person" ||
                // TODO (Guy): Refactor this to use only id.
@@ -58,8 +59,7 @@ class Profile extends Common {
          (e) =>
             e["System Access"] ===
             (this._username ||
-               (this._username =
-                  this._app.resources.account.userData?.user.username))
+               (this._username = app.resources.account.userData?.user.username))
       )[0];
    }
 

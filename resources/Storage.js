@@ -11,11 +11,12 @@ import { compressAccurately } from "image-conversion";
 import CryptoJS from "crypto-js";
 import Lock from "./Lock.js";
 
+const DB_NAME = "app";
 const DEFAULT_FILE_SLICESIZE = 512;
 const EVENT_KEY_DOWNLOAD_FILE = "download.file";
 const EVENT_KEY_UPLOAD_FILE = "upload.file";
 const EVENT_PATH = "resources.storage";
-const defaultTableKeys = ["file", "user"];
+const defaultTableKeys = ["inbox", "jobResponse", "file", "user"];
 
 class Storage extends EventEmitter {
    constructor() {
@@ -25,7 +26,6 @@ class Storage extends EventEmitter {
          key: null, // 256-bit key
       };
       this._db = null;
-      this._isInitializedListener = false;
       this._pendingNetworkCallbacks = {
          downloadFile: null,
          uploadFile: null,
@@ -75,6 +75,24 @@ class Storage extends EventEmitter {
          //    }
          // }
       });
+      this.on(EVENT_KEY_UPLOAD_FILE, async (context, data) => {
+         if (context.callback == null) return;
+         const callbackResult =
+            (context.error != null && context.callback(context.error)) ||
+            context.callback(null, {
+               uuid: data.uuid,
+               filename: data.file,
+               type: data.type,
+               fileEntry: context.data.fileEntry,
+            });
+         if (callbackResult instanceof Promise) {
+            try {
+               await callbackResult;
+            } catch (err) {
+               console.error(err);
+            }
+         }
+      });
    }
 
    /**
@@ -117,7 +135,7 @@ class Storage extends EventEmitter {
       const _db =
          this._db ||
          (this._db = await new Promise((resolve, reject) => {
-            const request = indexedDB.open("app");
+            const request = indexedDB.open(DB_NAME);
             request.onerror = (event) => {
                reject(event.target.error);
             };
@@ -136,32 +154,9 @@ class Storage extends EventEmitter {
                });
             };
          }));
-      if (this._isInitializedListener) return;
       _db.onerror = (event) => {
          console.error("IndexedDB error", event.target.errorCode);
       };
-      this.app.resources.network.on(
-         EVENT_KEY_UPLOAD_FILE,
-         async (context, data) => {
-            if (context.callback == null) return;
-            const callbackResult =
-               (context.error != null && context.callback(context.error)) ||
-               context.callback(null, {
-                  uuid: data.uuid,
-                  filename: data.file,
-                  type: data.type,
-                  fileEntry: context.data.fileEntry,
-               });
-            if (callbackResult instanceof Promise) {
-               try {
-                  await callbackResult;
-               } catch (err) {
-                  console.error(err);
-               }
-            }
-         },
-      );
-      this._isInitializedListener = true;
    }
 
    /**
