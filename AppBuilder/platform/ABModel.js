@@ -24,26 +24,22 @@ module.exports = class ABModel extends ABModelCore {
          )[0];
          const data = res.data;
          if (res.status === "error") {
+            const resErr = new Error(res.message);
             if (callbackQueue == null) {
-               console.error(data);
+               console.error(resErr);
                return;
             }
-            const callbackResult = callbackQueue.callback(new Error(res.message));
+            const callbackResult = callbackQueue.callback(resErr);
             callbackResult instanceof Promise && (await callbackResult);
             return;
          }
          if (callbackQueue == null) {
             try {
                if (instance == null) throw new Error("No instance");
-               const backupMethod = context.backupMethod;
-               const method = instance[backupMethod];
-               if (method == null) {
-                  const err = new Error(`No method ${backupMethod}`);
-                  err.instance = instance;
-                  throw err;
-               }
-               const result = backupMethod(...context.backupMethodArgs, data);
-               result instanceof Promise && (await result);
+               instance.emit(context.backupEvent, context.backupMethod, [
+                  ...context.backupMethodArgs,
+                  data,
+               ]);
             } catch (err) {
                console.error(err);
             }

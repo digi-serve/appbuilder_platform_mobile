@@ -215,7 +215,12 @@ class AppPage extends Common {
       const app = this.app;
       setTimeout(async () => {
          try {
-            await Promise.all([app.resources.account.loadUserData(true)]);
+            const pendingPromises = [];
+            pendingPromises.push(app.resources.account.loadUserData(true));
+            // app.abDCs.forEach((abDC) => {
+            //    pendingPromises.push(abDC.updateSyncData());
+            // });
+            await Promise.all(pendingPromises);
             // TODO:
             // loadProfileData() is no longer a thing?  How do we initialize the
             // Profile Display?
@@ -223,6 +228,7 @@ class AppPage extends Common {
          } catch (err) {
             console.error(err);
          }
+         console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
    }
