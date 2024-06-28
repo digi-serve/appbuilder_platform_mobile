@@ -10,7 +10,6 @@
 import Common from "./classes/Common.js";
 
 import ABApplicationList from "../../applications/applications.js";
-// import appFeedback from "../resources/AppFeedback.js";
 
 import inbox from "./components/inbox.js";
 import landing from "./components/landing.js";
@@ -25,7 +24,7 @@ class AppPage extends Common {
       super(
          "app-page",
          "lib/platform/pages/appPage.html",
-         "lib/platform/pages/appPage.css",
+         "lib/platform/pages/appPage.css"
       );
 
       // Are the AB Applications in the middle of being reset?
@@ -58,7 +57,7 @@ class AppPage extends Common {
             const hash = String(document.location.hash);
             await network.importCredentials(
                hash.match(/JRR=(\w+)/)?.[1],
-               hash.match(/tenant=(\w+)/)?.[1],
+               hash.match(/tenant=(\w+)/)?.[1]
             );
 
             // Remove tokens from current URL, for bookmarkability
@@ -80,7 +79,7 @@ class AppPage extends Common {
                            "<t>Problem authenticating with server</t>",
                            () => {
                               resolve();
-                           },
+                           }
                         )
                         .open();
                      break;
@@ -92,7 +91,7 @@ class AppPage extends Common {
                            "<t>Error</t>",
                            () => {
                               resolve();
-                           },
+                           }
                         )
                         .open();
                      break;
@@ -142,9 +141,6 @@ class AppPage extends Common {
                console.error("appPage.js: Error trying to init routes: ", err);
             }
 
-            // TODO (Guy): Refactor these in the future.
-            await Promise.all([components.profile.init(this)]);
-
             // This relies on the account object from the previous step.
             if (account.userData?.user.username == null)
                throw new Error("Not found an user.");
@@ -176,7 +172,7 @@ class AppPage extends Common {
                      } catch (err) {
                         console.error(err);
                      }
-                  }),
+                  })
                );
                this._checkForUpdate(true);
             })();
@@ -206,14 +202,6 @@ class AppPage extends Common {
             url: "/nav/",
             routes: menuRoutes,
          });
-         // const appView = f7AppViews.create("#main-view", {
-         //    url: "/",
-         //    routes: routes,
-         // });
-
-         // TODO (Guy): Refactor this later.
-         // appFeedback.init(appView.router);
-         // this.appView = appView;
          busy.hide();
          if (callback == null) return;
          const callbackResult = callback();
@@ -222,19 +210,19 @@ class AppPage extends Common {
    }
 
    _checkForUpdate(isUpdating) {
-      if (isUpdating && !this._isUpdating) {
-         this._isUpdating = isUpdating;
-      } else {
-         this._isUpdating = isUpdating;
-         return;
-      }
+      if (isUpdating !== this._isUpdating) this._isUpdating = isUpdating;
+      if (!this._isUpdating) return;
       const app = this.app;
       setTimeout(async () => {
-         await Promise.all([app.resources.account.loadUserData(true)]);
-         // TODO:
-         // loadProfileData() is no longer a thing?  How do we initialize the
-         // Profile Display?
-         // this.components.profile.loadProfileData();
+         try {
+            await Promise.all([app.resources.account.loadUserData(true)]);
+            // TODO:
+            // loadProfileData() is no longer a thing?  How do we initialize the
+            // Profile Display?
+            this.components.profile.loadProfileData();
+         } catch (err) {
+            console.error(err);
+         }
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
    }
@@ -280,10 +268,10 @@ class AppPage extends Common {
 
       // TODO (Guy): Refactor these in the future.
       let applications = ABApplicationList.map((App) => new App());
-      const profile = applications.find((app) => app.ID === "PROFILE");
+      const feedback = applications.find((app) => app.ID === "Feedback");
       applications = applications.filter((app) => {
          switch (app.ID) {
-            case "PROFILE":
+            case "Feedback":
                return false;
             default:
                return true;
@@ -293,8 +281,7 @@ class AppPage extends Common {
 
       // Component objects that will be referenced by F7 component code
       const components = this.components;
-      // components.feedback = feedback;
-      components.profile = profile;
+      components.feedback = feedback;
    }
 
    /**
@@ -370,7 +357,7 @@ class AppPage extends Common {
          this.f7App.dialog
             .alert(
                "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
-               "<t>Sorry</t>",
+               "<t>Sorry</t>"
             )
             .open();
       }, 90000);
@@ -401,7 +388,7 @@ class AppPage extends Common {
          });
       console.assert(
          targetDC,
-         "appPage.fetchRecordData() could not find the datacollection",
+         "appPage.fetchRecordData() could not find the datacollection"
       );
       return targetDC.reloadData();
    }
