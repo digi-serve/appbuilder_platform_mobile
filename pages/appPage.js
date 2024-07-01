@@ -10,14 +10,15 @@
 import Common from "./classes/Common.js";
 
 import ABApplicationList from "../../applications/applications.js";
-// import appFeedback from "../resources/AppFeedback.js";
 
 import inbox from "./components/inbox.js";
 import landing from "./components/landing.js";
-import navMenu from "../../applications/navMenu/app.js";
+import nav from "./components/nav.js";
+import profile from "./components/profile.js";
 import settings from "./components/settings.js";
 import welcome from "./components/welcome.js";
 
+const TIME_DATA_UPDATE = 1000;
 class AppPage extends Common {
    constructor() {
       super(
@@ -28,19 +29,21 @@ class AppPage extends Common {
 
       // Are the AB Applications in the middle of being reset?
       // TODO (Guy): Refactor this in the future;
+      this._isUpdating = false;
       this._pendingApplicationReset = false;
       this.applications = [];
       this.appView = null;
       this.components = {
          inbox,
          landing,
-         navMenu: new navMenu(),
+         nav,
+         profile,
          settings,
          welcome,
       };
       this.f7App = null;
       this.menuView = null;
-      this.on("ready", async () => {
+      this.on("ready", async (callback) => {
          const resources = this.app.resources;
          const account = resources.account;
          const busy = resources.busy;
@@ -60,7 +63,7 @@ class AppPage extends Common {
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
 
-            await account.fetchUserData();
+            await account.loadUserData();
             busy.hide();
          } catch (err) {
             console.error(err);
@@ -99,14 +102,8 @@ class AppPage extends Common {
          // TODO (Guy): Refactor later.
          // Preparing components.
          busy.show("Preparing components.");
-         const components = this.components;
-         const routes = [
-            components.inbox.route,
-            components.landing.route,
-            // TODO (Guy): Refactor later.
-            ...components.navMenu.routes,
-            components.settings.route,
-            components.welcome.route,
+         const mainRoutes = [
+            // TODO (Guy): Refactor.
             {
                path: "/profile/",
                componentUrl:
@@ -122,36 +119,63 @@ class AppPage extends Common {
                ],
             },
          ];
+         const menuRoutes = [];
          try {
-            await Promise.all([
-               components.inbox.init(this),
-               components.landing.init(this),
-               components.navMenu.init(this),
-               components.settings.init(this),
-               components.welcome.init(this),
-            ]);
+            const components = this.components;
+            let pendingPromises = [];
+            try {
+               // components isn't fully iterable, so we need to use a for loop.
+               for (const key in components) {
+                  if (Object.hasOwnProperty.call(components, key)) {
+                     pendingPromises.push(components[key].init(this));
+                     const routes = components[key].routes;
+                     if (routes.mainRoutes != null)
+                        mainRoutes.push(...routes.mainRoutes);
+                     if (routes.menuRoutes != null)
+                        menuRoutes.push(...routes.menuRoutes);
+                  }
+               }
+               await Promise.all(pendingPromises);
+               pendingPromises = [];
+            } catch (err) {
+               console.error("appPage.js: Error trying to init routes: ", err);
+            }
 
             // This relies on the account object from the previous step.
-            if (account.username == null) throw new Error("Not found an user.");
-
-            // TODO (Guy): Refactor these in the future.
-            await Promise.all([
-               components.profile.init(this),
-            ]);
+            if (account.userData?.user.username == null)
+               throw new Error("Not found an user.");
+            // this.app.abDCs.forEach(dc => {
+            //    pendingPromises.push(dc.init());
+            // });
+            // pendingPromises.forEach(async (pendingPromise) => {
+            //    try {
+            //       await pendingPromise;
+            //    } catch (err) {
+            //       console.error(err);
+            //    }
+            // })
+            pendingPromises = [];
 
             // Initialize the AB applications
             const pendingInitializedApps = [];
             this.applications.forEach((app) => {
                pendingInitializedApps.push(app.init(this));
-               routes.push(...app.routes.mainRoutes);
+               const routes = app.routes;
+               menuRoutes.push(...routes.menuRoutes);
+               mainRoutes.push(...routes.mainRoutes);
             });
-            pendingInitializedApps.forEach(async (pendingInitializedApp) => {
-               try {
-                  await pendingInitializedApp;
-               } catch (err) {
-                  console.error(err);
-               }
-            });
+            (async () => {
+               await Promise.all(
+                  pendingInitializedApps.map(async (pendingInitializedApp) => {
+                     try {
+                        await pendingInitializedApp;
+                     } catch (err) {
+                        console.error(err);
+                     }
+                  })
+               );
+               this._checkForUpdate(true);
+            })();
          } catch (err) {
             console.error(err);
          }
@@ -170,25 +194,47 @@ class AppPage extends Common {
          // Begin Framework7 router
          // Menu view
          const f7AppViews = f7App.views;
+         this.appView = f7AppViews.create("#main-view", {
+            url: "/",
+            routes: mainRoutes,
+         });
          this.menuView = f7AppViews.create("#left-view", {
             url: "/nav/",
-            routes: components.navMenu.routes,
+            routes: menuRoutes,
          });
-         const appView = f7AppViews.create("#main-view", {
-            url: "/",
-            routes: routes,
-         });
-
-         // TODO (Guy): Refactor this later.
-         // appFeedback.init(appView.router);
-         this.appView = appView;
          busy.hide();
+         if (callback == null) return;
+         const callbackResult = callback();
+         if (callbackResult instanceof Promise) await callbackResult;
       });
+   }
+
+   _checkForUpdate(isUpdating) {
+      if (isUpdating !== this._isUpdating) this._isUpdating = isUpdating;
+      if (!this._isUpdating) return;
+      const app = this.app;
+      setTimeout(async () => {
+         try {
+            const pendingPromises = [];
+            pendingPromises.push(app.resources.account.loadUserData(true));
+            // app.abDCs.forEach((abDC) => {
+            //    pendingPromises.push(abDC.updateSyncData());
+            // });
+            await Promise.all(pendingPromises);
+            // TODO:
+            // loadProfileData() is no longer a thing?  How do we initialize the
+            // Profile Display?
+            this.components.profile.loadProfileData();
+         } catch (err) {
+            console.error(err);
+         }
+         console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
+         this._checkForUpdate(this._isUpdating);
+      }, TIME_DATA_UPDATE);
    }
 
    async init(app) {
       await super.init(app);
-
       // Framework7 is the UI library
       this.f7App ||
          (this.f7App = new Framework7({
@@ -228,10 +274,10 @@ class AppPage extends Common {
 
       // TODO (Guy): Refactor these in the future.
       let applications = ABApplicationList.map((App) => new App());
-      const profile = applications.find((app) => app.ID === "PROFILE");
+      const feedback = applications.find((app) => app.ID === "Feedback");
       applications = applications.filter((app) => {
          switch (app.ID) {
-            case "PROFILE":
+            case "Feedback":
                return false;
             default:
                return true;
@@ -241,8 +287,7 @@ class AppPage extends Common {
 
       // Component objects that will be referenced by F7 component code
       const components = this.components;
-      // components.feedback = feedback;
-      components.profile = profile;
+      components.feedback = feedback;
    }
 
    /**
@@ -281,15 +326,11 @@ class AppPage extends Common {
       // importCredentials then refresh the page
       const resources = this.app.resources;
       await resources.network.importCredentials(preToken, tenantUUID);
-      await resources.account.fetchUserData();
+      await resources.account.loadUserData();
       // await this.fetchApplicationData(true);
    }
 
    getApplicationByID(id) {
-      // TODO (Guy): Refactor these in the future.
-      const components = this.components;
-      for (const key in components)
-         if (components[key].ID === id) return components[key];
       return this.applications.find((app) => {
          return app.ID === id;
       });

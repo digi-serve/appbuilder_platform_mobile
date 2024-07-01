@@ -43,7 +43,7 @@ class NetworkRest extends EventEmitter {
          (await this.app.resources.storage.get("user", refQueue)) || [];
       queue.push({ data, jobResponse });
       console.log(
-         `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`
+         `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`,
       );
       await this.app.resources.storage.set("user", refQueue, queue);
    }
@@ -84,7 +84,7 @@ class NetworkRest extends EventEmitter {
                if (text === "timeout" || jqXHR.readyState === 0) {
                   //// Network Error: conneciton refused, access denied, etc...
                   console.error(
-                     "*** NetworkRest._request():network connection error detected."
+                     "*** NetworkRest._request():network connection error detected.",
                   );
                   // retry the attempt:
                   if (numRetries > 0) {
@@ -94,8 +94,8 @@ class NetworkRest extends EventEmitter {
                            await this._request(
                               params,
                               jobResponse,
-                              numRetries - 1
-                           )
+                              numRetries - 1,
+                           ),
                         );
                      } catch (err) {
                         reject(err);
@@ -111,7 +111,7 @@ class NetworkRest extends EventEmitter {
                } else if (jqXHR.readyState == 4) {
                   //// an HTTP error
                   console.error(
-                     "HTTP error while communicating with relay server"
+                     "HTTP error while communicating with relay server",
                   );
                   console.error(`status code: ${jqXHR.status}`);
                }
@@ -121,14 +121,14 @@ class NetworkRest extends EventEmitter {
                   // add it to the queue and retry later
                   this._queue(params, jobResponse);
                   let error = new Error(
-                     "Network error: adding to queue for later retry."
+                     "Network error: adding to queue for later retry.",
                   );
                   resolve({ status: "queued" });
                   return;
                }
 
                const error = new Error(
-                  "NetworkRest._request() error with .ajax() command:"
+                  "NetworkRest._request() error with .ajax() command:",
                );
                error.response = jqXHR.responseText;
                error.text = text;
@@ -339,7 +339,6 @@ class NetworkRest extends EventEmitter {
  */
 const MAX_PACKET_SIZE = config.appbuilder.maxPacketSize || 1048576;
 const MAX_JOB_AGE = config.appbuilder.maxJobAge || 1000 * 60 * 60 * 24 * 7; // 7 days
-
 class NetworkRelay extends NetworkRest {
    /**
     * Generate random bytes in hex format.
@@ -376,22 +375,17 @@ class NetworkRelay extends NetworkRest {
       this._isPolling = false;
 
       // TODO (Guy): Storage won't save string encryption for callback functions. I will fix it later.
-      this._jobTokens = {};
+      this._jobResponses = {};
       this._relayRequestRoute = null;
       this._relayState = null;
       this._tenantUUID = null;
-      this._validRoutes = {
-         config: "/config",
-         fileBase64Download: "/file/:uuid/base64?mobile=true",
-         fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
-      };
       document.addEventListener(
          "offline",
          () => {
             // trigger an 'online' event
             this.emit("offline");
          },
-         false
+         false,
       );
       document.addEventListener(
          "online",
@@ -407,23 +401,32 @@ class NetworkRelay extends NetworkRest {
             // trigger an 'online' event
             this.emit("online");
          },
-         false
+         false,
       );
-      this.on("offline", () => {
+      this.on(this.defaultEventKeys.offline, () => {
          // TODO (Guy):
       });
-      this.on("online", async () => {
+      this.on(this.defaultEventKeys.online, async () => {
          // TODO (Guy):
       });
-      const validRoutes = this._validRoutes;
-      for (const key in validRoutes)
-         this.on(validRoutes[key], (context, res) => {
-            let instance = this.app;
-            context.targetEventPath.split(".").forEach((e) => {
-               instance = instance[e];
-            });
-            instance.emit(context.targetEventKey, context, res);
-         });
+      this.on(this.defaultEventKeys.callback, (context, res) => {
+         let instance = this.app;
+         const targetEventPath = context.targetEventPath;
+         if (targetEventPath != null) {
+            const pathKeys = targetEventPath.split(".");
+            for (const pathKey of pathKeys) {
+               if (Array.isArray(instance)) {
+                  const [objKey, objValue] = pathKey.split("=");
+                  instance = instance.find(
+                     (e) => e instanceof Object && e[objKey] === objValue
+                  );
+               } else instance = instance[pathKey];
+               if (instance == null) return;
+            }
+            if (!(instance instanceof EventEmitter)) return;
+         }
+         instance.emit(context.targetEventKey, context, res, instance);
+      });
    }
 
    /**
@@ -449,15 +452,13 @@ class NetworkRelay extends NetworkRest {
       let data = this._encrypt(params);
       const app = this.app;
       const storage = app.resources.storage;
-      const jobToken = app.AB.uuid();
-      const jobTokens =
-         this._jobTokens ||
-         (await storage.get("user", "abRelayJobToken")) ||
-         {};
+      const jobToken = app.utils.uuidv4();
+      const jobResponses =
+         this._jobResponses || (await storage.get("user", "jobResponse")) || {};
 
       // add our jobToken to the local data:
-      jobTokens[jobToken] = jobResponse;
-      await storage.set("user", "abRelayJobToken", jobTokens);
+      jobResponses[jobToken] = jobResponse;
+      await storage.set("user", "jobResponse", jobResponses);
 
       // Split up large data into smaller packets
       const packets = [];
@@ -485,7 +486,7 @@ class NetworkRelay extends NetworkRest {
                      data: packets[i],
                      tenant: config.appbuilder.tenantUUID,
                   },
-               })
+               }),
             );
          }
          return mccRes;
@@ -510,7 +511,7 @@ class NetworkRelay extends NetworkRest {
          const decrypted = CryptoJS.AES.decrypt(
             dataParts[0],
             CryptoJS.enc.Hex.parse(this._relayState.aesKey),
-            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) }
+            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) },
          );
 
          // Parse JSON to plantext.
@@ -534,7 +535,7 @@ class NetworkRelay extends NetworkRest {
       return `${CryptoJS.AES.encrypt(
          JSON.stringify(data),
          CryptoJS.enc.Hex.parse(aesKey),
-         { iv: CryptoJS.enc.Hex.parse(iv) }
+         { iv: CryptoJS.enc.Hex.parse(iv) },
       ).toString()}:::${iv}`;
    }
 
@@ -549,8 +550,8 @@ class NetworkRelay extends NetworkRest {
       // or alterations to jobPackets inbetween these times would be overwritten
       // by these new values, so make sure jobPackets are included in this chain:
       const [jobPackets, jobPacketsTimestamps] = await Promise.all([
-         (await storage.get("user", "abRelayJobPackets")) || {},
-         (await storage.get("abRelayJobPacketsTimestamps")) || {},
+         storage.get("user", "abRelayJobPackets") || Promise.resolve({}),
+         storage.get("abRelayJobPacketsTimestamps") || Promise.resolve({}),
       ]);
       return { jobPackets, jobPacketsTimestamps };
    }
@@ -564,13 +565,13 @@ class NetworkRelay extends NetworkRest {
       const storage = app.resources.storage;
       await Promise.all([
          (async () => {
-            const jobTokens = await storage.get("user", "abRelayJobToken");
-            if (jobTokens != null) {
-               this._jobTokens = jobTokens;
+            const jobResponses = await storage.get("user", "jobResponse");
+            if (jobResponses != null) {
+               this._jobResponses = jobResponses;
                return;
             }
-            await storage.set("user", "abRelayJobToken", {});
-            this._jobTokens = {};
+            await storage.set("user", "jobResponse", {});
+            this._jobResponses = {};
          })(),
          (async () => {
             const relayState = (await storage.get("user", "relayState")) || {
@@ -592,7 +593,7 @@ class NetworkRelay extends NetworkRest {
          (async () => {
             let appUUID = await storage.get("user", "appUUID");
             if (appUUID == null) {
-               appUUID = app.AB.uuid();
+               appUUID = app.utils.uuidv4();
                await storage.set("user", "appUUID", appUUID);
             }
             this._appUUID = appUUID;
@@ -636,7 +637,7 @@ class NetworkRelay extends NetworkRest {
       // prevent offline attempt.
       if (!navigator.onLine)
          throw new Error(
-            "NetworkRelay:init(): prevent initresolve when no network conencted."
+            "NetworkRelay:init(): prevent initresolve when no network conencted.",
          );
 
       // NOTE: use super.post() here so we don't do our .post()
@@ -647,7 +648,7 @@ class NetworkRelay extends NetworkRest {
             rsa_aes: rsa.encrypt(
                JSON.stringify({
                   aesKey: relayState.aesKey,
-               })
+               }),
             ),
             userUUID: await storage.get("user", "uuid"),
             appID: config.appbuilder.maID,
@@ -728,7 +729,7 @@ class NetworkRelay extends NetworkRest {
                   if (packets.length < e.totalPackets) {
                      await this._saveJobPackets(
                         jobPackets,
-                        jobPacketsTimestamps
+                        jobPacketsTimestamps,
                      );
                      return;
                   }
@@ -745,7 +746,7 @@ class NetworkRelay extends NetworkRest {
                      if (hash[i] != null) continue;
                      console.warn(
                         `Weird. Missing packet[${i}/${e.totalPackets - 1}]`,
-                        packets.map((p) => p.packet)
+                        packets.map((p) => p.packet),
                      );
 
                      // Compare the duplicate packets.
@@ -766,24 +767,24 @@ class NetworkRelay extends NetworkRest {
                            }
                         if (p.data === duplicatedPacket.data) {
                            console.warn(
-                              `Duplicate packets for ${p.packet} are identical`
+                              `Duplicate packets for ${p.packet} are identical`,
                            );
                            console.warn("Dropping one of them");
                            packets.splice(j, 1);
                         } else {
                            console.warn(
-                              `Duplicate packets for ${p.packet} are different!`
+                              `Duplicate packets for ${p.packet} are different!`,
                            );
                            console.warn(
-                              `One of them is corrupted. But which one?`
+                              `One of them is corrupted. But which one?`,
                            );
                            console.warn(
                               "the packet",
-                              p.data.substring(0, 20) + "..."
+                              p.data.substring(0, 20) + "...",
                            );
                            console.warn(
                               "The duplicated packet",
-                              duplicatedPacket.data.substring(0, 20) + "..."
+                              duplicatedPacket.data.substring(0, 20) + "...",
                            );
                            console.warn("Dropping the smaller packet");
                            if (p.length < duplicatedPacket.length)
@@ -798,7 +799,7 @@ class NetworkRelay extends NetworkRest {
                      // set.
                      await this._saveJobPackets(
                         jobPackets,
-                        jobPacketsTimestamps
+                        jobPacketsTimestamps,
                      );
                      return;
                   }
@@ -816,7 +817,7 @@ class NetworkRelay extends NetworkRest {
                      jobToken: e.jobToken,
                   });
                   await this._saveJobPackets(jobPackets, jobPacketsTimestamps);
-               })
+               }),
             );
          } catch (err) {
             console.error(err);
@@ -825,6 +826,19 @@ class NetworkRelay extends NetworkRest {
       };
       checkIn();
       this._isPolling = true;
+   }
+
+   /**
+    * _resend()
+    * processes messages that were queued due to network connectivity
+    * issues.  Our initial run would have already converted the params to
+    * the encrypted packet and made our jobToken.  So we just try to send
+    * it again now.
+    * @param {obj} params  the jQuery.ajax() formatted params
+    * @return {Promise}
+    */
+   async _resend(params /*, jobResponse */) {
+      await super.post(params);
    }
 
    /**
@@ -839,8 +853,7 @@ class NetworkRelay extends NetworkRest {
     * @response {Promise}
     **/
    async _resolveJob(response) {
-      let data = this._decrypt(response.data);
-      let error = null;
+      const data = this._decrypt(response.data);
 
       // we expect a fully wrapped data packet back:
       // {
@@ -848,33 +861,33 @@ class NetworkRelay extends NetworkRest {
       //  data:[]
       // }
 
-      // remember if this is an error
-      if (data.status === "error") error = data;
-
       // find the jobToken
       // trigger the registered .key callback
-      const jobTokens =
-         this._jobTokens ||
-         (await this.app.resources.storage.get("user", "abRelayJobToken")) ||
+      const jobResponses =
+         this._jobResponses ||
+         (await this.app.resources.storage.get("user", "jobResponse")) ||
          {};
-      const foundToken = jobTokens[response.jobToken];
-      if (foundToken != null) {
-         if (error != null) foundToken.context.error = error;
-         this.emit(foundToken.key, foundToken.context, data);
-         delete jobTokens[response.jobToken];
+      const jobResponse = jobResponses[response.jobToken];
+      if (jobResponse != null) {
+         this.emit(
+            jobResponse.key || this.defaultEventKeys.callback,
+            jobResponse.context,
+            data
+         );
+         delete jobResponses[response.jobToken];
          await this.app.resources.storage.set(
             "user",
-            "abRelayJobToken",
-            jobTokens
+            "jobResponse",
+            jobResponses
          );
       } else
          console.error(
             "!!! Unknown job token in response packet:",
             response.jobToken,
-            jobTokens,
+            jobResponses,
             data
          );
-      delete jobTokens[response.jobToken];
+      delete jobResponses[response.jobToken];
    }
 
    /**
@@ -945,7 +958,7 @@ class NetworkRelay extends NetworkRest {
                },
             },
             null,
-            false
+            false,
          );
          await storage.set("user", "authToken", newAuthToken);
          this._authToken = newAuthToken;
@@ -1046,17 +1059,12 @@ class NetworkRelay extends NetworkRest {
       return this._createJob(params, jobResponse);
    }
 
-   /**
-    * _resend()
-    * processes messages that were queued due to network connectivity
-    * issues.  Our initial run would have already converted the params to
-    * the encrypted packet and made our jobToken.  So we just try to send
-    * it again now.
-    * @param {obj} params  the jQuery.ajax() formatted params
-    * @return {Promise}
-    */
-   async _resend(params /*, jobResponse */) {
-      await super.post(params);
+   get defaultEventKeys() {
+      return {
+         callback: "callback",
+         offline: "offline",
+         online: "online",
+      };
    }
 
    get relayRequestRoute() {
@@ -1068,7 +1076,12 @@ class NetworkRelay extends NetworkRest {
    }
 
    get validRoutes() {
-      return structuredClone(this._validRoutes);
+      return {
+         config: "/config",
+         fileBase64Download: "/file/:uuid/base64?mobile=true",
+         fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
+         data: "/app_builder/model/:objID/:id",
+      };
    }
 }
 

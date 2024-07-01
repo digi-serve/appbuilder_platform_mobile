@@ -11,11 +11,12 @@ import { compressAccurately } from "image-conversion";
 import CryptoJS from "crypto-js";
 import Lock from "./Lock.js";
 
+const DB_NAME = "app";
 const DEFAULT_FILE_SLICESIZE = 512;
-const NETWORK_EVENT_KEY_DOWNLOAD_FILE = "file.base64.download";
-const NETWORK_EVENT_KEY_UPLOAD_FILE = "file.base64.upload";
-const NETWORK_EVENT_PATH = "resources.storage";
-const defaultTableKeys = ["file", "user"];
+const EVENT_KEY_DOWNLOAD_FILE = "download.file";
+const EVENT_KEY_UPLOAD_FILE = "upload.file";
+const EVENT_PATH = "resources.storage";
+const defaultTableKeys = ["inbox", "jobResponse", "file", "user"];
 
 class Storage extends EventEmitter {
    constructor() {
@@ -25,7 +26,6 @@ class Storage extends EventEmitter {
          key: null, // 256-bit key
       };
       this._db = null;
-      this._isInitializedListener = false;
       this._pendingNetworkCallbacks = {
          downloadFile: null,
          uploadFile: null,
@@ -35,7 +35,7 @@ class Storage extends EventEmitter {
          /* key : Lock() */
       };
       this.app = null;
-      this.on(NETWORK_EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
+      this.on(EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
          const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
          const downloadFile = pendingNetworkCallbacks.downloadFile;
          const data = res.data;
@@ -75,6 +75,24 @@ class Storage extends EventEmitter {
          //    }
          // }
       });
+      this.on(EVENT_KEY_UPLOAD_FILE, async (context, data) => {
+         if (context.callback == null) return;
+         const callbackResult =
+            (context.error != null && context.callback(context.error)) ||
+            context.callback(null, {
+               uuid: data.uuid,
+               filename: data.file,
+               type: data.type,
+               fileEntry: context.data.fileEntry,
+            });
+         if (callbackResult instanceof Promise) {
+            try {
+               await callbackResult;
+            } catch (err) {
+               console.error(err);
+            }
+         }
+      });
    }
 
    /**
@@ -112,12 +130,12 @@ class Storage extends EventEmitter {
 
    async init(app) {
       this.app = app;
-      const dcs = this.app.abApp.datacollectionsIncluded();
+      const dcs = this.app.abDCs;
       // IndexedDB is standard on modern browsers
       const _db =
          this._db ||
          (this._db = await new Promise((resolve, reject) => {
-            const request = indexedDB.open("app");
+            const request = indexedDB.open(DB_NAME);
             request.onerror = (event) => {
                reject(event.target.error);
             };
@@ -136,32 +154,9 @@ class Storage extends EventEmitter {
                });
             };
          }));
-      if (this._isInitializedListener) return;
       _db.onerror = (event) => {
          console.error("IndexedDB error", event.target.errorCode);
       };
-      this.app.resources.network.on(
-         NETWORK_EVENT_KEY_UPLOAD_FILE,
-         async (context, data) => {
-            if (context.callback == null) return;
-            const callbackResult =
-               (context.error != null && context.callback(context.error)) ||
-               context.callback(null, {
-                  uuid: data.uuid,
-                  filename: data.file,
-                  type: data.type,
-                  fileEntry: context.data.fileEntry,
-               });
-            if (callbackResult instanceof Promise) {
-               try {
-                  await callbackResult;
-               } catch (err) {
-                  console.error(err);
-               }
-            }
-         }
-      );
-      this._isInitializedListener = true;
    }
 
    /**
@@ -191,7 +186,7 @@ class Storage extends EventEmitter {
                         }
                         return value;
                      })) ||
-                     value
+                     value,
                );
             })()) ||
          value;
@@ -266,7 +261,7 @@ class Storage extends EventEmitter {
                   } catch (err) {
                      return result;
                   }
-               })
+               }),
             );
          };
       });
@@ -301,22 +296,33 @@ class Storage extends EventEmitter {
     */
    clearAll(tableKey, keyRange) {
       return new Promise((resolve, reject) => {
-         const transaction = this._db.transaction(tableKey, "readwrite");
-         transaction.onerror = (event) => {
-            console.error("DB error during clearAll", event.error);
-            reject(event.error);
-         };
-         const store = transaction.objectStore(tableKey);
-         if (keyRange) {
-            const req = store.delete(keyRange);
-            req.onsuccess = (event) => {
-               resolve();
+         try {
+            const transaction = this._db.transaction(tableKey, "readwrite");
+            transaction.onerror = (event) => {
+               console.error("DB error during clearAll", event.error);
+               reject(event.error);
             };
-         } else {
-            const req = store.clear();
-            req.onsuccess = (event) => {
+            const store = transaction.objectStore(tableKey);
+            if (keyRange) {
+               const req = store.delete(keyRange);
+               req.onsuccess = (event) => {
+                  resolve();
+               };
+            } else {
+               const req = store.clear();
+               req.onsuccess = (event) => {
+                  resolve();
+               };
+            }
+         } catch (e) {
+            if (e.toString().indexOf("not found") > -1) {
+               // sometimes we get back a strange # value
                resolve();
-            };
+               return;
+            }
+            console.error(e);
+            console.warn("tableKey:" + tableKey);
+            reject();
          }
       });
    }
@@ -336,7 +342,7 @@ class Storage extends EventEmitter {
                   file.name,
                   {
                      type: compressedFile.type,
-                  }
+                  },
                );
                resolve(compressedFileFromBlob);
             } else {
@@ -406,32 +412,32 @@ class Storage extends EventEmitter {
    }
 
    async downloadFile(uuid, data) {
-      return data || (await new Promise((resolve, reject) => {
-         (async () => {
-            this._pendingNetworkCallbacks.downloadFile = async (
-               err,
-               result
-            ) => {
-               if (err != null) reject(new Error(err.message));
-               if (err != null || result.uuid == null)
-                  reject(new Error(`No file data (${uuid})`));
-               resolve(result);
-            };
+      return (
+         data ||
+         (await new Promise((resolve, reject) => {
+            (async () => {
+               this._pendingNetworkCallbacks.downloadFile = async (
+                  err,
+                  result,
+               ) => {
+                  if (err != null) reject(new Error(err.message));
+                  if (err != null || result.uuid == null)
+                     reject(new Error(`No file data (${uuid})`));
+                  resolve(result);
+               };
 
-            // image was not found on device you need to fetch it
-            const network = this.app.resources.network;
-            await network.get(
-               {
-                  url: network.validRoutes.fileBase64Download.replace(
-                     ":uuid",
-                     uuid
-                  ),
-               },
-               {
-                  key: network.validRoutes.fileBase64Download,
-                  context: {
-                     targetEventKey: NETWORK_EVENT_KEY_DOWNLOAD_FILE,
-                     targetEventPath: NETWORK_EVENT_PATH,
+               // image was not found on device you need to fetch it
+               const network = this.app.resources.network;
+               await network.get(
+                  {
+                     url: network.validRoutes.fileBase64Download.replace(
+                        ":uuid",
+                        uuid,
+                     ),
+                  },
+                  {
+                     targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
+                     targetEventPath: EVENT_PATH,
                      callback: async (err, result) => {
                         if (err != null) reject(new Error(err.message));
                         if (err != null || result.uuid == null)
@@ -439,10 +445,10 @@ class Storage extends EventEmitter {
                         resolve(result);
                      },
                   },
-               }
-            );
-         })();
-      }));
+               );
+            })();
+         }))
+      );
    }
 
    uploadFile(objID, fieldID, data) {
@@ -464,25 +470,22 @@ class Storage extends EventEmitter {
                   },
                },
                {
-                  key: NETWORK_EVENT_KEY_UPLOAD_FILE,
-                  context: {
-                     targetEventKey: NETWORK_EVENT_KEY_UPLOAD_FILE,
-                     targetEventPath: NETWORK_EVENT_PATH,
-                     data: {
-                        fileEntry: data.fileEntry,
-                     },
-                     callback: async (err, result) => {
-                        if (err != null) reject(new Error(err.message));
-                        if (result.uuid == null)
-                           reject(
-                              new Error(
-                                 `Failed to upload the file! (${data.filename})`
-                              )
-                           );
-                        resolve(data);
-                     },
+                  targetEventKey: KEY_UPLOAD_FILE,
+                  targetEventPath: EVENT_PATH,
+                  data: {
+                     fileEntry: data.fileEntry,
                   },
-               }
+                  callback: async (err, result) => {
+                     if (err != null) reject(new Error(err.message));
+                     if (result.uuid == null)
+                        reject(
+                           new Error(
+                              `Failed to upload the file! (${data.filename})`,
+                           ),
+                        );
+                     resolve(data);
+                  },
+               },
             );
          })();
       });
@@ -516,7 +519,15 @@ class Storage extends EventEmitter {
    }
 
    get validStorageKeys() {
-      return structuredClone(this._db.objectStoreNames);
+      try {
+         return structuredClone(this._db.objectStoreNames);
+      } catch (e) {
+         let vals = [];
+         for (var e in this._db.objectStoreNames) {
+            vals.push(this._db.objectStoreNames[e]);
+         }
+         return vals;
+      }
    }
 }
 

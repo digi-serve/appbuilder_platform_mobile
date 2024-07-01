@@ -3,30 +3,27 @@
  */
 "use strict";
 
-import EventEmitter from "eventemitter2";
+import Common from "./classes/Common";
 
-class Inbox extends EventEmitter {
+class Inbox extends Common {
    /**
     */
    constructor() {
-      super();
-      this.page = null;
-      this.route = {
-         path: "/inbox/",
-         componentUrl: "./lib/platform/pages/components/inbox-list.html",
-         routes: [
-            {
-               path: "formio/:id/",
-               popup: {
-                  componentUrl: "./lib/platform/pages/components/inbox-formio.html"
-               }
-            }
-         ]
-      }
-   }
-
-   async init(page) {
-      this.page = page;
+      super([
+         {
+            path: "/inbox/",
+            componentUrl: "./lib/platform/pages/components/inbox-list.html",
+            routes: [
+               {
+                  path: "formio/:id/",
+                  popup: {
+                     componentUrl:
+                        "./lib/platform/pages/components/inbox-formio.html",
+                  },
+               },
+            ],
+         },
+      ]);
    }
 }
 

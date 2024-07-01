@@ -1,0 +1,208 @@
+<!-- framework7 component template -->
+<template>
+    <div class="page profile">
+        <div class="navbar">
+            <div class="navbar-bg"></div>
+            <div class="navbar-inner sliding">
+                <div class="left">
+                    <a data-cy="menu" href="#" class="link icon-only panel-open" data-panel="left" data-cy="left">
+                        <i class="fa fa-bars"></i>
+                    </a>
+                </div>
+                <div class="title sliding" translate=1>Profile</div>
+            </div>
+        </div>
+        <div class="page-content ptr-content" ptr-data-ptr-distance="55" ptr-data-ptr-mousewheel="true">
+            <!-- Default pull to refresh preloader-->
+            <div class="ptr-preloader">
+                <div class="preloader"></div>
+                <div class="ptr-arrow"></div>
+            </div>
+
+            {{#if loading}}
+            <div class="block-title skeleton-text skeleton-effect-fade"><strong>
+                    <t>Welcome</t>, James
+                </strong></div>
+            {{else}}
+            <div class="block-title"><strong>
+                    <t>Welcome</t>, {{print user 'Preferred Name'}}
+                </strong></div>
+            {{/if}}
+            <div class="block">
+                <p translate=1>
+                    Select a family member to view their profile information.
+                </p>
+            </div>
+
+            <div class="list">
+                <ul>
+                    {{#if loading}}
+                    {{#each "1234"}}
+                    <li class="swipeout">
+                        <div class="demo-facebook-card swipeout-content">
+                            <div class="card-header">
+                                <a href="#" class="no-fastclick">
+                                    <div class="demo-facebook-avatar color-male skeleton-text skeleton-effect-fade">
+                                        XX
+                                    </div>
+                                    <div class="demo-facebook-name skeleton-text skeleton-effect-fade">XXXXX XXXXXX
+                                    </div>
+                                </a>
+                                <div class="demo-facebook-ellipsis toggle-footer"><i
+                                        class="fas fa-ellipsis-h fa-lg"></i></div>
+                            </div>
+                        </div>
+                        <div class="swipeout-actions-right">
+                            <a href="#" class="open-more-actions color-blue"><i
+                                    class="fas fa-address-card fa-lg no-fastclick"></i></a>
+                            <a href="#" class="open-more-actions color-blue"><i
+                                    class="fas fa-building fa-lg no-fastclick"></i></a>
+                            <a href="#" class="open-more-actions color-blue"><i
+                                    class="fas fa-users-cog fa-lg no-fastclick"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                    {{else}}
+                    {{#each familyMembers}}
+                    <li key="{{uuid}}" class="swipeout">
+                        <div class="demo-facebook-card swipeout-content">
+                            <div class="card-header">
+                                <a href="/profile/details/{{uuid}}" data-cy="profile-details-item{{@index}}"
+                                    class="no-fastclick">
+                                    <div class="demo-facebook-avatar color-{{Gender||"blue"}}">
+                                        {{initial this "Preferred Name"}}{{initial this "Surname"}}
+                                    </div>
+                                    <div class="demo-facebook-name">{{print this "Preferred Name"}} {{Surname}}</div>
+                                </a>
+                                <div class="demo-facebook-ellipsis" data-cy="profile-details-item{{@index}}-swipeout"
+                                    @click="toggleFooter"><i class="fas fa-ellipsis-h fa-lg"></i></div>
+                            </div>
+                        </div>
+                        <div class="swipeout-actions-right">
+                            <a data-cy="profile-details-item{{@index}}-tab2"
+                                href="/profile/details/{{uuid}}?swiperIndex=1" class="open-more-actions color-blue"><i
+                                    class="fas fa-address-card fa-lg no-fastclick"></i></a>
+                            <a data-cy="profile-details-item{{@index}}-tab4"
+                                href="/profile/details/{{uuid}}?swiperIndex=4" class="open-more-actions color-blue"><i
+                                    class="fas fa-users-cog fa-lg no-fastclick"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                    {{/if}}
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+</template>
+
+<!-- framework7 component script -->
+<script>
+    var profileApp = null;
+    var userPersonDC = null;
+    var familyMembersDC = null;
+    var userListenerFN = null;
+    var familyListenerFN = null;
+    var app = null;
+
+    return {
+        data() {
+            return new Promise((resolve) => {
+                resolve({
+                    loading: true
+                });
+            });
+        },
+        on: {
+            pageBeforeIn: function () {
+                this.$(".view-main .navbar").attr(
+                    "class",
+                    "navbar bg-color-blue text-color-white color-theme-white"
+                );
+                this.$(".view-main .navbar-bg").attr(
+                    "class",
+                    "navbar-bg bg-color-blue"
+                );
+            },
+            pageInit: function () {
+                const self = this;
+                // Get our datacollection(s) so we can set up listeners later
+                const appPage = this.$root.app.pages.appPage;
+                profileApp = appPage.components.profile;
+                userPersonDC = appPage.getDatacollectionByID("User Person");
+                familyMembersDC = appPage.getDatacollectionByID("Family Members");
+
+                // we need to check app status on pageInit in case you are loading
+                // a page that was previously unloaded and has data stored in your local database
+                if (profileApp.isReady()) {
+                    profileAppReady();
+                } else {
+                    profileApp.on("status", function (value) {
+                        if (value == "ready") profileAppReady();
+                    });
+                }
+
+                function profileAppReady() {
+                    if (familyMembersDC && userPersonDC) {
+                        let familyMembers = familyMembersDC.getAllRecords();
+                        familyMembers.sort((a, b) =>
+                            a["Birth Date"] > b["Birth Date"] ? 1 : -1
+                        );
+                        let user = userPersonDC.getAllRecords()[0];
+                        self.$setState({
+                            familyMembers: familyMembers,
+                            user: user,
+                            loading: false
+                        });
+                    }
+                }
+
+                // listener function that we will use on all events
+                // well...all events was overboard...lets narrow to the ones below
+                userListenerFN = (event, value) => {
+                    let user = userPersonDC.getAllRecords()[0];
+                        self.$setState({
+                            user: user
+                        });
+                };
+
+                familyListenerFN = (event, value) => {
+                    let familyMembers = familyMembersDC.getAllRecords();
+                        familyMembers.sort((a, b) =>
+                            a["Birth Date"] > b["Birth Date"] ? 1 : -1
+                        );
+                        self.$setState({
+                            familyMembers: familyMembers
+                        });
+                };
+
+                self?.$app?.off("ptrRefresh");
+                self?.$app?.on("ptrRefresh", () => {
+                    self.$root.appPage.fetchRecordData("PROFILE", "User Person");
+                    self.$root.appPage.fetchRecordData("PROFILE", "Family Members");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "Assignments - mobile");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "City");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "Email - mobile");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "Social Media - mobile");
+                    self?.$app?.ptr.done()
+                });
+
+                // add function to all events with onAny()
+                userPersonDC.onAny(userListenerFN);
+                familyMembersDC.onAny(familyListenerFN);
+            },
+            pageBeforeRemove: function () {
+                // turn off listeners to prevent errors with offAny()
+                userPersonDC.offAny(userListenerFN);
+                familyMembersDC.offAny(familyListenerFN);
+            }
+        },
+        methods: {
+            toggleFooter: function (event) {
+                var actions = $(event.target).closest("li");
+                app.swipeout.open(actions, "right");
+            }
+        }
+    };
+</script>

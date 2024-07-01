@@ -5,12 +5,7 @@
          <div class="navbar-bg"></div>
          <div class="navbar-inner">
             <div class="left">
-               <a
-                  href="#"
-                  class="link icon-only panel-open"
-                  data-panel="left"
-                  data-cy="leftWelcome"
-               >
+               <a href="#" class="link icon-only panel-open" data-panel="left" data-cy="leftWelcome">
                   <i class="fa fa-bars"></i>
                </a>
             </div>
@@ -20,11 +15,7 @@
          </div>
       </div>
 
-      <div
-         class="page-content ptr-content"
-         ptr-data-ptr-distance="55"
-         ptr-data-ptr-mousewheel="true"
-      >
+      <div class="page-content ptr-content" ptr-data-ptr-distance="55" ptr-data-ptr-mousewheel="true">
          <!-- Default pull to refresh preloader-->
          <div class="ptr-preloader">
             <div class="preloader"></div>
@@ -32,10 +23,7 @@
          </div>
          <div class="block-title"></div>
          <div class="card" id="sync-data" style="display: none">
-            <div
-               class="card-header bg-color-gray text-color-white"
-               translate="1"
-            >
+            <div class="card-header bg-color-gray text-color-white" translate="1">
                Announcement
             </div>
             <div class="card-content card-content-padding">
@@ -51,10 +39,7 @@
          </div>
          <!-- if has auth token, hide this option -->
          <div id="jsqr-storage-panel" class="card">
-            <div
-               class="card-header bg-color-gray text-color-white"
-               translate="1"
-            >
+            <div class="card-header bg-color-gray text-color-white" translate="1">
                Scan a QR code from the secure website to begin setup
             </div>
             <div class="card-content card-content-padding">
@@ -66,33 +51,22 @@
                <div id="output" hidden>
                   <div hidden><b>Data:</b> <span id="outputData"></span></div>
                </div>
-               <button
-                  id="qr-scan-refresh"
-                  class="button button-large button-outline color-purple"
-               >
+               <button id="qr-scan-refresh" class="button button-large button-outline color-purple">
                   <i class="fa fa-qrcode"></i>
                   <t id="outputMessage">No QR code detected.</t>
                </button>
             </div>
          </div>
          <div class="card">
-            <div
-               class="card-header bg-color-gray text-color-white"
-               translate="1"
-            >
+            <div class="card-header bg-color-gray text-color-white" translate="1">
                Refresh App
             </div>
             <div class="card-content card-content-padding">
-               <t
-                  >Tap below to remove all locally stored data, except the
-                  authToken.</t
-               ><br />
+               <t>Tap below to remove all locally stored data, except the
+                  authToken.</t><br />
                <br />
-               <button
-                  id="refresh-app"
-                  data-cy="reset-get-server"
-                  class="button button-large button-outline color-purple"
-               >
+               <button id="refresh-app" data-cy="reset-get-server"
+                  class="button button-large button-outline color-purple">
                   <i class="fa fa-sync"></i>
                   <t>Refresh Now</t>
                </button>
@@ -231,7 +205,7 @@
                   }
                );
             });
-            const username = resources.account.username;
+            const username = resources.account.userData?.user.username;
             if (username != null) {
                $syncData.show();
                $jsQRStoragePanel.hide();
@@ -387,7 +361,9 @@
                         })
                         .open();
 
+                     busy.show("Refreshing...")
                      setTimeout(() => {
+                        busy.hide();
                         location.reload(true);
                      }, DELAY_REFRESH);
                   }, IMPORT_CREDENTIALS_TIMEOUT);
@@ -401,18 +377,20 @@
                   busy.hide();
 
                   // we have to reload the app and re-login after syncing the credentials
-                  busy.show("Refreshing...")
-                  setTimeout(() => {
-                     toast
+                  await new Promise((resolve, reject) => {
+                     appPage.emit("ready", () => {
+                        resolve();
+                     });
+                  });
+                  cachedState.buildTimestamp = app.buildTimeStamp;
+                  cachedState.systemInfo = app.pages.appPage.components.welcome.getSystemInfo();
+                  toast
                      .create({
                         text: "<t>Finished!</t>",
                         position: "center",
                      })
                      .open();
-                     busy.hide();
-                     appPage.emit("ready");
-                     // location.reload(true);
-                  }, DELAY_REFRESH);
+                  this.$setState(cachedState);
                   clearTimeout(pendingLoadData);
                   pendingLoadData = null;
                } catch (error) {
@@ -422,15 +400,17 @@
                   outputData.parentElement.hidden = true;
                   video.pause();
                   video.currentTime = 0;
-                  video.srcObject.getTracks().forEach((track) => {
+                  (video.srcObject?.getTracks() ?? []).forEach((track) => {
                      track.stop();
                   });
                }
             };
             try {
-               video.srcObject = await navigator.mediaDevices.getUserMedia({
-                  video: { facingMode: "environment" },
-               });
+               if (navigator.mediaDevices) {
+                  video.srcObject = await navigator.mediaDevices?.getUserMedia({
+                     video: { facingMode: "environment" },
+                  });
+               }
                video.setAttribute("playsinline", true);
                video.play();
                requestAnimationFrame(tick);
@@ -438,7 +418,7 @@
                console.error(error);
                video.pause();
                video.currentTime = 0;
-               video.srcObject.getTracks().forEach((track) => {
+               (video.srcObject?.getTracks() ?? []).forEach((track) => {
                   track.stop();
                });
             }
@@ -450,9 +430,11 @@
                try {
                   // Ask the browser for permissions again
                   // Update the video element with the new stream
-                  video.srcObject = await navigator.mediaDevices.getUserMedia({
-                     video: { facingMode: "environment" },
-                  });
+                  if (navigator.mediaDevices) {
+                     video.srcObject = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" },
+                     });
+                  }
                   video.setAttribute("playsinline", true);
                   video.currentTime = 0;
                   video.play();

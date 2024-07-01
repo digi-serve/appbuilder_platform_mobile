@@ -1,6 +1,5 @@
 import { cloneDeep } from "lodash";
 import moment from "moment";
-import { v4 as uuidv4 } from "uuid";
 
 import ABFactoryCore from "./core/ABFactoryCore";
 
@@ -102,9 +101,5 @@ export default class ABFactory extends ABFactoryCore {
    notify(...args) {
       console.warn("TODO: AB.notify");
       console.log(...args);
-   }
-
-   uuid() {
-      return uuidv4();
    }
 }

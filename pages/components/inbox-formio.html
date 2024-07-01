@@ -95,7 +95,7 @@
          popupClosed(popup) {},
          popupOpened(popup) {
             const appPage = this.$root.app.pages.appPage;
-            const inboxApp = appPage.getApplicationByID("INBOX");
+            const inboxApp = appPage.components.inbox;
             const financialApp = appPage.getApplicationByID("FINANCIAL"); // we are including this because it has a good process for fetching images
             const activeIframes = [];
             const b = () => {
@@ -281,7 +281,7 @@
                   },
                });
             });
-            $app.router.on.off("photoDownloaded");
+            $app.router.off("photoDownloaded");
             $app.router.on("photoDownloaded", (photo) => {
                children.forEach((child) => {
                   child.send({

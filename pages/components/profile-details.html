@@ -1,0 +1,1066 @@
+<!-- framework7 component template -->
+<template>
+<div class="popup">
+    <div class="view">
+        <div class="page profile-page">
+            <div class="navbar bg-color-blue text-color-white color-theme-white">
+                <div class="navbar-bg bg-color-blue"></div>
+                <div class="navbar-inner sliding">
+                    <div class="left">
+                        <a data-cy="done" href="#" class="link popup-close" translate=1>
+                            Done
+                        </a>
+                    </div>
+                    <div class="title sliding">
+                        <t>Profile</t>
+                    </div>
+
+        <div class="right">
+            <a href="#" class="link" id="edit-page" translate=1>
+                Edit
+            </a>
+            <a href="#" class="link" id="save-page" style="display: none;" translate=1>
+                Save
+            </a>
+        </div>
+
+    </div>
+    </div>
+    <div id="user-profile" class="page-content ptr-content" ptr-data-ptr-distance="55" ptr-data-ptr-mousewheel="true">
+        <!-- Default pull to refresh preloader-->
+        <div class="ptr-preloader">
+            <div class="preloader"></div>
+            <div class="ptr-arrow"></div>
+        </div>
+
+
+    <div class="profile-header theme-dark" style="background-image: url(img/black_bg.png); background-size:cover;">
+        {{#if loading}}
+        <div class="skeleton-text skeleton-effect-fade demo-facebook-avatar color-Male">
+            <i class="fas fa-pencil-alt fa-2x fa-inverse edit-avatar disabled"></i>
+            JD
+        </div>
+        <div class="profile-title skeleton-text skeleton-effect-fade">James Duncan</div>
+        {{else}}
+        {{#js_if "person?.Gender != null" }}
+        <div class="demo-facebook-avatar color-{{person.Gender}}">
+            <!-- <i class="fas fa-pencil-alt fa-2x fa-inverse edit-avatar disabled"></i> -->
+            {{initial person "Preferred Name"}}{{initial person "Surname"}}
+        </div>
+        {{else}}
+        <div class="demo-facebook-avatar color-blue">
+            <!-- <i class="fas fa-pencil-alt fa-2x fa-inverse edit-avatar disabled"></i> -->
+            {{initial person "Preferred Name"}}{{initial person "Surname"}}
+        </div>
+        {{/js_if}}
+        <div class="profile-title">{{print person "Preferred Name"}} {{print person "Surname"}}</div>
+        {{/if}}
+        <div class="profile-footer" id="profile_nav">
+            <a href="#" @click="profileFooter" data-cy="slideto-0" data-slideto="0" class="active">
+                <i class="fas fa-info-circle fa-lg"></i>
+                <span class="tabbar-label" translate=1>Profile</span>
+            </a>
+            <a href="#" @click="profileFooter" data-cy="slideto-1" data-slideto="1" class="">
+                <i class="fas fa-address-card fa-lg"></i>
+                <span class="tabbar-label" data-cy="contactTab" translate=1>Contact</span>
+            </a>
+            <a href="#" @click="profileFooter" data-cy="slideto-4" data-slideto="4" class="">
+                <i class="fas fa-users-cog  fa-lg"></i>
+                <span class="tabbar-label" translate=1>Teams</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="swiper-container" id="profile-swiper-container">
+        <div class="swiper-pagination"></div>
+        <div id="profile-form" class="swiper-wrapper">
+
+            <div class="swiper-slide">
+
+                <div class="block-title" translate=1 data-cy="nameForm">Name</div>
+                {{#if loading}}
+                <div class="list inset" style="margin-top: 15px;">
+                    <ul>
+                        <!-- <li class="item-content disabled item-input item-input-with-value">
+                                            <div class="item-inner">
+                                                <div class="item-title item-label" translate=1>Given Name</div>
+                                                <div class="item-input-wrap">
+                                                    <input type="text" placeholder="Your first name" value="" disabled=1>
+                                                </div>
+                                            </div>
+                                        </li> -->
+                        <li class="item-content disabled item-input item-input-with-value">
+                            <div class="item-inner">
+                                <div class="item-title item-label" translate=1>Surname</div>
+                                <div class="item-input-wrap">
+                                    <input type="text" placeholder="Your last name" value="" disabled=1>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="item-content disabled item-input item-input-with-value">
+                            <div class="item-inner">
+                                <div class="item-title item-label" translate=1>Preferred Name</div>
+                                <div class="item-input-wrap">
+                                    <input type="text" placeholder="Preferred name" value="" disabled=1>
+                                </div>
+                            </div>
+                        </li>
+                        </ul>
+                        </div>
+                        {{else}}
+                        <div class="list inset" style="margin-top: 15px;">
+                            <ul>
+                                <!-- <li class="item-content disabled item-input item-input-with-value">
+                                            <div class="item-inner">
+                                                <div class="item-title item-label" translate=1>Given Name</div>
+                                                <div class="item-input-wrap">
+                                                    <input type="text" name="Given Name" placeholder="Your first name" value="{{print person 'Given Name'}}" disabled=1>
+                                                    <span class="input-clear-button"></span>
+                                                </div>
+                                            </div>
+                                        </li> -->
+                        <li class="item-content disabled item-input item-input-with-value">
+                            <div class="item-inner">
+                                <div class="item-title item-label" data-cy="surname" translate=1>Surname</div>
+                                <div class="item-input-wrap">
+                                    <input type="text" name="Surname" placeholder="Your last name" value="{{person.Surname}}" disabled=1>
+                                    <!-- <span class="input-clear-button"></span> -->
+                                </div>
+                            </div>
+                        </li>
+                        <li class="item-content disabled item-input item-input-with-value">
+                            <div class="item-inner">
+                                <div class="item-title item-label" translate=1>Preferred Name</div>
+                                <div class="item-input-wrap">
+                                    <input type="text" name="Preferred Name" data-cy="preferredName" placeholder="Preferred name"
+                                        value="{{print person 'Preferred Name'}}" disabled=1>
+                                    <!-- <span class="input-clear-button"></span> -->
+                                </div>
+                            </div>
+                        </li>
+                                    </ul>
+                                    </div>
+                                    {{/if}}
+                                    <div class="block-title" data-cy="additionalPage" translate=1>Additional Information</div>
+                                    {{#if loading}}
+                                    <div class="list inset" style="margin-top: 15px;">
+                                        <ul>
+                                            <li class="item-content disabled item-input item-input-with-value">
+                                                <div class="item-inner">
+                                                    <div class="item-title item-label" translate=1>Profile type</div>
+                                                    <input type="text" value="" class="input-with-value" disabled=1>
+                                                </div>
+                                            </li>
+                                            <li class="item-content disabled item-input item-input-with-value">
+                                                <div class="item-inner">
+                                                    <div class="item-title item-label" data-cy="birthday" translate=1>Birthday</div>
+                                                    <div class="item-input-wrap">
+                                                        <input type="date" value="" placeholder="Please choose..." class="input-with-value" disabled=1>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="item-content disabled item-input item-input-with-value">
+                                                <div class="item-inner">
+                                                    <div class="item-title item-label" translate=1>Gender</div>
+                                                    <div class="item-input-wrap">
+                                                        <input type="text" value="" class="input-with-value" disabled=1>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="item-content disabled item-input item-input-with-value">
+                                                <div class="item-inner">
+                                                    <div class="item-title item-label" translate=1>Marital Status</div>
+                                                    <div class="item-input-wrap">
+                                                        <input type="text" value="" class="input-with-value" disabled=1>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="item-content disabled item-input item-input-with-value">
+                                                <div class="item-inner">
+                                                    <div class="item-title item-label" translate=1>Preferred Language</div>
+                                                    <div class="item-input-wrap">
+                                                        <input type="text" value="" class="input-with-value" disabled=1>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="item-content disabled item-input item-input-with-value">
+                                                <div class="item-inner">
+                                                    <label class="item-checkbox item-content">
+                                                        <input type="checkbox" data-cy="isPointOfContact" name="Family Point of Contact" value="1"
+                                                            disabled=1>
+                                                        <i class="icon icon-checkbox"></i>
+                                                        <div class="item-title item-label" translate=1>Is Family Point of Contact?</div>
+                                                    </label>
+                                                </div>
+                                            </li>
+                                    </ul>
+                                    </div>
+                                    {{else}}
+                                    <div class="list inset" style="margin-top: 15px;">
+                                        <ul>
+                                            <li class="item-content disabled item-input item-input-with-value">
+                                                <div class="item-inner">
+                                                    <div class="item-title item-label" translate=1>Profile type</div>
+                                                    <select disabled=1 data-cy="personType" name="Person Type">
+                                                        <!-- disable-eslint -->
+                                                        {{listItems 'PROFILE' 'Person - Profile' 'Person Type' person '<option %selected% value="%id%">%label%</option>'}}
+                                    </select>
+                                    </div>
+                                    </li>
+                                    <li class="item-content disabled item-input item-input-with-value">
+                                        <div class="item-inner">
+                                            <div class="item-title item-label" translate=1>Birth Date</div>
+                                            <div class="item-input-wrap">
+                                                    <input type="date" name='Birth Date' value="{{date person 'Birth Date'}}" placeholder="Please choose..." class="input-with-value" disabled=1>
+                                                    <!-- <span class="input-clear-button"></span> -->
+                                    <!-- <span class="input-clear-button"></span> -->
+                                    </div>
+                                    </div>
+                                    </li>
+                                    <li class="item-content disabled item-input item-input-with-value">
+                                        <div class="item-inner">
+                                            <div class="item-title item-label" translate=1>Gender</div>
+                                            <select disabled=1 data-cy="gender" name="Gender">
+                                                <!-- disable-eslint -->
+                                                    {{listItems 'PROFILE' 'Person - Profile' 'Gender' person '<option %selected% value="%id%">%label%</option>'}}
+                                                </select>
+                                    </div>
+                                    </li>
+                                    <li class="item-content disabled item-input item-input-with-value">
+                                        <div class="item-inner">
+                                            <div class="item-title item-label" translate=1>Marital Status</div>
+                                            <select disabled=1 data-cy="maritalStatus" name="Marital Status">
+                                                <!-- disable-eslint -->
+                                                    {{listItems 'PROFILE' 'Person - Profile' 'Marital Status' person '<option %selected% value="%id%">%label%</option>'}}
+                                                </select>
+                                    </div>
+                                    </li>
+                                    <li class="item-content disabled item-input item-input-with-value">
+                                        <div class="item-inner">
+                                            <label class="item-checkbox item-content">
+                                                {{#js_if "isPointOfContact != null"}}
+                                                <input type="checkbox" data-cy="fpoc" name="Family Point of Contact" value="1" checked="checked" disabled=1>
+                                                {{else}}
+                                                <input type="checkbox" data-cy="fpoc" name="Family Point of Contact" value="1" disabled=1>
+                                                {{/js_if}}
+                                    <i class="icon icon-checkbox"></i>
+                                    <div class="item-title item-label" translate=1>Is Family Point of Contact?</div>
+                                </label>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                {{/if}}
+
+                <div class="block">
+                    <div class="row">
+                        <button class="col button button-large button-fill color-blue swiper-next" data-cy="next" @click="swiperNext"
+                            translate=1>Next</button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="swiper-slide">
+
+                <div class="block-title">
+                    <t data-cy="email">Email</t>
+                </div>
+                {{#if loading}}
+                {{else}}
+                {{#each emails}}
+                <button @click="deleteItem" data-cy="deleteEmail" data-uuid="{{uuid}}" data-object="Email"
+                    data-collection="familyEmailDC" class="deleteButton hidden button button-round text-color-white bg-color-red"><i
+                        class="fa fa-times"></i></button>
+                <form class="emailForm list inset" style="margin-top: 0px; margin-bottom: 15px;">
+                    <ul>
+                        <li class="item-content disabled item-input item-input-with-value" email_id='{{uuid}}'>
+                            <div class="item-inner emailForm">
+                                <div class="item-title item-label">
+                                    <label class="item-checkbox">
+                                        <input type="hidden" name="uuid" value="{{uuid}}" />
+                                        <input type="checkbox" data-cy="emailSecure" ame="Secure" value="1" {{#js_if "this['Secure']" }}checked="checked"
+                                            {{/js_if}} disabled=1>
+                                        <i class="icon icon-checkbox"></i>
+                                        <t>Secure</t>
+                                        </label>
+                                        </div>
+                                        <div class="item-input-wrap" data-cy="emailInput{{uuid}}">
+                                            <input type="email" placeholder="Enter email address" name="Email" value="{{Email}}">
+                                            <span class="input-clear-button"></span>
+                                        </div>
+                                        </div>
+                                        </li>
+                                        </ul>
+                                        </form>
+                                        {{else}}
+                                        <div class="list inset">
+                                            <ul>
+                                                <li>
+                                                    <center class="text-color-gray" style="padding: 20px 0;">
+                                <i class="fas fa-question-circle fa-5x"></i><br />
+                                <br />
+                                <span translate=1>There are no email records.</span>
+                                </center>
+                                </li>
+                                </ul>
+                                </div>
+                                {{/each}}
+                                <div class="block">
+                    <button class="button button-large button-fill color-blue hidden" data-cy="addEmail" id="addEmail"><i
+                            class="fa fa-plus"></i>
+                        <t>Add Email</t>
+                    </button>
+                    </div>
+                    {{/if}}
+
+                <div key="socialmedia" class="block-title">
+                    <t>Social Media</t>
+                </div>
+                {{#if loading}}
+                {{else}}
+                {{#each socialMedia}}
+                <button @click="deleteItem" data-uuid="{{uuid}}" data-object="Social Media" data-collection="socialMediaDC"
+                    class="deleteButton hidden button button-round text-color-white bg-color-red"><i class="fa fa-times"></i></button>
+                <form class="socialMediaForm list inset" style="margin-top: 15px;">
+                    <input type="hidden" value="{{uuid}}" name="uuid">
+                    <ul>
+                        <li class="item-content disabled item-input item-input-with-value">
+                            <div class="item-inner">
+                                <div class="item-title item-label" translate=1>Platform</div>
+                                <div class="item-input-wrap input-dropdown-wrap">
+                                    <select disabled=1 name="Platform">
+                                        <!-- disable-eslint -->
+                                        {{listItems 'PROFILE' 'Social Media' 'Platform' this '<option %selected% value="%id%">%label%</option>'}}
+                                        </select>
+                                        </div>
+                                        </div>
+                                        </li>
+                                        <li class="item-content disabled item-input item-input-with-value">
+                                            <div class="item-inner">
+                                                <div class="item-title item-label" translate=1>Handle</div>
+                                                <div class="item-input-wrap">
+                                                    <input type="text" placeholder="" name="Handle" value="{{print this 'Handle'}}">
+                                                    <span class="input-clear-button"></span>
+                                                </div>
+                                            </div>
+                                        </li>
+                                        </ul>
+                                        </form>
+                                        {{else}}
+                                        <div class="list inset" style="margin-top: 15px;">
+                                            <ul>
+                                                <li>
+                                                    <center class="text-color-gray" style="padding: 20px 0;">
+                                <i class="fas fa-question-circle fa-5x"></i><br />
+                                <br />
+                                <span translate=1>There are no social media records.</span>
+                                </center>
+                                </li>
+                                </ul>
+                                </div>
+                                {{/each}}
+                                <div class="block">
+                    <button class="button button-large button-fill color-blue hidden" id="addSocialMedia"><i class="fa fa-plus"></i>
+                        <t>Add Social Media</t>
+                    </button>
+                    </div>
+
+
+                {{/if}}
+
+                <div class="block">
+                    <div class="row">
+                        <button class="col button button-large color-blue swiper-back" @click="swiperBack" translate=1>Back</button>
+                        <button class="col button button-large button-fill color-blue swiper-next" @click="swiperNext"
+                            translate=1>Next</button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="swiper-slide">
+
+
+                <div class="block-title" translate=1>Assignment</div>
+                {{#if loading}}
+                {{else}}
+                {{#each assignments}}
+                <div id={{print this 'uuid' }} class="list inset" style="margin-top: 15px;">
+                    <ul>
+                        <li class="item-content">
+                            <div class="item-inner">
+                                <div translate=1>City Name</div>
+                                {{print CityTeam__relation 'City Name'}}
+                            </div>
+                        </li>
+                        <li class="item-content">
+                            <div class="item-inner">
+                                <div translate=1>Position</div>
+                                {{translate 'PROFILE' Role195__relation 'Label'}}
+                            </div>
+                        </li>
+                        {{#js_if "this['Ministry Team']"}}
+                        <li class="item-content">
+                            <div class="item-inner">
+                                <div translate=1>Project Team</div>
+                                {{print MinistryTeam__relation 'Name'}}
+                            </div>
+                        </li>
+                        {{/js_if}}
+                        {{#js_if "this['Is Primary Assignment']"}}
+                        <li class="item-content">
+                            <div class="item-inner">
+                                <div translate=1>Primary Assignment</div>
+                            </div>
+                        </li>
+                        {{/js_if}}
+                    </ul>
+                </div>
+                {{else}}
+                <div class="list inset" style="margin-top: 15px;">
+                    <ul>
+                        <li>
+                            <center class="text-color-gray" style="padding: 20px 0;">
+                                <i class="fas fa-question-circle fa-5x"></i><br />
+                                <br />
+                                <span translate=1>There are no assignment records.</span>
+                                </center>
+                                </li>
+                                </ul>
+                                </div>
+                                {{/each}}
+                                {{/if}}
+                                <div class="block">
+                                    <div class="row">
+                                        <button class="col button button-large color-blue swiper-back" @click="swiperBack" translate=1>Back</button>
+                        <button class="col button button-large button-fill color-blue swiper-next" @click="swiperNext" translate=1>Next</button>
+                        </div>
+                        </div>
+
+            </div>
+            </div>
+            </div>
+
+</div>
+</div>
+</div>
+</div>
+</template>
+
+<style>
+    .popupForm {
+        padding: 10px;
+        margin: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        margin-top: 15px;
+        margin-bottom: 15px;
+    }
+</style>
+<!-- framework7 component script -->
+<script>
+                    let profileApp; 
+                    let emails;
+                    let personID;
+                    let familyID;
+                    let workerID;
+                    let swiper;
+                    let emailIDs = [];
+                            // var assignmentIDs = [];
+                    let app;
+
+return {
+    data() {
+        return {
+                person: null,
+                isPointOfContact: null,
+                assignments: null,
+                socialMedia: null,
+                emails: null,
+                loading: true
+            }
+    },
+    on: {
+        popupOpen() {
+            profileApp = this.$root.app.pages.appPage.components.profileComponent;
+            personID = this.$route.params["uuid"];
+
+            // we need to check app status on pageInit in case you are loading
+            // a page that was previously unloaded and has data stored in your local database
+            // var workerInfoDC = profileApp.dataCollection("Family Worker Information");
+            // 21e13cd7-26a7-41fc-8abd-fbe8e5616d3a
+            const profileComponent = this.$root.app.pages.appPage.components.profileComponent;
+            const familyMemberDC = profileComponent.dataCollection("Family Members");
+            const assignmentsDC = profileComponent.dataCollection("Assignments - mobile");
+            const cityDC = profileComponent.dataCollection("City");
+            const familyEmailsDC = profileComponent.dataCollection("Email - mobile");
+            const socialMediaDC = profileComponent.dataCollection("Social Media - mobile");
+            const userPersonDC = profileComponent.dataCollection("User Person");
+
+            var familyEmailsListenerFN = (event, value) => {
+            var emails = familyEmailsDC
+                .getAllRecords()
+                .filter((r) => {
+                    if (r.Person == personID) return true;
+                });
+            self.$setState({
+                emails: emails
+            }, function () {
+                if (this.$("#edit-page").is(":visible")) {
+                    disableFields();
+                } else {
+                    enableFields();
+                }
+                swiper.update();
+            });
+            };
+            familyEmailsDC.onAny(familyEmailsListenerFN);
+
+            var socialMediaListenerFN = (event, value) => {
+            var socialMedia = socialMediaDC
+                .getAllRecords()
+                .filter((r) => {
+                    if (r.Person == personID) return true;
+                });
+            console.log("social media:", socialMedia);
+            self.$setState({
+                socialMedia: socialMedia
+            }, function () {
+                if (this.$("#edit-page").is(":visible")) {
+                    disableFields();
+                } else {
+                    enableFields();
+                }
+                swiper.update();
+            });
+            };
+
+            socialMediaDC.onAny(socialMediaListenerFN);
+            // we need to check app status on pageInit in case you are loading
+            // a page that was previously unloaded and has data stored in your local database
+            if (profileApp.isReady()) {
+                // console.log("🚀 @achoobert ~ file: profile-details.html:769 ~ profileApp ready:", profileApp);
+                profileAppReady();
+            } else {
+                profileApp.on("status", function (value) {
+                    if (value == "ready") profileAppReady();
+            });
+            }
+
+            function profileAppReady() {
+            var familyMember = familyMemberDC
+                .getAllRecords()
+                .find((r) => {
+                    return r?.uuid == personID;
+                });
+            console.log("person: ", familyMember);
+            familyID = familyMember.Family;
+
+            var emails = familyEmailsDC
+                .getAllRecords()
+                .filter((r) => {
+                    if (r.Person == personID) return true;
+                });
+                console.assert(emails.length > 0, "No emails found for personID: ", personID);
+                console.log("emails: ", emails);
+
+            var socialMedia = socialMediaDC
+                .getAllRecords()
+                .filter((r) => {
+                    if (r.Person == personID) return true;
+                });
+            console.log("social media:", socialMedia);
+
+            var cityList = cityDC
+                .getAllRecords();
+            console.log(cityList);
+            Template7.global.city = cityList;
+
+            var assignments = assignmentsDC
+                .getAllRecords()
+                .filter((r) => {
+                    if (
+                        r.personTeam__relation?.uuid == personID && // filter out ended assignments
+                        (r["Assignment End"] == null ||
+                            moment().diff(r["Assignment End"], "days") < 0)
+                    ) {
+                        console.log(
+                            "date diff: ",
+                            moment().diff(r["Assignment End"], "days")
+                        );
+                        return true;
+                    } else {
+                        return false;
+                    }
+                });
+                // console.log("assignments: ", assignments);
+                //     assignments.forEach(assignment => {
+                //     assignmentIDs.push(assignment?.uuid)
+                // })
+
+                self?.$app?.off("ptrRefresh");
+                self?.$app?.on("ptrRefresh", () => {
+                    // 5 second timer then done
+                    self.$root.appPage.fetchRecordData("PROFILE", "User Person");
+                    self.$root.appPage.fetchRecordData("PROFILE", "Family Members");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "Assignments - mobile");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "City");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "Email - mobile");
+                    // self.$root.appPage.fetchRecordData("PROFILE", "Social Media - mobile");
+                    self?.$app?.ptr.done()
+                });
+
+            self.$setState(
+                {
+                    person: familyMember,
+                    isPointOfContact: familyMember.PrimaryContact__relation
+                        ? true
+                        : false,
+                    assignments: assignments,
+                    socialMedia: socialMedia,
+                    emails: emails,
+                    loading: false
+                },
+                function () {
+                    console.log("DOM and state updated");
+                    self.$("textarea").each((index, item) => {
+                        app.input.resizeTextarea(item);
+                    });
+                    swiper.update();
+                }
+            );
+            }
+
+        var obj = this;
+            var boolTest = function (input) {
+            // true if  or "1" or 1 or ["1"]
+                if (input === undefined) {
+                // TODO this fires on prod
+                console.dir("is undefined")
+                return false
+            }
+            return (input[0] === true || input[0] === "on" || input[0] === "" || input[0] === "1" || input[0] === ["1"])
+            // false if [] or "0" or undefined
+        }
+
+        function enableFields() {
+            var inputs = obj.$("#user-profile .disabled");
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].classList.remove("disabled");
+                inputs[i].classList.add("enabled");
+            }
+            var formInputs = obj.$("#user-profile [disabled]");
+            for (var i = 0; i < formInputs.length; i++) {
+                formInputs[i].removeAttribute('disabled');
+            }
+
+            var addNewButtons = obj.$("#user-profile .hidden");
+            for (var i = 0; i < addNewButtons.length; i++) {
+                addNewButtons[i].classList.remove("hidden");
+                addNewButtons[i].classList.add("addNewButtons");
+            }
+            addEmailButton();
+            addSocialMediaButton();
+        }
+
+            this.$("#edit-page").on("click", function () {
+            enableFields();
+            this.style.display = "none";
+            obj.$("#save-page")[0].style.display = "";
+            swiper.update();
+        });
+
+        function disableFields() {
+            var inputs = obj.$("#user-profile .enabled");
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].classList.remove("enabled");
+                inputs[i].classList.add("disabled");
+                inputs[i].disabled = false;
+            }
+        }
+
+            this.$("#save-page").on("click", function () {
+            // SUBMIT button was clicked
+            var userInput = app.form.convertToData("#profile-form")
+
+            Promise.resolve()
+                .then(() => {
+                    // Validate
+                    // TODO this is copy-pasted, may break?
+                    var $form = $("#profile-form");
+                    var validateMsg = $form.find(".item-input-invalid");
+                    if (validateMsg.length > 0) {
+                        throw new Error("Please correct your entries.");
+                    }
+                })
+                .then(() => {
+                    // freeze the page while it loads?
+                    // this.$root.busy.show();
+                    // person
+                    var personUpdatedValues = {
+                        'Preferred Name': userInput['Preferred Name'],
+                        Surname: userInput['Surname'],
+                        // 'Family Point of Contact': boolTest(userInput['Family Point of Contact'])
+                    };
+
+                    //d10ba98c-9e6f-48c5-962f-19c39a5b6e92
+                    profileApp
+                        .object("Person")
+                        .model()
+                        .update(personID, personUpdatedValues)
+                        .then(() => {
+                            app.toast
+                        .create({
+                            icon: '<i class="fa-2x fas fa-star"></i>',
+                            text: "<t>Person Updated</t>",
+                            position: "center"
+                        })
+                        .open();
+                        });
+                    var emailOperations = [];
+                    $(".emailForm").each((index, form) => {
+                        var emailVals = $(form).serializeArray().reduce(function (obj, item) {
+                            obj[item.name] = item.value;
+                            return obj;
+                        }, {});
+                        if (boolTest(emailVals.Secure)) { //
+                            emailVals.Secure = 1;
+                        } else {
+                            emailVals.Secure = 0;
+                        }
+                        emailOperations.push(
+                            profileApp
+                                .object("Email")
+                                .model()
+                                .update(emailVals?.uuid, emailVals)
+                        );
+                    });
+
+                    Promise.all(emailOperations).then((data) => {
+                        app.toast
+                            .create({
+                                icon: '<i class="fa-2x fas fa-star"></i>',
+                                text: "<t>Email Updated</t>",
+                                position: "center"
+                            })
+                            .open();
+                    });
+
+                    // Social Media
+                    var socialMediaOperations = [];
+                    $(".socialMediaForm").each((index, form) => {
+                        var socialMediaVals = $(form).serializeArray().reduce(function (obj, item) {
+                            obj[item.name] = item.value;
+                            return obj;
+                        }, {});
+                        socialMediaOperations.push(
+                            profileApp
+                                .object("Social Media")
+                                .model()
+                                .update(socialMediaVals?.uuid, socialMediaVals)
+                        );
+                    });
+
+                    Promise.all(socialMediaOperations).then((data) => {
+                        app.toast
+                            .create({
+                                icon: '<i class="fa-2x fas fa-star"></i>',
+                                text: "<t>Social Media Updated</t>",
+                                position: "center"
+                            })
+                            .open();
+                    });
+                });
+            // end save
+            // set classes back to disabled
+            disableFields();
+
+            var addNewButtons = obj.$("#user-profile .addNewButtons");
+            for (var i = 0; i < addNewButtons.length; i++) {
+                addNewButtons[i].classList.remove("addNewButtons");
+                addNewButtons[i].classList.add("hidden");
+            }
+
+            this.style.display = "none";
+            obj.$("#edit-page")[0].style.display = "";
+            swiper.update();
+            });
+        function addEmailButton() {
+            this.$("#addEmail").unbind("click");
+            this.$("#addEmail").on("click", () => {
+                // Create a form with an input field and a save button
+                // inline css to make sure user can see the input field via outline or border
+                // TODO autofocus and open keyboard if on mobile
+                // html form validation for email
+                const emailForm = `<form id="emailForm" class="popupForm"><div>
+                        <input class="item-input item-input-with-value" placeholder="example@proton.net" type="text" id="email" name="email" required>
+                        <span class="input-clear-button"></span></div>
+                    </form>`;
+
+                const uuid = profileApp.page.app.utils.uuidv4();
+                // Display the form using a dialogue popup
+                let dialog = app.dialog.create({
+                    backdrop: true,
+                    closeByBackdropClick: false,
+                    title: "<t>Enter the new email</t>",
+                    text: emailForm,                    
+                    buttons: [
+                        {
+                            text: "<t data-cy='save' >Save</t>",
+                            close: false,
+                            onClick: (dialog, ev) => {
+                                // do form validation here
+                                const email = app.$("#email").val();
+                                if (email && valid) {
+                                    Promise.resolve()
+                                        .then(() => {
+                                            // self.$root.busy.show();
+                                            var values = {
+                                                uuid,
+                                                Person: personID,
+                                                Email: email  // Add the email to the values object 
+                                            };
+                                            var allOperations = [];
+                                            allOperations.push(
+                                                profileApp
+                                                    .object("Email")
+                                                    .model()
+                                                    .create(values)
+                                            );
+                                            self.$root.app.resources.busy.hide();
+                                            return Promise.all(allOperations);
+                                        })
+                                        .then(() => {
+
+                                            // Additional handling after adding the email
+                                        self.$app.toast
+                                            .create({
+                                                icon: "<i data-cy='addedToast' class='fa-2x fas fa-star'></i>",
+                                                text: 'Added',
+                                                position: "center"
+                                            })
+                                            .open();
+                                        swiper.update();
+                                    })
+                                    .catch((err) => {
+                                        self.$root.app.resources.busy.hide();
+                                        self.$app.dialog.alert(err.message || err, "<t>Error</t>");
+                                    });
+                                } else {
+                                    // TODO: show error message
+                                    app.toast
+                                        .create({
+                                            icon: "<i class='fa-2x fas fa-exclamation-triangle'></i>",
+                                            text: 'Please enter a valid email address',
+                                            position: "center",
+                                            closeTimeout: 500,
+                                        })
+                                        .open();
+                                }
+                            }
+                        },
+                        {
+                            text: "<t data-cy='cancel' >Cancel</t>",
+                            close: true
+                        }
+                    ]
+                });
+                dialog.open();
+            });
+        }
+        function addSocialMediaButton() {
+            this.$("#addSocialMedia").unbind("click");
+            this.$("#addSocialMedia").on("click", () => {
+                // Create a form with input fields for social media details
+                const listPlatforms = profileApp.listItems('Social Media', 'Platform').map((platform) => {
+                    return `<option value="${platform.id}">${platform.label}</option>`;
+                }).join('');
+                const socialMediaForm = `<form id="socialMediaForm" ><div class="popupForm">
+                        <input class="item-input item-input-with-value" placeholder="@myName" type="text"  data-cy='handle' id="label" name="label" required>
+                        <span class="input-clear-button"></span>
+                        </div>
+                        <div class="item-input-wrap input-dropdown-wrap popupForm">
+                            <select id="PlatformPopup">
+                                ${listPlatforms}
+                            </select>
+                        </div>
+                    </form>
+                    `;
+                const uuid = profileApp.page.app.utils.uuidv4();
+
+                // Display the form using a dialogue popup
+                let dialog = app.dialog.create({
+                    backdrop: true,
+                    closeByBackdropClick: false,
+                    title: "<t>Enter social media details</t>",
+                    text: socialMediaForm, // Replace with the actual form HTML
+                    buttons: [
+                        {
+                            text: "<t data-cy='save' >Save</t>",
+                            onClick: (dialog, ev) => {
+                                const Handle = app.$("#label").val();
+                                const Platform = app.$("#PlatformPopup").val();
+                                if (Handle) {
+                                    Promise.resolve()
+                                        .then(() => {
+                                            // self.$root.busy.show();
+                                            var values = {
+                                                uuid,
+                                                Person: personID,
+                                                Handle,  // Add the email to the values object
+                                                Platform
+                                            };
+                                            var allOperations = [];
+                                            allOperations.push(
+                                                profileApp
+                                                    .object("Social Media")
+                                                    .model()
+                                                    .create(values)
+                                            );
+                                            self.$root.app.resources.busy.hide();
+                                            return Promise.all(allOperations);
+                                        })
+                                        .then(() => {
+                                            // Additional handling after adding the email
+                                            self.$app.toast
+                                                .create({
+                                                    icon: '<i  data-cy="addedToast" class="fa-2x fas fa-star"></i>',
+                                                    text: 'Added',
+                                                    position: "center",
+                                                    closeTimeout: 700,
+                                                })
+                                                .open();
+                                            swiper.update();
+                                        })
+                                        .catch((err) => {
+                                            self.$root.app.resources.busy.hide();
+                                            self.$app.dialog.alert(err.message || err, "<t>Error</t>");
+                                        });
+                                }
+                            }
+                        },
+                        {
+                            text: "<t data-cy='cancel' >Cancel</t>",
+                            close: true
+                        }
+                    ]
+                });
+                dialog.open();
+            });
+            };
+
+
+            swiper = app.swiper.create("#profile-swiper-container", {
+            spaceBetween: 10,
+            autoHeight: true,
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true
+            },
+            preventClicksPropagation: true,
+            on: {
+                paginationUpdate: function (page) {
+                    var customNav = this.$("#profile_nav")[0];
+
+                    if (customNav) {
+                        for (var i = 0; i < customNav.children.length; i++) {
+                            if (i == page.activeIndex) {
+                                customNav.children[i].classList.add("active");
+                            } else {
+                                customNav.children[i].classList.remove("active");
+                            }
+                        }
+                    }
+
+                    var swiperScroll = document.getElementById("user-profile");
+                    if (swiperScroll) {
+                        if (
+                            swiperScroll.scrollTop >
+                            document.getElementById("profile_nav").offsetTop - 44
+                        ) {
+                            swiperScroll.scrollTop =
+                                document.getElementById("profile_nav").offsetTop -
+                                44;
+                        }
+                    }
+                    // we want to track view to each tab
+                    var pageNumber = parseInt(page.activeIndex) + 1;
+                    root.analytics.pageView(
+                        "/popup/view-profile/" +
+                        userPersonDC.getData()[0]?.uuid +
+                        "/tab-" +
+                        pageNumber +
+                        "/"
+                    );
+                    this.update();
+                }
+            }
+            });
+            if (app.view.current.router.currentRoute.hasOwnProperty("query")) {
+                if (
+                    app.view.current.router.currentRoute.query.hasOwnProperty(
+                        "swiperIndex"
+                    )
+                ) {
+                    swiper.slideTo(
+                        app.view.current.router.currentRoute.query.swiperIndex,
+                        0
+                    );
+                } else if (
+                    app.view.current.router.currentRoute.query.hasOwnProperty("new")
+                ) {
+                    this.$("#edit-page").click();
+                }
+            }
+        },
+        popupClose: function () {
+            const appPage = this.$root.app.pages.appPage;
+            var profileApp = this.$root.app.pages.appPage.components.profile;
+            var familyEmailsDC = appPage.getDatacollectionByID("Email - mobile");
+            var socialMediaDC = appPage.getDatacollectionByID("Social Media - mobile");
+
+            familyEmailsDC.offAny();
+            socialMediaDC.offAny();
+            swiper.destroy();
+        }
+    },
+    methods: {
+        swiperNext: function (event) {
+            swiper.slideNext();
+        },
+        swiperBack: function (event) {
+            swiper.slidePrev();
+        },
+        profileFooter: function (event) {
+            var slideTo = $(event.currentTarget).data("slideto");
+            $(".profile-footer a").removeClass("active-state");
+            if (swiper) {
+                swiper.slideTo(slideTo);
+            }
+            else {
+                console.warn("methods.profileFooter()...");
+                console.warn("    swiper.slideTo() was called before swiper was initialized");
+            }
+        },
+        deleteItem: function (event) {
+            var uuid = $(event.currentTarget).data("uuid");
+            var object = $(event.currentTarget).data("object");
+            var collection = $(event.currentTarget).data("collection");
+
+            profileApp
+            .object(object)
+                .model()
+                .delete(uuid)
+                .then(() => {
+                    app.toast
+                        .create({
+                            icon: '<i class="fa-2x fas fa-trash"></i>',
+                            text: "<t>Item Deleted</t>",
+                            position: "center"
+                        })
+                        .open();
+                })
+        }
+    }
+};
+</script>

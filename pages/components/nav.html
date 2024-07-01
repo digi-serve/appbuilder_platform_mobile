@@ -1,0 +1,321 @@
+<style>
+   .blink {
+      animation: blinkenlights 2s infinite;
+   }
+
+   /* Opacity may cause ios crashes */
+   @keyframes blinkenlights {
+      from {
+         opacity: 100%;
+      }
+
+      50% {
+         opacity: 20%;
+      }
+
+      to {
+         opacity: 100%;
+      }
+   }
+
+   #relay-error-count {
+      margin: 0 auto;
+      width: 3em;
+      color: red;
+      text-align: center;
+      font-size: 0.9em;
+      position: absolute;
+      left: 42%;
+      display: none;
+   }
+</style>
+
+<!-- framework7 component template -->
+<template>
+   <div class="page">
+      <div class="navbar theme-dark">
+         <div class="navbar-inner sliding">
+            <div class="left">
+               <a
+                  data-cy="inbox"
+                  data-view=".view-main"
+                  class="panel-close link icon-only color-white"
+                  href="/inbox/"
+               >
+                  <i class="icon fa fa-envelope" style="font-size: 22px">
+                     <!-- 
+                              loading - loads slower than the rest of the page
+                              no items
+                              yes items
+                     -->
+                     {{#if loadingInbox}}<span
+                        data-cy="loadingInbox"
+                        class="badge color-grey skeleton-effect-fade"
+                     ></span>
+                     {{else}} {{#js_if "this.inboxBadge > 0"}}<span
+                        data-cy="inboxBadge"
+                        class="badge color-red"
+                        >{{inboxBadge}}</span
+                     >{{/js_if}} {{/if}}
+                  </i>
+               </a>
+            </div>
+            <div class="title">conneXted</div>
+            <div class="right">
+               <a
+                  data-cy="lock"
+                  class="link icon-only color-white"
+                  href="/nav/lock/"
+               >
+                  <i class="fa fa-lock"></i>
+               </a>
+            </div>
+         </div>
+      </div>
+      <div class="page-content">
+         <div class="row no-gap" style="justify-content: center">
+            <a
+               href="/welcome/"
+               data-cy="welcome"
+               data-view=".view-main"
+               class="panel-close item-link item-content emphasis color-white"
+               style="flex: 1; text-align: center; padding: 5px"
+            >
+               <i class="icon fa fa-home" style="font-size: 22px"></i>
+            </a>
+            <a
+               href="/settings/"
+               data-cy="settings"
+               data-view=".view-main"
+               class="panel-close item-link item-content emphasis color-white"
+               style="
+                  flex: 1;
+                  text-align: center;
+                  border-left-width: 1px;
+                  padding: 5px;
+               "
+            >
+               <i class="icon fa fa-cog" style="font-size: 22px"></i>
+            </a>
+         </div>
+         {{#js_if "this.loading"}}
+         <div class="demo-card-header-pic">
+            <div
+               style="background-image: url(img/profile_bg.png)"
+               valign="bottom"
+               class="profile_container"
+            >
+               <a
+                  href="#"
+                  data-view=".view-main"
+                  class="panel-close text-color-white"
+               >
+                  <div
+                     class="avatar skeleton-text skeleton-effect-fade"
+                     style="background: #ccc"
+                  >
+                     XX
+                  </div>
+                  <span
+                     data-cy="username-loading"
+                     class="username skeleton-text skeleton-effect-fade"
+                     >XXXXX XXXXXXX</span
+                  ><br />
+                  <small>
+                     <i class="icon fas fa-fw fa-cog"></i>
+                     <t>view profile</t>
+                  </small>
+               </a>
+            </div>
+         </div>
+         {{else}}
+         <div class="demo-card-header-pic">
+            <div
+               style="background-image: url(img/profile_bg.png)"
+               valign="bottom"
+               class="profile_container"
+            >
+               <a
+                  href="/profile/"
+                  data-cy="profile"
+                  data-view=".view-main"
+                  class="panel-close text-color-white"
+                  style="display: block"
+               >
+                  {{#js_if "this.userProfile?.Gender != null"}}
+                  <div
+                     class="avatar color-{{userProfile.Gender}}"
+                     style="background: #ccc"
+                  ></div>
+                  {{else}}
+                  <div class="avatar color-blue" style="background: #ccc"></div>
+                  {{/js_if}}
+                  <!-- prettier-ignore -->
+                  <span class="username">{{print userProfile "Preferred Name"}} {{print userProfile "Surname"}}</span>
+                  <br />
+                  <small>
+                     <i class="icon fas fa-fw fa-cog"></i>
+                     <t>view profile</t>
+                  </small>
+               </a>
+            </div>
+         </div>
+         {{/js_if}}
+         <div id="progressBar" style="min-height: 5px">
+            <div class="progressbar" style="margin-top: 3px"></div>
+            <div class="loader">
+               <div class="left-channel"></div>
+               <div class="right-channel"></div>
+               <div class="cpu">
+                  <div class="cpu-inner">
+                     <div class="cpu-bar cpu-bar1"></div>
+                     <div class="cpu-bar cpu-bar2"></div>
+                     <div class="cpu-dot"></div>
+                  </div>
+               </div>
+               <div class="left-dot"></div>
+               <div class="right-dot"></div>
+            </div>
+         </div>
+         <div class="list" style="margin: 0">
+            <ul>
+               {{#if enabledApps.financial}} {{#if loadingFinancial}}
+               <li key="navFinancial" class="swipeout">
+                  <a
+                     href="#"
+                     data-view=".view-left"
+                     data-cy="financial-disabled"
+                     class="item-link item-content emphasis text-color-grey disabled"
+                  >
+                     <div class="item-inner">
+                        <div class="item-title">
+                           <span translate="1" class="text-color-white"
+                              >ministry</span
+                           >
+                           <t>finances</t>
+                           <i
+                              class="fas fa-cloud-download-alt blink skeleton-effect-fade"
+                           ></i>
+                        </div>
+                     </div>
+                  </a>
+               </li>
+               {{else}}
+               <li key="navFinancial" class="swipeout">
+                  <a
+                     href="/financial/ministry/"
+                     data-cy="ministry"
+                     data-view=".view-left"
+                     class="item-link item-content emphasis text-color-green"
+                  >
+                     <div class="item-inner">
+                        <div class="item-title">
+                           <span translate="1" class="text-color-white"
+                              >ministry</span
+                           >
+                           <t>finances</t>
+                        </div>
+                     </div>
+                  </a>
+                  <div class="swipeout-actions-right">
+                     <a
+                        href="/financial/ministry/donors/add/"
+                        data-cy="donor-swipe-add"
+                        data-view=".view-main"
+                        class="color-green panel-close"
+                        ><i class="fa fa-user-plus"></i
+                     ></a>
+                     <a
+                        href="/financial/ministry/donations/add/"
+                        data-cy="donation-swipe-add"
+                        data-view=".view-main"
+                        class="color-green panel-close"
+                        ><i class="fa fa-donate"></i
+                     ></a>
+                  </div>
+               </li>
+               {{/if}} {{/if}}
+            </ul>
+         </div>
+         <a
+            href="/feedback/"
+            data-cy="feedback"
+            data-view=".view-main"
+            id="send-feedback"
+            class="panel-close link button button-fill bg-color-gray text-color-white"
+            style="border-radius: 0; position: absolute; bottom: 0; width: 100%"
+         >
+            <i class="fas fa-comment"></i>
+            <t>Submit Feedback</t>
+         </a>
+      </div>
+   </div>
+</template>
+
+<!-- framework7 component script -->
+<script>
+   const cachedState = {
+      enabledApps: {
+         financial: false,
+      },
+      loading: true,
+      loadingInbox: true,
+      loadingFinancial: true,
+      inboxBadge: 0,
+      userProfile: null,
+   };
+   const TIME_DATA_UPDATE = 1000;
+   return {
+      async data() {
+         const storage = this.$root.app.resources.storage;
+         return cachedState;
+      },
+      on: {
+         pageInit() {
+            const app = this.$root.app;
+            const appPage = app.pages.appPage;
+
+            // Get our datacollection(s) so we can set up listeners later
+            const profileComponent = appPage.components.profile;
+            const financialApp = appPage.getApplicationByID("FINANCIAL");
+
+            const financialAppReady = () => {
+               cachedState.loadingFinancial = false;
+               this.$setState(cachedState);
+            };
+
+            // we need to check app status, if data is missing, don't allow user to navigate there.
+            if (financialApp.isReady()) {
+               financialAppReady();
+            } else {
+               financialApp.on("status", function (value) {
+                  if (value === "ready") financialAppReady();
+               });
+            }
+            const checkDataUpdate = async () => {
+               cachedState.userProfile = profileComponent.userProfile;
+               if (cachedState.userProfile == null) {
+                  cachedState.loading = true;
+                  const enabledApps = cachedState.enabledApps;
+                  enabledApps.financial = false;
+                  cachedState.inboxBadge = 0;
+                  cachedState.loadingInbox = true;
+               } else {
+                  cachedState.loading = false;
+                  const enabledApps = cachedState.enabledApps;
+                  enabledApps.financial = true;
+                  cachedState.inboxBadge =
+                     (await app.resources.storage.get("user", "siteUserData"))
+                        ?.inbox.length ?? 0;
+                  cachedState.loadingInbox = false;
+               }
+               this.$setState(cachedState);
+               setTimeout(async () => {
+                  await checkDataUpdate();
+               }, TIME_DATA_UPDATE);
+            };
+            checkDataUpdate();
+         },
+      },
+   };
+</script>

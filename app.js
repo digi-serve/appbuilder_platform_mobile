@@ -24,13 +24,17 @@ import translate from "./resources/Translate.js";
 import JSEncrypt from "jsencrypt";
 import jsQR from "jsqr";
 import pbkdf2 from "./utils/pbkdf2.js";
+import { v4 as uuidv4 } from "uuid";
 
 class App extends EventEmitter {
    constructor() {
       super();
+      this._AB = null;
+      this._abApps = [];
+      this._abDatacollections = [];
+      this._abObjects = [];
+      this._abQuerys = [];
       this._isInitializedListener = false;
-      this.AB = null;
-      this.abApp = null;
       this.f7App = null;
       this.pages = {
          appPage,
@@ -50,13 +54,19 @@ class App extends EventEmitter {
          JSEncrypt,
          jsQR,
          pbkdf2,
+         uuidv4,
+         languageDefault: this.languageDefault,
       };
    }
 
    async init(appbuilderDefinitions, abAppUUID) {
-      this.AB = new ABFactory(appbuilderDefinitions);
-      await this.AB.init(this);
-      this.abApp = this.AB.applicationByID(abAppUUID);
+      const AB = (this._AB = new ABFactory(appbuilderDefinitions));
+      await AB.init(this);
+      // this._abApps = AB.applicationByID(abAppUUID);
+      this._abApps = AB.applications();
+      this._abDCs = AB.datacollections();
+      this._abObjs = AB.objects();
+      this._abQrys = AB.queries();
       const resources = this.resources;
       let pendingPromises = [];
       for (const key in resources)
@@ -64,8 +74,7 @@ class App extends EventEmitter {
       await Promise.all(pendingPromises);
       pendingPromises = [];
       const pages = this.pages;
-      for (const key in pages)
-         pendingPromises.push(pages[key].init(this));
+      for (const key in pages) pendingPromises.push(pages[key].init(this));
       await Promise.all(pendingPromises);
 
       // Force garbade collector.
@@ -73,7 +82,7 @@ class App extends EventEmitter {
       const appPage = pages.appPage;
 
       if (this._isInitializedListener) return;
-      const passwordPage = pages.passwordPage
+      const passwordPage = pages.passwordPage;
       const loadingPage = pages.loadingPage;
       passwordPage.on("loading", () => {
          loadingPage.overlay();
@@ -102,6 +111,10 @@ class App extends EventEmitter {
       this._isInitializedListener = true;
    }
 
+   languageDefault() {
+      return this.resources.translate.langCode || "en"
+   }
+
    show(pageKey) {
       const pages = this.pages;
       const passwordPage = pages.passwordPage;
@@ -118,6 +131,14 @@ class App extends EventEmitter {
             break;
       }
       pages[pageKey] != null && pages[pageKey].show();
+   }
+
+   get abDCs() {
+      return this._abDCs;
+   }
+
+   get abObjs() {
+      return this._abObjs;
    }
 
    get buildTimeStamp() {
