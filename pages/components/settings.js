@@ -1,20 +1,24 @@
 /**
- * @class SettingsComponent
+ * @class Settings
  */
 "use strict";
 
-import EventEmitter from "eventemitter2";
+import Common from "./classes/Common";
 
-class SettingsComponent extends EventEmitter {
+class Settings extends Common {
    constructor() {
-      super({
-         wildcard: true,
-      });
-      this.page = null;
-      this.route = {
-         path: "/settings/",
-         componentUrl: "./lib/platform/pages/components/settingsComponent.html",
-      };
+      super(
+         [
+            {
+               path: "/settings/",
+               componentUrl: "./lib/platform/pages/components/settings.html",
+            },
+         ],
+         null,
+         {
+            wildcard: true,
+         }
+      );
       this.templates = {};
       this.appInfo = null;
       this.isUpdateReady = false;
@@ -37,10 +41,9 @@ class SettingsComponent extends EventEmitter {
     * @param {ABFactory} AB
     */
    async init(page) {
-      this.page = page;
+      await super.init(page);
       await this.prepareTemplates({
-         updateInfo:
-            "lib/platform/pages/components/settingsComponent-update-info.html",
+         updateInfo: "lib/platform/pages/components/settings-update-info.html",
       });
    }
 
@@ -98,4 +101,4 @@ class SettingsComponent extends EventEmitter {
    }
 }
 
-export default new SettingsComponent();
+export default new Settings();

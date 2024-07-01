@@ -17,13 +17,12 @@ export default class ABAppController extends EventEmitter2 {
       super({
          wildcard: true,
       });
-      this.page = null;
-      this.routes = routes;
-      this._status = "constructor";
-      this.datacollections = []; //this.application.datacollectionsIncluded();
       // keep track of which datacollections we are managing.
       // will try to initialize these when the App initializes (init()).
-      this.initTimeout = 25 * 1000;
+      this._datacollections = [];
+      this._status = "constructor";
+      this.page = null;
+      this.routes = routes;
    }
 
    /**
@@ -46,38 +45,25 @@ export default class ABAppController extends EventEmitter2 {
    async init(page, dcIDs) {
       // save a reference to the lib/platform/pages/...Page.js object.
       this.page = page;
+      const app = this.page.app;
+      this.abApp = app.abApp;
       if (dcIDs?.length > 0)
-         this.datacollections = this.page.app.abApp.datacollectionsIncluded(
-            (dc) => {
-               return dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1;
-            }
+         this._datacollections = app.abDCs.filter(
+            (dc) => dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1,
          );
-
-      // Emit a message if init doesn't complete within 25 seconds
-      const initTimeout = setTimeout(() => {
-         console.error(
-            "ABApplication timed out during init(): " + this.page.app.abApp.id
-         );
-      }, this.initTimeout);
 
       return new Promise((resolve, reject) => {
          this.status = "init";
 
          // make sure our site user data has been properly
          // loaded. (1st load this needs to come from server call)
-         if (
-            this.page.app.resources.account.authToken == null &&
-            this.page.app.resources.account.username == null
-         )
+         if (app.resources.account.userData?.user.username == null)
             throw new Error("Not found authToken and username.");
 
          // make sure each of our Datacollections have loaded their data:
          const allInits = [];
-         this.datacollections.forEach((dc) => {
-            if (dc == null) {
-               console.error("Could not find data collection for key:" + dc);
-               return;
-            }
+         this._datacollections.forEach((dc) => {
+            if (dc == null) return;
             allInits.push(dc.init());
          });
 
@@ -86,11 +72,9 @@ export default class ABAppController extends EventEmitter2 {
                this.status = "loading";
                await Promise.all(allInits);
                this.status = "ready";
-               clearTimeout(initTimeout);
                resolve();
             } catch (err) {
                this.status = "ready";
-               clearTimeout(initTimeout);
                reject(err);
             }
          })();
@@ -144,8 +128,8 @@ export default class ABAppController extends EventEmitter2 {
     * @return {ABDataCollection}
     */
    dataCollection(key) {
-      return this.datacollections.find(
-         (dc) => dc.id === key || dc.name === key || dc.label == key
+      return this._datacollections.find(
+         (dc) => dc.id === key || dc.name === key || dc.label == key,
       );
    }
 
@@ -164,10 +148,12 @@ export default class ABAppController extends EventEmitter2 {
     */
    listItems(objKey, fieldKey, langCode = "en") {
       const results = [];
-      const object = this.page.app.AB.objectByID(objKey);
+      const object = this.page.app.abObjs.find(
+         (abObj) => abObj.id === objKey || abObj.name === objKey
+      );
       if (object == null) return results;
       const field = object.fields(
-         (f) => f.id === fieldKey || f.columnName === fieldKey
+         (f) => f.id === fieldKey || f.columnName === fieldKey,
       )[0];
       if (field == null) return results;
 
@@ -197,7 +183,12 @@ export default class ABAppController extends EventEmitter2 {
     * @return {ABDataCollection}
     */
    object(key) {
-      return this.page.app.AB.objectByID(key);
+      return this.page.app.abObjs.find(
+         (obj) =>
+            obj.id === key ||
+            // TODO (Guy): Refactor this to use only id.
+            obj.name === key,
+      );
    }
 
    /**
@@ -206,12 +197,12 @@ export default class ABAppController extends EventEmitter2 {
     * uninitialized state, and the perform an init()
     * @return {Promise}
     */
-   async reset() {
+   async reset(force = false) {
       // make sure each of our Datacollections have resset their
       // data:
       const allResets = [];
-      this.datacollections.forEach((dc) => {
-         allResets.push(dc.reset());
+      this._datacollections.forEach((dc) => {
+         allResets.push(dc.reset(force));
       });
       await Promise.all(allResets);
    }

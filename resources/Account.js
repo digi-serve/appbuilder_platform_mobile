@@ -9,17 +9,32 @@
 
 import EventEmitter from "eventemitter2";
 
-const config = require("../../config/config.js");
-const NETWORK_EVENT_KEY_USER_GET = "user.get";
-
+const EVENT_KEY_LOAD_USER_DATA = "loadUserData";
+const EVENT_PATH = "resources.account";
+const TIME_WAIT_FOR_USER_DATA = 1000;
 class Account extends EventEmitter {
    constructor() {
       super();
-      this._authToken = null;
       this._importInProgress = false;
-      this._isInitializedListener = false;
-      this._username = null;
+      this._pendingNetworkCallbacks = {
+         loadUserData: null,
+      };
+      this._userData = null;
       this.app = null;
+      this.on(EVENT_KEY_LOAD_USER_DATA, (context, res) => {
+         const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
+         const loadUserData = pendingNetworkCallbacks.loadUserData;
+
+         // This is in case we reload and still receive a job response from MCC.
+         const isError = res.status === "error";
+         const data = res.data;
+         if (loadUserData == null) {
+            (isError && console.error(data)) || this.loadUserData(true, data);
+            return;
+         }
+         (isError && loadUserData(data)) || loadUserData(null, data);
+         pendingNetworkCallbacks.loadUserData = null;
+      });
    }
 
    /**
@@ -32,61 +47,72 @@ class Account extends EventEmitter {
     */
    async init(app) {
       this.app = app;
-      if (this._isInitializedListener) return;
-      this.app.resources.network.on(
-         NETWORK_EVENT_KEY_USER_GET,
-         async (context, data) => {
-            if (context.callback == null) return;
-            if (context.error != null) context.callback(context.error);
-            const callbackResult = context.callback(null, data);
-            if (callbackResult instanceof Promise) await callbackResult;
-         }
-      );
-      this._isInitializedListener = true;
    }
 
-   async fetchUserData() {
+   async loadUserData(sync = false, backupUserData) {
       const resources = this.app.resources;
       const storage = resources.storage;
+      const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
+
+      // If this method has already been called, just wait for a response.
+      if (pendingNetworkCallbacks.loadUserData != null) {
+         await new Promise((resolve) => {
+            const waitForLoadingUserData = () => {
+               const loadUserData = pendingNetworkCallbacks.loadUserData;
+               if (loadUserData == null) {
+                  resolve();
+                  return;
+               }
+               setTimeout(() => {
+                  waitForLoadingUserData();
+               }, TIME_WAIT_FOR_USER_DATA);
+            };
+            waitForLoadingUserData();
+         });
+         return;
+      }
       if (
-         this._username ||
-         (this._username = (
-            await storage.get("user", "siteUserData")
-         )?.user.username) != null
+         !sync &&
+         (this._userData ||
+            (this._userData = await storage.get("user", "siteUserData")) !=
+               null)
       )
          return;
-      const userData = await new Promise((resolve, reject) => {
-         (async () => {
-            await resources.network.get(
-               { url: config.appbuilder.routes.userData },
-               {
-                  key: NETWORK_EVENT_KEY_USER_GET,
-                  context: {
-                     callback: (err, result) => {
-                        if (err != null) {
-                           reject(new Error(err.message));
-                           return;
-                        }
-                        resolve(result);
+      const network = resources.network;
+      const userData =
+         backupUserData ||
+         (await new Promise((resolve, reject) => {
+            (async () => {
+               pendingNetworkCallbacks.loadUserData = (err, result) => {
+                  if (err != null) {
+                     reject(new Error(err.message));
+                     return;
+                  }
+                  resolve(result);
+               };
+               await network.get(
+                  { url: network.validRoutes.config },
+                  {
+                     context: {
+                        targetEventKey: EVENT_KEY_LOAD_USER_DATA,
+                        targetEventPath: EVENT_PATH,
                      },
-                  },
-               }
-            );
-         })();
-      });
-      const username = userData.user.username;
-      if (username == null) {
+                  }
+               );
+            })();
+         }));
+      if (userData == null) {
          await storage.set("user", "siteUserData", null);
          const err = new Error("Not found username");
          err.code = "E_BADAUTHTOKEN";
          throw err;
       }
       await storage.set("user", "siteUserData", userData);
-      this._username = username;
+      this._userData = userData;
    }
 
-   get username() {
-      return this._username;
+   get userData() {
+      return this._userData;
    }
 }
 

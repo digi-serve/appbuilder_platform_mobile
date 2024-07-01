@@ -476,11 +476,11 @@
 
             $("#restart-app").on("click", () => {});
             if (
-               this.$root.app.pages.appPage.components.settingsComponent
+               this.$root.app.pages.appPage.components.settings
                   .isUpdateReady
             )
                $("#update-ready").show();
-            this.$root.app.pages.appPage.components.settingsComponent.renderPackageInfo();
+            this.$root.app.pages.appPage.components.settings.renderPackageInfo();
             let syncing;
 
             // Sync with server
@@ -527,7 +527,7 @@
                   "<t>This will delete all local files from your device. Continue?</t>",
                   "<t>Delete</t>",
                   async () => {
-                     await this.$root.app.pages.appPage.components.settingsComponent.deleteLocalImages();
+                     await this.$root.app.pages.appPage.components.settings.deleteLocalImages();
                      this.$setState({
                         // TODO: Logic for the local storage size.
                         totalStorage: Number(0).toFixed(2),

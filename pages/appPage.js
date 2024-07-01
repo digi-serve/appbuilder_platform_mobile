@@ -10,21 +10,16 @@
 import Common from "./classes/Common.js";
 
 import ABApplicationList from "../../applications/applications.js";
-import Shake from "shake.js";
-import config from "../../config/config.js";
-import appFeedback from "../resources/AppFeedback.js";
 
-import landingComponent from "./components/landingComponent.js";
-import navMenuComponent from "../../applications/navMenu/app.js";
-import settingsComponent from "./components/settingsComponent.js";
-import welcomeComponent from "./components/welcomeComponent.js";
+import inbox from "./components/inbox.js";
+import landing from "./components/landing.js";
+import nav from "./components/nav.js";
+import profile from "./components/profile.js";
+import settings from "./components/settings.js";
+import welcome from "./components/welcome.js";
 
-const MAX_BACK_PRESSES = 3;
-const WAIT_FOR_BUSY = 1000;
-
-export class AppPage extends Common {
-   /**
-    */
+const TIME_DATA_UPDATE = 1000;
+class AppPage extends Common {
    constructor() {
       super(
          "app-page",
@@ -34,89 +29,26 @@ export class AppPage extends Common {
 
       // Are the AB Applications in the middle of being reset?
       // TODO (Guy): Refactor this in the future;
-      this._isInitializedListener = false;
+      this._isUpdating = false;
       this._pendingApplicationReset = false;
       this.applications = [];
       this.appView = null;
       this.components = {
-         landingComponent,
-         navMenuComponent: new navMenuComponent(),
-         settingsComponent,
-         welcomeComponent,
+         inbox,
+         landing,
+         nav,
+         profile,
+         settings,
+         welcome,
       };
-      this.datacollections = [];
       this.f7App = null;
       this.menuView = null;
-      this.shakeEvent = null;
-   }
-
-   async _wait(miliSeconds) {
-      await new Promise((resolve) => {
-         setTimeout(() => {
-            resolve();
-         }, miliSeconds);
-      });
-   }
-
-   async init(app) {
-      await super.init(app);
-
-      // Framework7 is the UI library
-      const f7App = (this.f7App = new Framework7({
-         toast: {
-            closeTimeout: 5000,
-            position: "top",
-         },
-         statusbar: {
-            iosOverlaysWebView: false,
-            overlay: false,
-         },
-
-         // All of these will be available to F7 Components
-         // under `this.$root.{name}`
-         data: () => ({
-            app: this.app,
-         }),
-
-         // Root DOM element for Framework7
-         root: this.$element.get(0),
-      }));
-
-      // Can shake device to activate Feedback tool
-      this.shakeEvent = new Shake({ threshold: 15 });
-
-      // TODO (Guy): Refactor these in the future.
-      let applications = ABApplicationList.map((App) => new App());
-      const feedbackComponent = applications.find(
-         (app) => app.ID === "Feedback"
-      );
-      const inboxComponent = applications.find((app) => app.ID === "INBOX");
-      const profileComponent = applications.find((app) => app.ID === "PROFILE");
-      applications = applications.filter((app) => {
-         switch (app.ID) {
-            case "Feedback":
-            case "INBOX":
-            case "PROFILE":
-               return false;
-            default:
-               return true;
-         }
-      });
-      this.applications = applications;
-
-      // Component objects that will be referenced by F7 component code
-      const components = this.components;
-      components.feedbackComponent = feedbackComponent;
-      components.inboxComponent = inboxComponent;
-      components.profileComponent = profileComponent;
-
-      // Initialize listeners
-      if (this._isInitializedListener) return;
-      const resources = this.app.resources;
-      const account = resources.account;
-      const busy = resources.busy;
-      const network = resources.network;
-      this.on("ready", async () => {
+      this.on("ready", async (callback) => {
+         const resources = this.app.resources;
+         const account = resources.account;
+         const busy = resources.busy;
+         const network = resources.network;
+         const f7App = this.f7App;
          busy.show("Checking an account.");
          try {
             // Load authToken
@@ -131,17 +63,17 @@ export class AppPage extends Common {
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
 
-            await account.fetchUserData();
-            await this._wait(WAIT_FOR_BUSY);
+            await account.loadUserData();
             busy.hide();
          } catch (err) {
             console.error(err);
-            await this._wait(WAIT_FOR_BUSY);
             busy.hide();
             await new Promise((resolve) => {
+               const dialog = f7App.dialog;
                switch (err.code) {
+                  case "E_NOJRRTOKEN":
                   case "E_BADAUTHTOKEN":
-                     f7App.dialog
+                     dialog
                         .alert(
                            "<t>Make sure you have scanned the correct QR code for your account. If the problem persists, please contact an admin for help.</t>",
                            "<t>Problem authenticating with server</t>",
@@ -151,17 +83,9 @@ export class AppPage extends Common {
                         )
                         .open();
                      break;
-
-                  case "E_NOJRRTOKEN":
-                     const resolveFunction = () => {
-                        resolve();
-                     };
-                     resolveFunction();
-                     break;
-
                   default:
                      // Some other problem with the server
-                     f7App.dialog
+                     dialog
                         .alert(
                            "<t>There is an unexpected problem with the server at this time.</t>",
                            "<t>Error</t>",
@@ -178,32 +102,8 @@ export class AppPage extends Common {
          // TODO (Guy): Refactor later.
          // Preparing components.
          busy.show("Preparing components.");
-         const routes = [
-            components.landingComponent.route,
-            // TODO (Guy): Refactor later.
-            ...components.navMenuComponent.routes,
-            components.settingsComponent.route,
-            components.welcomeComponent.route,
-            {
-               path: "/feedback/",
-               popup: {
-                  componentUrl:
-                     "./lib/applications/feedback/templates/feedback.html",
-               },
-            },
-            {
-               path: "/inbox/",
-               componentUrl: "./lib/applications/inbox/templates/list.html",
-               routes: [
-                  {
-                     path: "formio/:id/",
-                     popup: {
-                        componentUrl:
-                           "./lib/applications/inbox/templates/formio.html",
-                     },
-                  },
-               ],
-            },
+         const mainRoutes = [
+            // TODO (Guy): Refactor.
             {
                path: "/profile/",
                componentUrl:
@@ -219,64 +119,66 @@ export class AppPage extends Common {
                ],
             },
          ];
+         const menuRoutes = [];
          try {
-            await Promise.all([
-               components.landingComponent.init(this),
-               components.navMenuComponent.init(this),
-               components.settingsComponent.init(this),
-               components.welcomeComponent.init(this),
-            ]);
+            const components = this.components;
+            let pendingPromises = [];
+            try {
+               // components isn't fully iterable, so we need to use a for loop.
+               for (const key in components) {
+                  if (Object.hasOwnProperty.call(components, key)) {
+                     pendingPromises.push(components[key].init(this));
+                     const routes = components[key].routes;
+                     if (routes.mainRoutes != null)
+                        mainRoutes.push(...routes.mainRoutes);
+                     if (routes.menuRoutes != null)
+                        menuRoutes.push(...routes.menuRoutes);
+                  }
+               }
+               await Promise.all(pendingPromises);
+               pendingPromises = [];
+            } catch (err) {
+               console.error("appPage.js: Error trying to init routes: ", err);
+            }
 
             // This relies on the account object from the previous step.
-            if (account.username == null) throw new Error("Not found an user.");
-
-            // TODO (Guy): Refactor these in the future.
-            await Promise.all([
-               components.feedbackComponent.init(this),
-               components.inboxComponent.init(this),
-               components.profileComponent.init(this),
-            ]);
-            const datacollections = this.datacollections;
-            [
-               components.feedbackComponent,
-               components.inboxComponent,
-               components.profileComponent,
-            ].forEach((dcComponent) => {
-               dcComponent.datacollections.forEach((dc) => {
-                  if (
-                     datacollections.find(
-                        (existingDC) => existingDC.id === dc.id
-                     ) == null
-                  )
-                     datacollections.push(dc);
-               });
-            });
+            if (account.userData?.user.username == null)
+               throw new Error("Not found an user.");
+            // this.app.abDCs.forEach(dc => {
+            //    pendingPromises.push(dc.init());
+            // });
+            // pendingPromises.forEach(async (pendingPromise) => {
+            //    try {
+            //       await pendingPromise;
+            //    } catch (err) {
+            //       console.error(err);
+            //    }
+            // })
+            pendingPromises = [];
 
             // Initialize the AB applications
             const pendingInitializedApps = [];
             this.applications.forEach((app) => {
                pendingInitializedApps.push(app.init(this));
-               routes.push(...app.routes.mainRoutes);
-               app.datacollections.forEach((dc) => {
-                  if (
-                     this.datacollections.find(
-                        (existingDC) => existingDC.id === dc.id
-                     ) == null
-                  )
-                     this.datacollections.push(dc);
-               });
+               const routes = app.routes;
+               menuRoutes.push(...routes.menuRoutes);
+               mainRoutes.push(...routes.mainRoutes);
             });
-            pendingInitializedApps.forEach(async (pendingInitializedApp) => {
-               try {
-                  await pendingInitializedApp;
-               } catch (err) {
-                  console.error(err);
-               }
-            });
+            (async () => {
+               await Promise.all(
+                  pendingInitializedApps.map(async (pendingInitializedApp) => {
+                     try {
+                        await pendingInitializedApp;
+                     } catch (err) {
+                        console.error(err);
+                     }
+                  })
+               );
+               this._checkForUpdate(true);
+            })();
          } catch (err) {
             console.error(err);
          }
-         await this._wait(WAIT_FOR_BUSY);
          busy.hide();
 
          // Start up main Framework7 routing.
@@ -288,45 +190,104 @@ export class AppPage extends Common {
          } catch (err) {
             console.error(err);
          }
-         await this._wait(WAIT_FOR_BUSY);
-         busy.hide();
-
-         // Start listening for shake gesture
-         if (config.platform.shakeGesture) this.shakeEvent.start();
 
          // Begin Framework7 router
          // Menu view
          const f7AppViews = f7App.views;
+         this.appView = f7AppViews.create("#main-view", {
+            url: "/",
+            routes: mainRoutes,
+         });
          this.menuView = f7AppViews.create("#left-view", {
             url: "/nav/",
-            routes: components.navMenuComponent.routes,
+            routes: menuRoutes,
          });
-         const appView = f7AppViews.create("#main-view", {
-            url: "/",
-            routes: routes,
+         busy.hide();
+         if (callback == null) return;
+         const callbackResult = callback();
+         if (callbackResult instanceof Promise) await callbackResult;
+      });
+   }
+
+   _checkForUpdate(isUpdating) {
+      if (isUpdating !== this._isUpdating) this._isUpdating = isUpdating;
+      if (!this._isUpdating) return;
+      const app = this.app;
+      setTimeout(async () => {
+         try {
+            const pendingPromises = [];
+            pendingPromises.push(app.resources.account.loadUserData(true));
+            // app.abDCs.forEach((abDC) => {
+            //    pendingPromises.push(abDC.updateSyncData());
+            // });
+            await Promise.all(pendingPromises);
+            // TODO:
+            // loadProfileData() is no longer a thing?  How do we initialize the
+            // Profile Display?
+            this.components.profile.loadProfileData();
+         } catch (err) {
+            console.error(err);
+         }
+         console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
+         this._checkForUpdate(this._isUpdating);
+      }, TIME_DATA_UPDATE);
+   }
+
+   async init(app) {
+      await super.init(app);
+      // Framework7 is the UI library
+      this.f7App ||
+         (this.f7App = new Framework7({
+            toast: {
+               closeTimeout: 5000,
+               position: "top",
+            },
+            statusbar: {
+               iosOverlaysWebView: false,
+               overlay: false,
+            },
+
+            // All of these will be available to F7 Components
+            // under `this.$root.{name}`
+            data: () => ({
+               app: this.app,
+            }),
+
+            // Root DOM element for Framework7
+            root: this.$element.get(0),
+         })).on("pageInit popupOpen", (page) => {
+            // Log Framework7 page views
+            // if we cannot populate this we need let the app know we are hitting a dead end without an error
+            let pageName = "unknown-page-name";
+            // if this is a popup we need to look at the dom to get the title
+            if (page.type === "popup") {
+               const popUpElement = page.el.querySelector(".title");
+               if (popUpElement == null) return;
+               pageName = `/popup/${popUpElement.innerHTML
+                  .toLowerCase()
+                  .replace(" ", "-")}`;
+            }
+            // if this is a normal page we just grab the route path
+            else if (page.route?.path != null) pageName = page.route.path;
+            this.app.resources.analytics.pageView(pageName);
          });
 
-         // TODO (Guy): Refactor this later.
-         appFeedback.init(appView.router);
-         this.appView = appView;
-      });
-      f7App.on("pageInit popupOpen", (page) => {
-         // Log Framework7 page views
-         // if we cannot populate this we need let the app know we are hitting a dead end without an error
-         let pageName = "unknown-page-name";
-         // if this is a popup we need to look at the dom to get the title
-         if (page.type === "popup") {
-            const popUpElement = page.el.querySelector(".title");
-            if (popUpElement == null) return;
-            pageName = `/popup/${popUpElement.innerHTML
-               .toLowerCase()
-               .replace(" ", "-")}`;
+      // TODO (Guy): Refactor these in the future.
+      let applications = ABApplicationList.map((App) => new App());
+      const feedback = applications.find((app) => app.ID === "Feedback");
+      applications = applications.filter((app) => {
+         switch (app.ID) {
+            case "Feedback":
+               return false;
+            default:
+               return true;
          }
-         // if this is a normal page we just grab the route path
-         else if (page.route?.path != null) pageName = page.route.path;
-         resources.analytics.pageView(pageName);
       });
-      this._initializeListener = true;
+      this.applications = applications;
+
+      // Component objects that will be referenced by F7 component code
+      const components = this.components;
+      components.feedback = feedback;
    }
 
    /**
@@ -365,15 +326,11 @@ export class AppPage extends Common {
       // importCredentials then refresh the page
       const resources = this.app.resources;
       await resources.network.importCredentials(preToken, tenantUUID);
-      await resources.account.fetchUserData();
+      await resources.account.loadUserData();
       // await this.fetchApplicationData(true);
    }
 
    getApplicationByID(id) {
-      // TODO (Guy): Refactor these in the future.
-      const components = this.components;
-      for (const key in components)
-         if (components[key].ID === id) return components[key];
       return this.applications.find((app) => {
          return app.ID === id;
       });
@@ -472,22 +429,6 @@ export class AppPage extends Common {
 
       // wipe the cache and hard reload
       this._pendingApplicationReset = false;
-   }
-
-   /**
-    * Activate the feedback form
-    */
-   activateFeedback() {
-      try {
-         appFeedback.open();
-      } catch (err) {
-         console.log("Feedback error", err);
-         this.f7App.dialog.alert(
-            "<t>There was a problem sending feedback</t>",
-            "<t>Sorry</t>"
-         );
-         appFeedback.close();
-      }
    }
 }
 

@@ -1,0 +1,184 @@
+<!-- framework7 component template -->
+<template>
+   <div class="page">
+      <div class="navbar">
+         <div class="navbar-bg"></div>
+         <div class="navbar-inner sliding">
+            <div class="left">
+               <a href="#" class="link icon-only panel-open" data-panel="left">
+                  <i class="fa fa-bars"></i>
+               </a>
+            </div>
+            <div class="title">Inbox</div>
+         </div>
+      </div>
+      <div
+         class="page-content ptr-content"
+         ptr-data-ptr-distance="55"
+         ptr-data-ptr-mousewheel="true"
+      >
+         <!-- Default pull to refresh preloader-->
+         <div class="ptr-preloader">
+            <div class="preloader"></div>
+            <div class="ptr-arrow"></div>
+         </div>
+         {{#js_if "this.items.length > 0"}} {{#each items}} {{#if hasTasks}}
+         <div class="block-title">{{name}}</div>
+         <div class="list">
+            {{#each processes}} {{#if hasTasks}}
+            <div class="list-group">
+               <ul>
+                  <li class="list-group-title uppercase">{{name}}</li>
+                  <li>
+                     <a
+                        href="/inbox/formio/{{id}}/"
+                        class="item-link item-content"
+                     >
+                        <div class="item-inner">
+                           <!-- prettier-ignore -->
+                           <div class="item-title">{{js "if (this.tasks) return this.tasks[0].name;"}}</div>
+                           <div class="item-after">
+                              <!-- prettier-ignore -->
+                              <span class="badge color-blue">{{js "if (this.tasks) return this.tasks.length;"}}</span>
+                           </div>
+                        </div>
+                     </a>
+                  </li>
+               </ul>
+            </div>
+            {{/if}} {{/each}}
+         </div>
+         {{/if}} {{/each}} {{else}}
+         <div
+            class="block text-align-center text-color-gray"
+            style="margin-top: 20vh"
+         >
+            <i class="fas fa-thumbs-up fa-8x"></i>
+            <br />
+            <br />
+            <t>No Inbox Items</t><br />
+         </div>
+         {{/js_if}}
+      </div>
+   </div>
+</template>
+
+<!-- framework7 component script -->
+<script>
+   const cachedState = {
+      items: [],
+   };
+
+   /**
+    * Sort inbox items by application and process
+    * @param {Array<Object>} items array of inbox items as returned by GET /process/inbox
+    * @param {Array<Object>} meta array of applications and their processes
+    * as returned by GET /process/inbox/meta
+    * @returns {Array<Object}
+    * @example return
+    * [{
+    *    "id": "cbf95e19-805b-4793-8d27-56c0c8c9449e",
+    *    "name": "My App"
+    *    "translations": [],
+    *    "hasTasks": true,
+    *    "processes": [
+    *       {
+    *          "id": "24cb6b33-3ac5-432b-a4ad-c9ae7f12367a",
+    *          "translations": [],
+    *          "hasTasks" : true,
+    *          "tasks": [
+    *             // ...
+    *          ]
+    *       }
+    *    ]
+    * }]
+    */
+   const formatInbox = (items = [], meta = []) => {
+      if (meta.length === 0) return [];
+      meta.forEach((app) => {
+         if (app.translations)
+            app.translations.forEach((translation) => {
+               switch (translation.language_code) {
+                  case "en":
+                     app.name = translation.label;
+                     break;
+                  default:
+                     break;
+               }
+            });
+         let appHasTasks = false;
+         if (app.processes) {
+            app.processes.forEach((process) => {
+               if (process.translations)
+                  process.translations.forEach((translation) => {
+                     switch (translation.language_code) {
+                        case "en":
+                           process.name = translation.label;
+                           break;
+                        default:
+                           break;
+                     }
+                  });
+
+               process.tasks = items.filter(
+                  (item) => item.definition === process.id
+               );
+               if (process.tasks.length > 0) {
+                  appHasTasks = true;
+                  process.hasTasks = true;
+                  return;
+               }
+               process.hasTasks = false;
+            });
+         }
+         app.hasTasks = appHasTasks;
+      });
+      return meta;
+   };
+   return {
+      async data() {
+         const { inbox, inboxMeta } =
+            (await this.$root.app.resources.storage.get(
+               "user",
+               "siteUserData"
+            )) || {};
+         cachedState.items = formatInbox(inbox, inboxMeta);
+         return cachedState;
+      },
+      on: {
+         async pageBeforeIn() {
+            this.$(".view-main .navbar").attr(
+               "class",
+               "navbar bg-color-blue text-color-white color-theme-white"
+            );
+            this.$(".view-main .navbar-bg").attr(
+               "class",
+               "navbar-bg bg-color-blue"
+            );
+         },
+         async pageInit() {
+            const $app = this.$app;
+            $app.off("ptrRefresh");
+            $app.on("ptrRefresh", async (dom, done) => {
+               const { inbox, inboxMeta } =
+                  await this.$root.app.resources.storage.get(
+                     "user",
+                     "siteUserData"
+                  );
+               cachedState.items = formatInbox(inbox, inboxMeta);
+               this.$setState(cachedState);
+
+               // Give the user a toast message to let them know the data request happened
+               $app.toast
+                  .create({
+                     text: "Refreshed Successfully!",
+                     position: "center",
+                     closeTimeout: 2000,
+                  })
+                  .open();
+               done();
+            });
+         },
+      },
+   };
+</script>
