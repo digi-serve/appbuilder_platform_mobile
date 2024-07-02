@@ -38,8 +38,8 @@ class Camera extends EventEmitter {
    }
 
    get validImageTypes() {
-      return this.app.resources.storage.validFileTypes.filter(
-         (validFileType) => validFileType.includes("image/")
+      return this.app.resources.storage.validFileTypes.filter((validFileType) =>
+         validFileType.includes("image/")
       );
    }
 
@@ -190,6 +190,14 @@ class Camera extends EventEmitter {
       });
    }
 
+   /**
+    * Early initialization. This can happen even before the auth token is
+    * setup.
+    *
+    * @param {App} app
+    *
+    * @return {Promise}
+    **/
    async init(app) {
       this.app = app;
       // Hidden HTML elements used to trigger camera in _getPicture()

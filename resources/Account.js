@@ -15,7 +15,7 @@ const TIME_WAIT_FOR_USER_DATA = 1000;
 class Account extends EventEmitter {
    constructor() {
       super();
-      this._importInProgress = false;
+      this._lock = null;
       this._pendingNetworkCallbacks = {
          loadUserData: null,
       };
@@ -44,14 +44,13 @@ class Account extends EventEmitter {
     * @param {App} app
     *
     * @return {Promise}
-    */
+    **/
    async init(app) {
       this.app = app;
+      this._lock = new app.utils.Lock();
    }
 
    async loadUserData(sync = false, backupUserData) {
-      const resources = this.app.resources;
-      const storage = resources.storage;
       const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
 
       // If this method has already been called, just wait for a response.
@@ -71,17 +70,28 @@ class Account extends EventEmitter {
          });
          return;
       }
-      if (
-         !sync &&
-         (this._userData ||
-            (this._userData = await storage.get("user", "siteUserData")) !=
-               null)
-      )
-         return;
-      const network = resources.network;
-      const userData =
-         backupUserData ||
-         (await new Promise((resolve, reject) => {
+      const lock = this._lock;
+      try {
+         await lock.acquire();
+         const resources = this.app.resources;
+         const storage = resources.storage;
+         if (backupUserData != null) {
+            await storage.set("user", "siteUserData", backupUserData);
+            lock.release();
+            return;
+         }
+         if (
+            !sync &&
+            (this._userData ||
+               (this._userData = await storage.get("user", "siteUserData")) !=
+                  null)
+         ) {
+            lock.release();
+            return;
+         }
+         lock.release();
+         const network = resources.network;
+         const userData = await new Promise((resolve, reject) => {
             (async () => {
                pendingNetworkCallbacks.loadUserData = (err, result) => {
                   if (err != null) {
@@ -100,15 +110,22 @@ class Account extends EventEmitter {
                   }
                );
             })();
-         }));
-      if (userData == null) {
-         await storage.set("user", "siteUserData", null);
-         const err = new Error("Not found username");
-         err.code = "E_BADAUTHTOKEN";
+         });
+         await lock.acquire();
+         if (userData == null) {
+            await storage.set("user", "siteUserData", null);
+            lock.release();
+            const err = new Error("Not found username");
+            err.code = "E_BADAUTHTOKEN";
+            throw err;
+         }
+         await storage.set("user", "siteUserData", userData);
+         lock.release();
+         this._userData = userData;
+      } catch (err) {
+         lock.release();
          throw err;
       }
-      await storage.set("user", "siteUserData", userData);
-      this._userData = userData;
    }
 
    get userData() {

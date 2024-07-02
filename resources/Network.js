@@ -22,6 +22,7 @@ class NetworkRest extends EventEmitter {
          maxListeners: 0,
       });
       this._authToken = null;
+      this._lock = null;
       this._baseURL = null;
       this.app = null;
    }
@@ -39,13 +40,21 @@ class NetworkRest extends EventEmitter {
          console.error("Queueing a QR scan doesn't seem to work...", data);
          return;
       }
-      const queue =
-         (await this.app.resources.storage.get("user", refQueue)) || [];
-      queue.push({ data, jobResponse });
-      console.log(
-         `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`,
-      );
-      await this.app.resources.storage.set("user", refQueue, queue);
+      const lock = this._lock;
+      try {
+         await lock.acquire();
+         const storage = this.app.resources.storage;
+         const queue = (await storage.get("user", refQueue)) || [];
+         queue.push({ data, jobResponse });
+         console.log(
+            `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`
+         );
+         await storage.set("user", refQueue, queue);
+         lock.release();
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
    }
 
    /**
@@ -84,7 +93,7 @@ class NetworkRest extends EventEmitter {
                if (text === "timeout" || jqXHR.readyState === 0) {
                   //// Network Error: conneciton refused, access denied, etc...
                   console.error(
-                     "*** NetworkRest._request():network connection error detected.",
+                     "*** NetworkRest._request():network connection error detected."
                   );
                   // retry the attempt:
                   if (numRetries > 0) {
@@ -94,8 +103,8 @@ class NetworkRest extends EventEmitter {
                            await this._request(
                               params,
                               jobResponse,
-                              numRetries - 1,
-                           ),
+                              numRetries - 1
+                           )
                         );
                      } catch (err) {
                         reject(err);
@@ -111,7 +120,7 @@ class NetworkRest extends EventEmitter {
                } else if (jqXHR.readyState == 4) {
                   //// an HTTP error
                   console.error(
-                     "HTTP error while communicating with relay server",
+                     "HTTP error while communicating with relay server"
                   );
                   console.error(`status code: ${jqXHR.status}`);
                }
@@ -121,14 +130,14 @@ class NetworkRest extends EventEmitter {
                   // add it to the queue and retry later
                   this._queue(params, jobResponse);
                   let error = new Error(
-                     "Network error: adding to queue for later retry.",
+                     "Network error: adding to queue for later retry."
                   );
                   resolve({ status: "queued" });
                   return;
                }
 
                const error = new Error(
-                  "NetworkRest._request() error with .ajax() command:",
+                  "NetworkRest._request() error with .ajax() command:"
                );
                error.response = jqXHR.responseText;
                error.text = text;
@@ -276,36 +285,44 @@ class NetworkRest extends EventEmitter {
          error.code = "E_NOTCONNECTED";
          throw error;
       }
-      const queue =
-         (await this.app.resources.storage.get("user", refQueue)) || [];
+      const lock = this._lock;
+      try {
+         await lock.acquire();
+         const storage = this.app.resources.storage;
+         const queue = (await storage.get("user", refQueue)) || [];
 
-      // recursively process each pending queue request
-      const processRequest = async (callback) => {
-         if (queue.length == 0) {
-            callback();
-            return;
-         }
-         const entry = queue.shift();
-         const params = entry.data;
+         // recursively process each pending queue request
+         const processRequest = async (callback) => {
+            if (queue.length == 0) {
+               callback();
+               return;
+            }
+            const entry = queue.shift();
+            const params = entry.data;
 
-         // temporarily search the queue for mobile/register
-         // and skip it if found
-         // TODO remove this when users don't have to scan QR from within app
-         if (params.url.includes("/mobile/register")) return;
-         const job = entry.jobResponse;
-         try {
-            await this._resend(params, job);
-            await processRequest(callback);
-         } catch (err) {
-            callback(err);
-         }
-      };
-      await new Promise((resolve, reject) => {
-         processRequest((err) => {
-            (err != null && reject(err)) || resolve();
+            // temporarily search the queue for mobile/register
+            // and skip it if found
+            // TODO remove this when users don't have to scan QR from within app
+            if (params.url.includes("/mobile/register")) return;
+            const job = entry.jobResponse;
+            try {
+               await this._resend(params, job);
+               await processRequest(callback);
+            } catch (err) {
+               callback(err);
+            }
+         };
+         await new Promise((resolve, reject) => {
+            processRequest((err) => {
+               (err != null && reject(err)) || resolve();
+            });
          });
-      });
-      await this.app.resources.storage.set("user", refQueue, []);
+         await storage.set("user", refQueue, []);
+         lock.release();
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
    }
 
    /**
@@ -321,6 +338,14 @@ class NetworkRest extends EventEmitter {
 
    set baseURL(value) {
       this._baseURL = value;
+   }
+
+   get lock() {
+      return this._lock;
+   }
+
+   set lock(value) {
+      this._lock = value;
    }
 
    /**
@@ -385,7 +410,7 @@ class NetworkRelay extends NetworkRest {
             // trigger an 'online' event
             this.emit("offline");
          },
-         false,
+         false
       );
       document.addEventListener(
          "online",
@@ -401,7 +426,7 @@ class NetworkRelay extends NetworkRest {
             // trigger an 'online' event
             this.emit("online");
          },
-         false,
+         false
       );
       this.on(this.defaultEventKeys.offline, () => {
          // TODO (Guy):
@@ -450,30 +475,36 @@ class NetworkRelay extends NetworkRest {
 
       // ok, the given params, are the DATA we want to send to the RelayServer
       let data = this._encrypt(params);
-      const app = this.app;
-      const storage = app.resources.storage;
-      const jobToken = app.utils.uuidv4();
-      const jobResponses =
-         this._jobResponses || (await storage.get("user", "jobResponse")) || {};
-
-      // add our jobToken to the local data:
-      jobResponses[jobToken] = jobResponse;
-      await storage.set("user", "jobResponse", jobResponses);
-
-      // Split up large data into smaller packets
-      const packets = [];
-      while (data.length >= MAX_PACKET_SIZE) {
-         packets.push(data.slice(0, MAX_PACKET_SIZE));
-         data = data.slice(MAX_PACKET_SIZE, data.length);
-      }
-      packets.push(data);
       const mccRes = [];
+      const lock = this._lock;
       try {
+         await lock.acquire();
+         const app = this.app;
+         const storage = app.resources.storage;
+         const jobToken = app.utils.uuidv4();
+         const jobResponses =
+            this._jobResponses ||
+            (await storage.get("user", "jobResponse")) ||
+            {};
+
+         // add our jobToken to the local data:
+         jobResponses[jobToken] = jobResponse;
+         await storage.set("user", "jobResponse", jobResponses);
+         lock.release();
+
+         // Split up large data into smaller packets
+         const packets = [];
+         while (data.length >= MAX_PACKET_SIZE) {
+            packets.push(data.slice(0, MAX_PACKET_SIZE));
+            data = data.slice(MAX_PACKET_SIZE, data.length);
+         }
+         packets.push(data);
+
          // we are Creating a new relay entry, so we do a POST
          // Can't just pass in a prepared `relayParams` object here
          // because its contents can change by the time the post is
          // being sent.
-         for (let i = 0; i < packets.length; i++) {
+         for (let i = 0; i < packets.length; i++)
             mccRes.push(
                await super.post({
                   url: this._relayRequestRoute,
@@ -486,12 +517,12 @@ class NetworkRelay extends NetworkRest {
                      data: packets[i],
                      tenant: config.appbuilder.tenantUUID,
                   },
-               }),
+               })
             );
-         }
          return mccRes;
       } catch (err) {
          mccRes.push(err);
+         lock.release();
          throw mccRes;
       }
    }
@@ -511,7 +542,7 @@ class NetworkRelay extends NetworkRest {
          const decrypted = CryptoJS.AES.decrypt(
             dataParts[0],
             CryptoJS.enc.Hex.parse(this._relayState.aesKey),
-            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) },
+            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) }
          );
 
          // Parse JSON to plantext.
@@ -535,129 +566,123 @@ class NetworkRelay extends NetworkRest {
       return `${CryptoJS.AES.encrypt(
          JSON.stringify(data),
          CryptoJS.enc.Hex.parse(aesKey),
-         { iv: CryptoJS.enc.Hex.parse(iv) },
+         { iv: CryptoJS.enc.Hex.parse(iv) }
       ).toString()}:::${iv}`;
-   }
-
-   /**
-    * Retrieve AB network packets from local storage.
-    **/
-   async _getJobPackets() {
-      const storage = this.app.resources.storage;
-
-      // NOTE: it is possible that while we were waiting for storage.get()
-      // several more calls to getJobPackets() were fired off.  any processing
-      // or alterations to jobPackets inbetween these times would be overwritten
-      // by these new values, so make sure jobPackets are included in this chain:
-      const [jobPackets, jobPacketsTimestamps] = await Promise.all([
-         storage.get("user", "abRelayJobPackets") || Promise.resolve({}),
-         storage.get("abRelayJobPacketsTimestamps") || Promise.resolve({}),
-      ]);
-      return { jobPackets, jobPacketsTimestamps };
    }
 
    /**
     * Load the necessary network data.
     **/
    async _loadNetworkData() {
-      const app = this.app;
-      const rsa = new app.utils.JSEncrypt();
-      const storage = app.resources.storage;
-      await Promise.all([
-         (async () => {
-            const jobResponses = await storage.get("user", "jobResponse");
-            if (jobResponses != null) {
-               this._jobResponses = jobResponses;
-               return;
-            }
-            await storage.set("user", "jobResponse", {});
-            this._jobResponses = {};
-         })(),
-         (async () => {
-            const relayState = (await storage.get("user", "relayState")) || {
-               aesKey: null,
-               aesKeySent: false,
-               lastSyncDate: null,
-            };
-            if (relayState.aesKey != null) {
+      const lock = this.lock;
+      try {
+         await lock.acquire();
+         const app = this.app;
+         const rsa = new app.utils.JSEncrypt();
+         const storage = app.resources.storage;
+         await Promise.all([
+            (async () => {
+               const jobResponses = await storage.get("user", "jobResponse");
+               if (jobResponses != null) {
+                  this._jobResponses = jobResponses;
+                  return;
+               }
+               await storage.set("user", "jobResponse", {});
+               this._jobResponses = {};
+            })(),
+            (async () => {
+               const relayState = (await storage.get("user", "relayState")) || {
+                  aesKey: null,
+                  aesKeySent: false,
+                  lastSyncDate: null,
+               };
+               if (relayState.aesKey != null) {
+                  this._relayState = relayState;
+                  return;
+               }
+
+               // Generate AES key now.debugger
+               relayState.aesKey = NetworkRelay.randomBytes(32);
+               relayState.aesKeySent = false;
+               await storage.set("user", "relayState", relayState);
                this._relayState = relayState;
-               return;
-            }
+            })(),
+            (async () => {
+               let appUUID = await storage.get("user", "appUUID");
+               if (appUUID == null) {
+                  appUUID = app.utils.uuidv4();
+                  await storage.set("user", "appUUID", appUUID);
+               }
+               this._appUUID = appUUID;
+            })(),
+            (async () => {
+               let tenantUUID = await storage.get("user", "tenantUUID");
+               if (tenantUUID == null) {
+                  tenantUUID = config.appbuilder.tenantUUID;
+                  await storage.set("user", "tenantUUID", tenantUUID);
+               }
+               this._tenantUUID = tenantUUID;
+            })(),
+            (async () => {
+               const rsaPublicKey = await storage.get("user", "rsaPublicKey");
+               if (rsaPublicKey != null && rsaPublicKey.length > 50) return;
 
-            // Generate AES key now.debugger
-            relayState.aesKey = NetworkRelay.randomBytes(32);
-            relayState.aesKeySent = false;
-            await storage.set("user", "relayState", relayState);
-            this._relayState = relayState;
-         })(),
-         (async () => {
-            let appUUID = await storage.get("user", "appUUID");
-            if (appUUID == null) {
-               appUUID = app.utils.uuidv4();
-               await storage.set("user", "appUUID", appUUID);
-            }
-            this._appUUID = appUUID;
-         })(),
-         (async () => {
-            let tenantUUID = await storage.get("user", "tenantUUID");
-            if (tenantUUID == null) {
-               tenantUUID = config.appbuilder.tenantUUID;
-               await storage.set("user", "tenantUUID", tenantUUID);
-            }
-            this._tenantUUID = tenantUUID;
-         })(),
-         (async () => {
-            const rsaPublicKey = await storage.get("user", "rsaPublicKey");
-            if (rsaPublicKey != null && rsaPublicKey.length > 50) return;
+               // have we done our initial /mobile/init and gotten an RSA key?
+               console.log("NetworkRelay: init stage 4");
+               console.log("..fetching RSA public key from server");
+               const data = (
+                  await super.get({
+                     url: config.appbuilder.routes.mobileInit, // "/mobile/init",
+                     data: {
+                        appID: config.appbuilder.maID,
+                     },
+                  })
+               ).data;
 
-            // have we done our initial /mobile/init and gotten an RSA key?
-            console.log("NetworkRelay: init stage 4");
-            console.log("..fetching RSA public key from server");
-            const data = (
-               await super.get({
-                  url: config.appbuilder.routes.mobileInit, // "/mobile/init",
-                  data: {
-                     appID: config.appbuilder.maID,
-                  },
-               })
-            ).data;
+               // go ahead and save these values:
+               await Promise.all([
+                  storage.set("user", "uuid", data.userUUID),
+                  storage.set("user", "rsaPublicKey", data.rsaPublic),
+                  storage.set("user", "appPolicy", data.appPolicy),
+               ]);
+            })(),
+         ]);
+         rsa.setKey(await storage.get("user", "rsaPublicKey"));
+         const relayState = this._relayState;
+         if (relayState.aesKeySent) {
+            lock.release();
+            return;
+         }
 
-            // go ahead and save these values:
-            await Promise.all([
-               storage.set("user", "uuid", data.userUUID),
-               storage.set("user", "rsaPublicKey", data.rsaPublic),
-               storage.set("user", "appPolicy", data.appPolicy),
-            ]);
-         })(),
-      ]);
-      rsa.setKey(await storage.get("user", "rsaPublicKey"));
-      const relayState = this._relayState;
-      if (relayState.aesKeySent) return;
+         // prevent offline attempt.
+         if (!navigator.onLine)
+            throw new Error(
+               "NetworkRelay:init(): prevent initresolve when no network conencted."
+            );
 
-      // prevent offline attempt.
-      if (!navigator.onLine)
-         throw new Error(
-            "NetworkRelay:init(): prevent initresolve when no network conencted.",
-         );
-
-      // NOTE: use super.post() here so we don't do our .post()
-      // which encrypts the data with AES ...
-      await super.post({
-         url: config.appbuilder.routes.mobileInitResolve,
-         data: {
-            rsa_aes: rsa.encrypt(
-               JSON.stringify({
-                  aesKey: relayState.aesKey,
-               }),
-            ),
-            userUUID: await storage.get("user", "uuid"),
-            appID: config.appbuilder.maID,
-            appUUID: this._appUUID,
-            tenantUUID: this._tenantUUID,
-         },
-      });
-      relayState.aesKeySent = true;
-      await storage.set("user", "relayState", relayState);
+         // NOTE: use super.post() here so we don't do our .post()
+         // which encrypts the data with AES ...
+         await super.post({
+            url: config.appbuilder.routes.mobileInitResolve,
+            data: {
+               rsa_aes: rsa.encrypt(
+                  JSON.stringify({
+                     aesKey: relayState.aesKey,
+                  })
+               ),
+               userUUID: await storage.get("user", "uuid"),
+               appID: config.appbuilder.maID,
+               appUUID: this._appUUID,
+               tenantUUID: this._tenantUUID,
+            },
+         });
+         relayState.aesKeySent = true;
+         await storage.set("user", "relayState", relayState);
+         lock.release();
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
    }
 
    /**
@@ -680,34 +705,102 @@ class NetworkRelay extends NetworkRest {
             this.pollTimerID = setTimeout(checkIn, frequency);
             return;
          }
+
+         // take a given response packet back from the server and ...
+         // you know ... process it.
+         const data =
+            (
+               await super.get({
+                  url: this._relayRequestRoute,
+                  data: { appUUID: this._appUUID },
+               })
+            ).data || [];
+         const lock = this._lock;
          try {
-            // take a given response packet back from the server and ...
-            // you know ... process it.
+            await lock.acquire();
+            const storage = this.app.resources.storage;
+            /**
+             * take the response from the Public Relay Server, and publish it to
+             * the jobResponse that was requested for it.
+             * @param {obj} response  the response packet from the server:
+             *              {
+             *                  appUUID: {string},
+             *                  data: {string},  encrypted data
+             *                  jobToken: {string}
+             *              }
+             * @response {Promise}
+             **/
+            const resolveJob = async (response) => {
+               const data = this._decrypt(response.data);
+
+               // we expect a fully wrapped data packet back:
+               // {
+               //  status: "success",
+               //  data:[]
+               // }
+
+               // find the jobToken
+               // trigger the registered .key callback
+               const jobResponses =
+                  this._jobResponses ||
+                  (await storage.get("user", "jobResponse")) ||
+                  {};
+               const jobResponse = jobResponses[response.jobToken];
+               if (jobResponse != null) {
+                  this.emit(
+                     jobResponse.key || this.defaultEventKeys.callback,
+                     jobResponse.context,
+                     data
+                  );
+                  delete jobResponses[response.jobToken];
+                  await storage.set("user", "jobResponse", jobResponses);
+               } else
+                  console.error(
+                     "!!! Unknown job token in response packet:",
+                     response.jobToken,
+                     jobResponses,
+                     data
+                  );
+               delete jobResponses[response.jobToken];
+            };
+            const saveJobPackets = async (packets, timestamps) => {
+               // save this back to our storage:
+               await storage.set("abRelayJobPackets", packets);
+
+               // update the timestamp info for any new jobs
+               for (const token in packets) {
+                  if (timestamps[token] != null) continue;
+                  timestamps[token] = Date.now();
+               }
+               await storage.set(
+                  "user",
+                  "abRelayJobPacketsTimestamps",
+                  timestamps
+               );
+            };
 
             // The big consideration here is that some packets can be excessivly
             // large (think encrypted images) and need to be split into smaller
             // packets that need to be reassembled.  We reasseble these packets
-            // before passing them off to ._resolveJob()
+            // before passing them off to resolveJob()
             await Promise.all(
-               (
-                  (
-                     await super.get({
-                        url: this._relayRequestRoute,
-                        data: { appUUID: this._appUUID },
-                     })
-                  ).data || []
-               ).map(async (e) => {
-                  if (e.totalPackets === 1) return this._resolveJob(e);
-
-                  // add this response to our pending Job Packets
-                  const storage = this.app.resources.storage;
+               data.map(async (e) => {
+                  const totalPackets = e.totalPackets;
+                  if (totalPackets === 1) {
+                     await resolveJob(e);
+                     return;
+                  }
 
                   // NOTE: it is possible that while we were waiting for storage.get()
                   // several more calls to getJobPackets() were fired off.  any processing
                   // or alterations to jobPackets inbetween these times would be overwritten
                   // by these new values, so make sure jobPackets are included in this chain:
-                  const { jobPackets, jobPacketsTimestamps } =
-                     await this._getJobPackets();
+                  const [jobPackets, jobPacketsTimestamps] = await Promise.all([
+                     storage.get("user", "abRelayJobPackets") ||
+                        Promise.resolve({}),
+                     storage.get("abRelayJobPacketsTimestamps") ||
+                        Promise.resolve({}),
+                  ]);
 
                   // Delete packets from jobs that are too old.
                   // These are jobs that were started long ago and never finished.
@@ -721,16 +814,14 @@ class NetworkRelay extends NetworkRest {
                      delete jobPacketsTimestamps[token];
                   }
 
-                  jobPackets[e.jobToken] = jobPackets[e.jobToken] || [];
-                  const packets = jobPackets[e.jobToken];
+                  const jobToken = e.jobToken;
+                  const packets = (jobPackets[jobToken] =
+                     jobPackets[jobToken] || []);
                   packets.push(e);
 
                   // now if we have a complete set, combine and resolve:
-                  if (packets.length < e.totalPackets) {
-                     await this._saveJobPackets(
-                        jobPackets,
-                        jobPacketsTimestamps,
-                     );
+                  if (packets.length < totalPackets) {
+                     await saveJobPackets(jobPackets, jobPacketsTimestamps);
                      return;
                   }
                   // not sure what order packets are in so hash them:
@@ -742,11 +833,11 @@ class NetworkRelay extends NetworkRest {
                   // Sometimes there may be missing packets even in a "complete"
                   // set. Perhaps from some of them being duplicates? Skip the
                   // process if that's the case here.
-                  for (let i = 0; i < e.totalPackets; i++) {
+                  for (let i = 0; i < totalPackets; i++) {
                      if (hash[i] != null) continue;
                      console.warn(
-                        `Weird. Missing packet[${i}/${e.totalPackets - 1}]`,
-                        packets.map((p) => p.packet),
+                        `Weird. Missing packet[${i}/${totalPackets - 1}]`,
+                        packets.map((p) => p.packet)
                      );
 
                      // Compare the duplicate packets.
@@ -767,24 +858,24 @@ class NetworkRelay extends NetworkRest {
                            }
                         if (p.data === duplicatedPacket.data) {
                            console.warn(
-                              `Duplicate packets for ${p.packet} are identical`,
+                              `Duplicate packets for ${p.packet} are identical`
                            );
                            console.warn("Dropping one of them");
                            packets.splice(j, 1);
                         } else {
                            console.warn(
-                              `Duplicate packets for ${p.packet} are different!`,
+                              `Duplicate packets for ${p.packet} are different!`
                            );
                            console.warn(
-                              `One of them is corrupted. But which one?`,
+                              `One of them is corrupted. But which one?`
                            );
                            console.warn(
                               "the packet",
-                              p.data.substring(0, 20) + "...",
+                              p.data.substring(0, 20) + "..."
                            );
                            console.warn(
                               "The duplicated packet",
-                              duplicatedPacket.data.substring(0, 20) + "...",
+                              duplicatedPacket.data.substring(0, 20) + "..."
                            );
                            console.warn("Dropping the smaller packet");
                            if (p.length < duplicatedPacket.length)
@@ -797,29 +888,28 @@ class NetworkRelay extends NetworkRest {
                      // Don't resolve job. Don't remove the packets.
                      // Maybe more packets will come in later to complete the
                      // set.
-                     await this._saveJobPackets(
-                        jobPackets,
-                        jobPacketsTimestamps,
-                     );
+                     await saveJobPackets(jobPackets, jobPacketsTimestamps);
                      return;
                   }
 
                   // then pull off 0 -> packets.length
                   let encryptedData = "";
-                  for (let i = 0; i < e.totalPackets; i++)
+                  for (let i = 0; i < totalPackets; i++)
                      encryptedData += hash[i].data;
 
                   // we can remove these pending job packets now
-                  delete jobPackets[e.jobToken];
-                  await this._resolveJob({
+                  delete jobPackets[jobToken];
+                  await resolveJob({
                      appUUID: e.appUUID,
                      data: encryptedData,
                      jobToken: e.jobToken,
                   });
-                  await this._saveJobPackets(jobPackets, jobPacketsTimestamps);
-               }),
+                  await saveJobPackets(jobPackets, jobPacketsTimestamps);
+               })
             );
+            lock.release();
          } catch (err) {
+            lock.release();
             console.error(err);
          }
          this.pollTimerID = setTimeout(checkIn, frequency);
@@ -842,75 +932,18 @@ class NetworkRelay extends NetworkRest {
    }
 
    /**
-    * take the response from the Public Relay Server, and publish it to
-    * the jobResponse that was requested for it.
-    * @param {obj} response  the response packet from the server:
-    *              {
-    *                  appUUID: {string},
-    *                  data: {string},  encrypted data
-    *                  jobToken: {string}
-    *              }
-    * @response {Promise}
+    * Early initialization. This can happen even before the auth token is
+    * setup.
+    *
+    * @param {App} app
+    *
+    * @return {Promise}
     **/
-   async _resolveJob(response) {
-      const data = this._decrypt(response.data);
-
-      // we expect a fully wrapped data packet back:
-      // {
-      //  status: "success",
-      //  data:[]
-      // }
-
-      // find the jobToken
-      // trigger the registered .key callback
-      const jobResponses =
-         this._jobResponses ||
-         (await this.app.resources.storage.get("user", "jobResponse")) ||
-         {};
-      const jobResponse = jobResponses[response.jobToken];
-      if (jobResponse != null) {
-         this.emit(
-            jobResponse.key || this.defaultEventKeys.callback,
-            jobResponse.context,
-            data
-         );
-         delete jobResponses[response.jobToken];
-         await this.app.resources.storage.set(
-            "user",
-            "jobResponse",
-            jobResponses
-         );
-      } else
-         console.error(
-            "!!! Unknown job token in response packet:",
-            response.jobToken,
-            jobResponses,
-            data
-         );
-      delete jobResponses[response.jobToken];
-   }
-
-   /**
-    * Save AB network packets to local storage.
-    **/
-   async _saveJobPackets(packets, timestamps) {
-      const storage = this.app.resources.storage;
-
-      // save this back to our storage:
-      await storage.set("abRelayJobPackets", packets);
-
-      // update the timestamp info for any new jobs
-      for (const token in packets) {
-         if (timestamps[token] != null) continue;
-         timestamps[token] = Date.now();
-      }
-      await storage.set("user", "abRelayJobPacketsTimestamps", timestamps);
-   }
-
    async init(app) {
       await super.init(app);
-      this.baseURL = config.appbuilder.urlRelayServer;
+      this.lock = new app.utils.Lock();
       this._relayRequestRoute = config.appbuilder.routes.relayRequest;
+      this.baseURL = config.appbuilder.urlRelayServer;
       this._poll(config.appbuilder.relayPollFrequencyNormal);
    }
 
@@ -958,7 +991,7 @@ class NetworkRelay extends NetworkRest {
                },
             },
             null,
-            false,
+            false
          );
          await storage.set("user", "authToken", newAuthToken);
          this._authToken = newAuthToken;
@@ -978,11 +1011,19 @@ class NetworkRelay extends NetworkRest {
    async reset() {
       const app = this.app;
       const storage = app.resources.storage;
-      await Promise.all([
-         storage.set("user", "rsaPublicKey", null),
-         storage.set("user", "relayState", null),
-         storage.set("user", "appUUID", null),
-      ]);
+      const lock = this.lock;
+      try {
+         await lock.acquire();
+         await Promise.all([
+            storage.set("user", "rsaPublicKey", null),
+            storage.set("user", "relayState", null),
+            storage.set("user", "appUUID", null),
+         ]);
+         lock.release();
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
       await this.init(app);
       await this._loadNetworkData();
    }

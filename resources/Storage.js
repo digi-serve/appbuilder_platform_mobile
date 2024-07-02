@@ -9,7 +9,7 @@
 import EventEmitter from "eventemitter2";
 import { compressAccurately } from "image-conversion";
 import CryptoJS from "crypto-js";
-import Lock from "./Lock.js";
+import Lock from "../utils/Lock.js";
 
 const DB_NAME = "app";
 const DEFAULT_FILE_SLICESIZE = 512;
@@ -128,6 +128,14 @@ class Storage extends EventEmitter {
       return `${ciphertext}:::${iv}`;
    }
 
+   /**
+    * Early initialization. This can happen even before the auth token is
+    * setup.
+    *
+    * @param {App} app
+    *
+    * @return {Promise}
+    **/
    async init(app) {
       this.app = app;
       const dcs = this.app.abDCs;
@@ -186,7 +194,7 @@ class Storage extends EventEmitter {
                         }
                         return value;
                      })) ||
-                     value,
+                     value
                );
             })()) ||
          value;
@@ -261,7 +269,7 @@ class Storage extends EventEmitter {
                   } catch (err) {
                      return result;
                   }
-               }),
+               })
             );
          };
       });
@@ -342,7 +350,7 @@ class Storage extends EventEmitter {
                   file.name,
                   {
                      type: compressedFile.type,
-                  },
+                  }
                );
                resolve(compressedFileFromBlob);
             } else {
@@ -418,7 +426,7 @@ class Storage extends EventEmitter {
             (async () => {
                this._pendingNetworkCallbacks.downloadFile = async (
                   err,
-                  result,
+                  result
                ) => {
                   if (err != null) reject(new Error(err.message));
                   if (err != null || result.uuid == null)
@@ -432,7 +440,7 @@ class Storage extends EventEmitter {
                   {
                      url: network.validRoutes.fileBase64Download.replace(
                         ":uuid",
-                        uuid,
+                        uuid
                      ),
                   },
                   {
@@ -444,7 +452,7 @@ class Storage extends EventEmitter {
                            reject(new Error(`No file data (${uuid})`));
                         resolve(result);
                      },
-                  },
+                  }
                );
             })();
          }))
@@ -480,12 +488,12 @@ class Storage extends EventEmitter {
                      if (result.uuid == null)
                         reject(
                            new Error(
-                              `Failed to upload the file! (${data.filename})`,
-                           ),
+                              `Failed to upload the file! (${data.filename})`
+                           )
                         );
                      resolve(data);
                   },
-               },
+               }
             );
          })();
       });

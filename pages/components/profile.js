@@ -39,28 +39,23 @@ class Profile extends Common {
             ],
          },
       ]);
-      this._app = null;
-      this._dc = null;
       this._userProfile = null;
-      this._username = null;
    }
 
    loadProfileData() {
-      const app = this._app || (this._app = this.page.app);
-      this._userProfile = (
-         this._dc ||
-         (this._dc = app.abDCs.find(
+      const app = this.page.app;
+      this._userProfile = app.abDCs
+         .find(
             (dc) =>
                dc.id === "User Person" ||
                // TODO (Guy): Refactor this to use only id.
                dc.name === "User Person"
-         ))
-      ).getData(
-         (e) =>
-            e["System Access"] ===
-            (this._username ||
-               (this._username = app.resources.account.userData?.user.username))
-      )[0];
+         )
+         .getData(
+            (e) =>
+               e["System Access"] ===
+               app.resources.account.userData?.user.username
+         )[0];
    }
 
    get userProfile() {

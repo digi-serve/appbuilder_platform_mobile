@@ -23,8 +23,9 @@ import translate from "./resources/Translate.js";
 // Utils
 import JSEncrypt from "jsencrypt";
 import jsQR from "jsqr";
-import pbkdf2 from "./utils/pbkdf2.js";
 import { v4 as uuidv4 } from "uuid";
+import Lock from "./utils/Lock.js";
+import pbkdf2 from "./utils/pbkdf2.js";
 
 class App extends EventEmitter {
    constructor() {
@@ -52,6 +53,7 @@ class App extends EventEmitter {
       };
       this.utils = {
          JSEncrypt,
+         Lock,
          jsQR,
          pbkdf2,
          uuidv4,
