@@ -32,6 +32,14 @@ class Analytics extends EventEmitter {
       this.ready = $.Deferred();
    }
 
+   /**
+    * Early initialization. This can happen even before the auth token is
+    * setup.
+    *
+    * @param {App} app
+    *
+    * @return {Promise}
+    **/
    async init(app) {
       this.app = app;
       if (process.env.NODE_ENV == "production") {
@@ -63,7 +71,7 @@ class Analytics extends EventEmitter {
       const getMemoryUsage = () => {
          const memoryInfo = performance.memory || {};
          return memoryInfo.usedJSHeapSize; // Memory used by JavaScript in bytes
-      }
+      };
       const memoryThreshold = 450000000; // ios threshold in bytes
       const memoryPanic = 500000000; // ios threshold in bytes
       const monitoringInterval = 5000; // Example interval in milliseconds
@@ -81,7 +89,7 @@ class Analytics extends EventEmitter {
             console.error("Firing memory error message: ", alertMessage);
             this.logError(memoryError);
          }
-      }
+      };
       // Set up the monitoring interval
       setInterval(monitorMemoryUsage, monitoringInterval);
 

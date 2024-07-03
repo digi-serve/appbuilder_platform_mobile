@@ -144,36 +144,46 @@ class AppPage extends Common {
             // This relies on the account object from the previous step.
             if (account.userData?.user.username == null)
                throw new Error("Not found an user.");
-            // this.app.abDCs.forEach(dc => {
-            //    pendingPromises.push(dc.init());
-            // });
-            // pendingPromises.forEach(async (pendingPromise) => {
-            //    try {
-            //       await pendingPromise;
-            //    } catch (err) {
-            //       console.error(err);
-            //    }
-            // })
-            pendingPromises = [];
-
-            // Initialize the AB applications
-            const pendingInitializedApps = [];
-            this.applications.forEach((app) => {
-               pendingInitializedApps.push(app.init(this));
-               const routes = app.routes;
-               menuRoutes.push(...routes.menuRoutes);
-               mainRoutes.push(...routes.mainRoutes);
+            this.app.abDCs.forEach((dc) => {
+               pendingPromises.push(
+                  (async () => {
+                     await dc.init();
+                     await dc.loadData();
+                  })()
+               );
             });
+
             (async () => {
                await Promise.all(
-                  pendingInitializedApps.map(async (pendingInitializedApp) => {
+                  pendingPromises.map(async (pendingPromise) => {
                      try {
-                        await pendingInitializedApp;
+                        await pendingPromise;
                      } catch (err) {
                         console.error(err);
                      }
                   })
                );
+               pendingPromises = [];
+
+               // Initialize the AB applications
+               // TODO (Guy):
+               this.applications.forEach((app) => {
+                  pendingPromises.push(app.init(this));
+                  const routes = app.routes;
+                  menuRoutes.push(...routes.menuRoutes);
+                  mainRoutes.push(...routes.mainRoutes);
+               });
+
+               await Promise.all(
+                  pendingPromises.map(async (pendingPromise) => {
+                     try {
+                        await pendingPromise;
+                     } catch (err) {
+                        console.error(err);
+                     }
+                  })
+               );
+               pendingPromises = null;
                this._checkForUpdate(true);
             })();
          } catch (err) {
@@ -214,20 +224,30 @@ class AppPage extends Common {
       if (!this._isUpdating) return;
       const app = this.app;
       setTimeout(async () => {
-         try {
-            const pendingPromises = [];
-            pendingPromises.push(app.resources.account.loadUserData(true));
-            // app.abDCs.forEach((abDC) => {
-            //    pendingPromises.push(abDC.updateSyncData());
-            // });
-            await Promise.all(pendingPromises);
-            // TODO:
-            // loadProfileData() is no longer a thing?  How do we initialize the
-            // Profile Display?
-            this.components.profile.loadProfileData();
-         } catch (err) {
-            console.error(err);
-         }
+         await Promise.all(
+            [
+               (async () => {
+                  try {
+                     await app.resources.account.loadUserData(true);
+                  } catch (err) {
+                     console.error(err);
+                  }
+               })(),
+            ].concat(
+               app.abDCs.map(async (abDC) => {
+                  try {
+                     await abDC.updateSyncData();
+                  } catch (err) {
+                     console.error(err);
+                  }
+               })
+            )
+         );
+
+         // TODO:
+         // loadProfileData() is no longer a thing?  How do we initialize the
+         // Profile Display?
+         this.components.profile.loadProfileData();
          console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);

@@ -85,6 +85,14 @@ class Translate extends EventEmitter {
       this.translateDOM();
    }
 
+   /**
+    * Early initialization. This can happen even before the auth token is
+    * setup.
+    *
+    * @param {App} app
+    *
+    * @return {Promise}
+    **/
    async init(app) {
       this.app = app;
    }

@@ -49,7 +49,7 @@ export default class ABAppController extends EventEmitter2 {
       this.abApp = app.abApp;
       if (dcIDs?.length > 0)
          this._datacollections = app.abDCs.filter(
-            (dc) => dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1,
+            (dc) => dcIDs.indexOf(dc.id) > -1 || dcIDs.indexOf(dc.name) > -1
          );
 
       return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ export default class ABAppController extends EventEmitter2 {
          const allInits = [];
          this._datacollections.forEach((dc) => {
             if (dc == null) return;
-            allInits.push(dc.init());
+            allInits.push(dc.loadData());
          });
 
          (async () => {
@@ -129,7 +129,7 @@ export default class ABAppController extends EventEmitter2 {
     */
    dataCollection(key) {
       return this._datacollections.find(
-         (dc) => dc.id === key || dc.name === key || dc.label == key,
+         (dc) => dc.id === key || dc.name === key || dc.label == key
       );
    }
 
@@ -153,7 +153,7 @@ export default class ABAppController extends EventEmitter2 {
       );
       if (object == null) return results;
       const field = object.fields(
-         (f) => f.id === fieldKey || f.columnName === fieldKey,
+         (f) => f.id === fieldKey || f.columnName === fieldKey
       )[0];
       if (field == null) return results;
 
@@ -187,7 +187,7 @@ export default class ABAppController extends EventEmitter2 {
          (obj) =>
             obj.id === key ||
             // TODO (Guy): Refactor this to use only id.
-            obj.name === key,
+            obj.name === key
       );
    }
 
