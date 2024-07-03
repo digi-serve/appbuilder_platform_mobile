@@ -250,7 +250,8 @@ class Camera extends EventEmitter {
          const compressFile = await this._recurseShrink(file, null, {
             timeout,
          });
-         const imageUUID = uuid();
+         const imageUUID = this.app.utils.uuidv4()
+
          return {
             uuid: imageUUID,
             filename: `${imageUUID}_${compressFile.name}`,
@@ -292,7 +293,8 @@ class Camera extends EventEmitter {
             }
          );
 
-         const imageUUID = uuid();
+         const imageUUID = this.app.utils.uuidv4()
+
          return {
             uuid: imageUUID,
             filename: `${imageUUID}_${file.name}`,

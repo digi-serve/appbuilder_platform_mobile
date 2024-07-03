@@ -436,6 +436,7 @@ class NetworkRelay extends NetworkRest {
       });
       this.on(this.defaultEventKeys.callback, (context, res) => {
          let instance = this.app;
+         console.assert(context, `no context${context}`)
          const targetEventPath = context.targetEventPath;
          if (targetEventPath != null) {
             const pathKeys = targetEventPath.split(".");
