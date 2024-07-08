@@ -5,21 +5,6 @@
 
 import Common from "./classes/Common.js";
 
-const dcIDs = [
-   "User Person",
-   "Family Members",
-   // "Address",
-   "Assignments - mobile",
-   "City",
-   "Email - mobile",
-   // "Languages",
-   // "Phone - Mobile", /// ! ABSCENT
-   "Social Media - mobile",
-   // "Family Worker Information",
-   // "Family Emails",
-   // "Social Media",
-];
-
 class Profile extends Common {
    /**
     */
@@ -42,20 +27,23 @@ class Profile extends Common {
       this._userProfile = null;
    }
 
+   async init(page) {
+      await super.init(page);
+      this.dc = this.page.app.abDCs.find(
+         (abDC) =>
+            abDC.id === "User Person" ||
+            // TODO (Guy):
+            abDC.name === "User Person"
+      );
+   }
+
    loadProfileData() {
       const app = this.page.app;
-      this._userProfile = app.abDCs
-         .find(
-            (dc) =>
-               dc.id === "User Person" ||
-               // TODO (Guy): Refactor this to use only id.
-               dc.name === "User Person"
-         )
-         .getData(
-            (e) =>
-               e["System Access"] ===
-               app.resources.account.userData?.user.username
-         )[0];
+      this._userProfile = this.dc.getData(
+         (e) =>
+            e["System Access"] ===
+            this.page.app.resources.account.userData?.user.username
+      )[0];
    }
 
    get userProfile() {

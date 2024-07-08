@@ -114,12 +114,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                case "data":
                   const data = dcData[key];
                   if (data.length === 0) break;
-                  if (this._latestItemDatetime == null)
+                  const isSourceTypeObject = this.sourceType === "object";
+                  if (isSourceTypeObject && this._latestItemDatetime == null)
                      this._latestItemDatetime = data[0]["updated_at"];
                   for (const value of data) {
                      if (
+                        isSourceTypeObject &&
                         new Date(this._latestItemDatetime) <
-                        new Date(value["updated_at"])
+                           new Date(value["updated_at"])
                      )
                         this._latestItemDatetime = value["updated_at"];
                      pendingPromises.push(
@@ -383,13 +385,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                }
                const dcData = await this._getDCData();
                const data = dcData.data;
+               const isSourceTypeObject = this.sourceType === "object";
                if (data.length > 0) {
-                  if (this._latestItemDatetime == null)
+                  if (isSourceTypeObject && this._latestItemDatetime == null)
                      this._latestItemDatetime = data[0]["updated_at"];
                   for (const value of data)
                      if (
+                        isSourceTypeObject &&
                         new Date(this._latestItemDatetime) <
-                        new Date(value["updated_at"])
+                           new Date(value["updated_at"])
                      )
                         this._latestItemDatetime = value["updated_at"];
                }
@@ -557,6 +561,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          default:
             break;
       }
+      const isSourceTypeObject = this.sourceType === "object";
       const saveData = async (dcData) => {
          let pendingPromises = [];
          const lock = this._lock;
@@ -581,13 +586,17 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         this.__totalCount = this.__totalCount + 1;
                      } else {
                         await storage.set(refStorage, key, value);
-                        const oldValue =
-                           this.getData((e) => e.key === key)[0](
-                              oldValue == null &&
-                                 this.__dataCollection.add(value)
-                           ) || this.__dataCollection.updateItem(key, value);
+                        const oldValue = this.getData((e) => e.key === key)[0];
+                        (oldValue == null &&
+                           this.__dataCollection.add(value)) ||
+                           this.__dataCollection.updateItem(key, value);
                      }
-                     this._latestItemDatetime = value["updated_at"];
+                     if (
+                        isSourceTypeObject &&
+                        new Date(this._latestItemDatetime) <
+                           new Date(value["updated_at"])
+                     )
+                        this._latestItemDatetime = value["updated_at"];
                   })()
                );
 
@@ -614,30 +623,43 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             throw err;
          }
       }
-      const cond = structuredClone(this._cond);
-      const where = cond.where || {};
-      if (where.glue == null) where.glue = "and";
-      if (where.rules == null) where.rules = [];
-      if (where.glue === "or") {
-         where.rules = [structuredClone(where)];
-         where.glue = "and";
-      }
-      const rules = where.rules;
-      if (this._latestItemDatetime == null)
-         rules.push({
-            key: "updated_at",
-            rule: "less_or_equal_current",
-            value: "",
-         });
-      else
-         rules.push({
-            key: "updated_at",
-            rule: "greater",
-            value: moment(new Date(this._latestItemDatetime).toISOString())
-               .utc()
-               .format("YYYY-MM-DD HH:mm:ss"),
-         });
       try {
+         if (!isSourceTypeObject) {
+            await saveData(
+               await this.model.findAll(this._cond, {
+                  backupEvent: "backupCall",
+                  backupMethod: "updateSyncData",
+                  backupMethodArgs: [],
+               })
+            );
+            this._isSyncing = false;
+            return;
+         }
+         const cond = structuredClone(this._cond);
+         const where = cond.where || {};
+         if (where.glue == null) where.glue = "and";
+         if (where.rules == null) where.rules = [];
+         if (where.glue === "or") {
+            where.rules = [structuredClone(where)];
+            where.glue = "and";
+         }
+         const rules = where.rules;
+         if (this._latestItemDatetime == null)
+            rules.push({
+               key: "updated_at",
+               rule: "less_or_equal",
+               value: moment(new Date().toISOString())
+                  .utc()
+                  .format("YYYY-MM-DD HH:mm:ss"),
+            });
+         else
+            rules.push({
+               key: "updated_at",
+               rule: "greater",
+               value: moment(new Date(this._latestItemDatetime).toISOString())
+                  .utc()
+                  .format("YYYY-MM-DD HH:mm:ss"),
+            });
          await saveData(
             await this.model.findAll(cond, {
                backupEvent: "backupCall",
@@ -646,7 +668,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             })
          );
          this._isSyncing = false;
-         return;
       } catch (err) {
          this._isSyncing = false;
          throw err;

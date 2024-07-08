@@ -1,0 +1,314 @@
+<style>
+   #attach-feedback-image {
+      display: block;
+   }
+   .with-preview-image #attach-feedback-image {
+      display: none;
+   }
+   #attach-feedback-image a {
+      width: 100%;
+      margin: 1em 2em;
+   }
+   #attach-feedback-image a i.fas {
+      padding-right: 0.5em;
+   }
+   #attach-feedback-image a t {
+      padding-left: 0.5em;
+   }
+
+   #clear-feedback-image {
+      display: none;
+   }
+   .with-preview-image #clear-feedback-image {
+      display: block;
+   }
+   #clear-feedback-image a {
+      width: 100%;
+      margin: 1em 2em;
+   }
+
+   #preview-feedback-image {
+      display: none;
+   }
+   .with-preview-image #preview-feedback-image {
+      display: block;
+   }
+   #preview-feedback-image img {
+      max-width: 60%;
+      max-height: 10em;
+      margin: 0.5em auto;
+   }
+</style>
+
+<!-- framework7 component template -->
+<template>
+   <div class="popup">
+      {{#if imageURL}}
+      <div class="page with-preview-image" id="feedback-page">
+         <div class="navbar">
+            <div class="navbar-bg"></div>
+            <div class="navbar-inner sliding">
+               <div class="title" translate="1">Send Feedback</div>
+            </div>
+         </div>
+         <div class="page-content">
+            <div class="list">
+               <ul>
+                  <li>
+                     <div class="item-content item-input">
+                        <div class="item-inner">
+                           <div class="item-title item-label" translate="1">
+                              Note
+                           </div>
+                           <div class="item-input-wrap">
+                              <textarea
+                                 id="feedback-note"
+                                 placeholder="Describe your issue or share your ideas."
+                              >
+{{note}}</textarea
+                              >
+                              <span class="input-clear-button"></span>
+                           </div>
+                        </div>
+                     </div>
+                  </li>
+               </ul>
+            </div>
+
+            <div class="list">
+               <ul>
+                  <li id="info-feedback-image">
+                     <div class="item-content item-input">
+                        <div class="item-inner">
+                           <div class="item-title item-label" translate="1">
+                              Optional
+                           </div>
+                           <div class="item-text">
+                              <t
+                                 >You may use your phone to take a screenshot,
+                                 and then return here to attach the image.</t
+                              >
+                           </div>
+                        </div>
+                     </div>
+                  </li>
+                  <li id="attach-feedback-image">
+                     <div class="item-content">
+                        <div class="item-inner">
+                           <a class="button button-fill">
+                              <i class="fas fa-paperclip"></i>
+                              <t>Include Screenshot</t>
+                           </a>
+                        </div>
+                     </div>
+                  </li>
+                  <li id="clear-feedback-image">
+                     <div class="item-content">
+                        <div class="item-inner">
+                           <a class="button button-fill">
+                              <i class="fas fa-trash"></i>
+                           </a>
+                        </div>
+                     </div>
+                  </li>
+                  <li id="preview-feedback-image">
+                     <div class="item-inner">
+                        <img src="{{imageURL}}" />
+                     </div>
+                  </li>
+               </ul>
+            </div>
+
+            <div class="block block-strong row">
+               <div class="col">
+                  <a
+                     href="#"
+                     class="button link popup-close"
+                     id="cancel-send-feedback"
+                     translate="1"
+                     >Cancel</a
+                  >
+               </div>
+               <div class="col">
+                  <a
+                     href="#"
+                     class="button link"
+                     id="submit-send-feedback"
+                     translate="1"
+                     >Send</a
+                  >
+               </div>
+            </div>
+         </div>
+      </div>
+      {{else}}
+      <div class="page" id="feedback-page">
+         <div class="navbar">
+            <div class="navbar-bg"></div>
+            <div class="navbar-inner sliding">
+               <div class="title" translate="1">Send Feedback</div>
+            </div>
+         </div>
+         <div class="page-content">
+            <div class="list">
+               <ul>
+                  <li>
+                     <div class="item-content item-input">
+                        <div class="item-inner">
+                           <div class="item-title item-label" translate="1">
+                              Note
+                           </div>
+                           <div class="item-input-wrap">
+                              <textarea
+                                 id="feedback-note"
+                                 placeholder="Describe your issue or share your ideas."
+                              >
+{{note}}</textarea
+                              >
+                              <span class="input-clear-button"></span>
+                           </div>
+                        </div>
+                     </div>
+                  </li>
+               </ul>
+            </div>
+            <div class="list">
+               <ul>
+                  <li id="info-feedback-image">
+                     <div class="item-content item-input">
+                        <div class="item-inner">
+                           <div class="item-title item-label" translate="1">
+                              Optional
+                           </div>
+                           <div class="item-text">
+                              <t
+                                 >You may use your phone to take a screenshot,
+                                 and then return here to attach the image.</t
+                              >
+                           </div>
+                        </div>
+                     </div>
+                  </li>
+                  <li id="attach-feedback-image">
+                     <div class="item-content">
+                        <div class="item-inner">
+                           <a class="button button-fill">
+                              <i class="fas fa-paperclip"></i>
+                              <t>Include Screenshot</t>
+                           </a>
+                        </div>
+                     </div>
+                  </li>
+                  <li id="clear-feedback-image">
+                     <div class="item-content">
+                        <div class="item-inner">
+                           <a class="button button-fill">
+                              <i class="fas fa-trash"></i>
+                           </a>
+                        </div>
+                     </div>
+                  </li>
+                  <li id="preview-feedback-image">
+                     <div class="item-inner">
+                        <img src="{{imageURL}}" />
+                     </div>
+                  </li>
+               </ul>
+            </div>
+
+            <div class="block block-strong row">
+               <div class="col">
+                  <a
+                     href="#"
+                     class="button link popup-close"
+                     id="cancel-send-feedback"
+                     translate="1"
+                     >Cancel</a
+                  >
+               </div>
+               <div class="col">
+                  <a
+                     href="#"
+                     class="button link"
+                     id="submit-send-feedback"
+                     translate="1"
+                     >Send</a
+                  >
+               </div>
+            </div>
+         </div>
+      </div>
+      {{/if}}
+   </div>
+</template>
+
+<!-- framework7 component script -->
+<script>
+   const cachedState = {
+      note: "",
+      imageURL: "",
+   };
+   return {
+      data() {
+         const feedback = this.$root.app.pages.appPage.components.feedback;
+         cachedState.note = feedback.note;
+         cachedState.imageURL = feedback.photoURL;
+         return cachedState;
+      },
+      on: {
+         popupOpen() {
+            const $app = this.$app;
+            const feedback = this.$root.app.pages.appPage.components.feedback;
+
+            // Save note in memory in case user wants to come back to it later
+            this.$("#feedback-note").on("change", (ev) => {
+               feedback.note = $(ev.target).val();
+            });
+
+            // Attach screenshot image
+            this.$("#attach-feedback-image a").on("click", async (ev) => {
+               ev.preventDefault();
+
+               const result = await feedback.getPhoto();
+               this.$("#preview-feedback-image img").attr(
+                  "src",
+                  feedback.photoURL
+               );
+
+               // This reveals the <img> and hides the attach button
+               $("#feedback-page").addClass("with-preview-image");
+            });
+
+            // Clear screenshot image
+            this.$("#clear-feedback-image a").on("click", (ev) => {
+               ev.preventDefault();
+
+               feedback.deletePhoto();
+
+               // This hides the <img> and reveals the attach button
+               $("#feedback-page").removeClass("with-preview-image");
+            });
+
+            // Send feedback
+            this.$("#submit-send-feedback").on("click", async (ev) => {
+               ev.preventDefault();
+
+               const $textarea = $("#feedback-note");
+               const note = $textarea.val();
+
+               try {
+                  // Post to server
+                  await feedback.sendFeedback(note);
+                  // After submitting form, clear feedback data
+                  $textarea.val("");
+                  feedback.note = "";
+                  await feedback.deletePhoto();
+                  $app.popup.close();
+               } catch (err) {
+                  $app.dialog.alert(err.message || err, "<t>Error</t>");
+               }
+            });
+         },
+      },
+   };
+</script>

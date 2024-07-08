@@ -9,8 +9,8 @@
 
 import Common from "./classes/Common.js";
 
-import ABApplicationList from "../../applications/applications.js";
-
+// Components
+import feedback from "./components/feedback.js";
 import inbox from "./components/inbox.js";
 import landing from "./components/landing.js";
 import nav from "./components/nav.js";
@@ -31,9 +31,9 @@ class AppPage extends Common {
       // TODO (Guy): Refactor this in the future;
       this._isUpdating = false;
       this._pendingApplicationReset = false;
-      this.applications = [];
       this.appView = null;
       this.components = {
+         feedback,
          inbox,
          landing,
          nav,
@@ -44,7 +44,8 @@ class AppPage extends Common {
       this.f7App = null;
       this.menuView = null;
       this.on("ready", async (callback) => {
-         const resources = this.app.resources;
+         const app = this.app;
+         const resources = app.resources;
          const account = resources.account;
          const busy = resources.busy;
          const network = resources.network;
@@ -136,44 +137,35 @@ class AppPage extends Common {
                   }
                }
                await Promise.all(pendingPromises);
-               pendingPromises = [];
             } catch (err) {
                console.error("appPage.js: Error trying to init routes: ", err);
             }
+            pendingPromises = [];
+            app.applications.forEach((app) => {
+               pendingPromises.push(app.init(this));
+               const routes = app.routes;
+               if (routes.mainRoutes != null)
+                  mainRoutes.push(...routes.mainRoutes);
+               if (routes.menuRoutes != null)
+                  menuRoutes.push(...routes.menuRoutes);
+            });
 
             // This relies on the account object from the previous step.
             if (account.userData?.user.username == null)
                throw new Error("Not found an user.");
-            this.app.abDCs.forEach((dc) => {
-               pendingPromises.push(
-                  (async () => {
-                     await dc.init();
-                     await dc.loadData();
-                  })()
-               );
-            });
-
             (async () => {
                await Promise.all(
-                  pendingPromises.map(async (pendingPromise) => {
-                     try {
-                        await pendingPromise;
-                     } catch (err) {
-                        console.error(err);
-                     }
-                  })
+                  app.abDCs.map((dc) =>
+                     (async () => {
+                        try {
+                           await dc.init();
+                           await dc.loadData();
+                        } catch (err) {
+                           console.error(err);
+                        }
+                     })()
+                  )
                );
-               pendingPromises = [];
-
-               // Initialize the AB applications
-               // TODO (Guy):
-               this.applications.forEach((app) => {
-                  pendingPromises.push(app.init(this));
-                  const routes = app.routes;
-                  menuRoutes.push(...routes.menuRoutes);
-                  mainRoutes.push(...routes.mainRoutes);
-               });
-
                await Promise.all(
                   pendingPromises.map(async (pendingPromise) => {
                      try {
@@ -190,32 +182,31 @@ class AppPage extends Common {
             console.error(err);
          }
          busy.hide();
-
-         // Start up main Framework7 routing.
-         // Requires app data to already be initialized.
-         // on bootup, try to flush any network Queues
-         busy.show("Starting up main Framework7 routing");
          try {
+            // Start up main Framework7 routing.
+            // Requires app data to already be initialized.
+            // on bootup, try to flush any network Queues
+            busy.show("Starting up main Framework7 routing");
             await network.queueFlush();
+
+            // Begin Framework7 router
+            // Menu view
+            const f7AppViews = f7App.views;
+            this.appView = f7AppViews.create("#main-view", {
+               url: "/",
+               routes: mainRoutes,
+            });
+            this.menuView = f7AppViews.create("#left-view", {
+               url: "/nav/",
+               routes: menuRoutes,
+            });
+            busy.hide();
+            if (callback == null) return;
+            const callbackResult = callback();
+            if (callbackResult instanceof Promise) await callbackResult;
          } catch (err) {
             console.error(err);
          }
-
-         // Begin Framework7 router
-         // Menu view
-         const f7AppViews = f7App.views;
-         this.appView = f7AppViews.create("#main-view", {
-            url: "/",
-            routes: mainRoutes,
-         });
-         this.menuView = f7AppViews.create("#left-view", {
-            url: "/nav/",
-            routes: menuRoutes,
-         });
-         busy.hide();
-         if (callback == null) return;
-         const callbackResult = callback();
-         if (callbackResult instanceof Promise) await callbackResult;
       });
    }
 
@@ -255,6 +246,7 @@ class AppPage extends Common {
 
    async init(app) {
       await super.init(app);
+
       // Framework7 is the UI library
       this.f7App ||
          (this.f7App = new Framework7({
@@ -291,23 +283,6 @@ class AppPage extends Common {
             else if (page.route?.path != null) pageName = page.route.path;
             this.app.resources.analytics.pageView(pageName);
          });
-
-      // TODO (Guy): Refactor these in the future.
-      let applications = ABApplicationList.map((App) => new App());
-      const feedback = applications.find((app) => app.ID === "Feedback");
-      applications = applications.filter((app) => {
-         switch (app.ID) {
-            case "Feedback":
-               return false;
-            default:
-               return true;
-         }
-      });
-      this.applications = applications;
-
-      // Component objects that will be referenced by F7 component code
-      const components = this.components;
-      components.feedback = feedback;
    }
 
    /**
@@ -351,8 +326,8 @@ class AppPage extends Common {
    }
 
    getApplicationByID(id) {
-      return this.applications.find((app) => {
-         return app.ID === id;
+      return this.app.applications.find((app) => {
+         return app.id === id;
       });
    }
 
@@ -404,7 +379,7 @@ class AppPage extends Common {
     * @param {string} datacollection
     */
    fetchRecordData(app, datacollection) {
-      const targetDC = this.applications
+      const targetDC = this.app.applications
          .find((a) => {
             return a.ID === app;
          })
@@ -434,12 +409,13 @@ class AppPage extends Common {
       // TODO: Implement any additional logic or actions required after clearing and getting new code
 
       // Reset the cached application data
-      await this.app.resources.network.init(this.app);
+      const app = this.app;
+      await app.resources.network.init(this.app);
       const allClears = [];
       const allResets = [];
 
       // tell all apps to .init() again
-      this.applications.forEach((app) => {
+      app.applications.forEach((app) => {
          if (app.clearSystemData != null) allClears.push(app.clearSystemData());
          allResets.push(app.reset());
       });

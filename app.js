@@ -35,7 +35,6 @@ class App extends EventEmitter {
       this._abDatacollections = [];
       this._abObjects = [];
       this._abQuerys = [];
-      this._isInitializedListener = false;
       this.f7App = null;
       this.pages = {
          appPage,
@@ -61,10 +60,10 @@ class App extends EventEmitter {
       };
    }
 
-   async init(appbuilderDefinitions, abAppUUID) {
+   async init(appbuilderDefinitions, applications) {
       const AB = (this._AB = new ABFactory(appbuilderDefinitions));
+      this._applications = applications;
       await AB.init(this);
-      // this._abApps = AB.applicationByID(abAppUUID);
       this._abApps = AB.applications();
       this._abDCs = AB.datacollections();
       this._abObjs = AB.objects();
@@ -82,8 +81,6 @@ class App extends EventEmitter {
       // Force garbade collector.
       pendingPromises = null;
       const appPage = pages.appPage;
-
-      if (this._isInitializedListener) return;
       const passwordPage = pages.passwordPage;
       const loadingPage = pages.loadingPage;
       passwordPage.on("loading", () => {
@@ -110,11 +107,10 @@ class App extends EventEmitter {
          passwordPage.emit("loading");
          appPage.forceApplicationReset(true);
       });
-      this._isInitializedListener = true;
    }
 
    languageDefault() {
-      return this.resources.translate.langCode || "en"
+      return this.resources.translate.langCode || "en";
    }
 
    show(pageKey) {
@@ -141,6 +137,10 @@ class App extends EventEmitter {
 
    get abObjs() {
       return this._abObjs;
+   }
+
+   get applications() {
+      return this._applications;
    }
 
    get buildTimeStamp() {
