@@ -455,8 +455,8 @@ class Storage extends EventEmitter {
    }
 
    uploadFile(objID, fieldID, data) {
-      if (data.fileEntry.type)
-         throw new Error(`This file type is invalid: ${type}`);
+      // if (data.fileEntry.type)
+      //    throw new Error(`This file type is invalid: ${type}`);
       return new Promise((resolve, reject) => {
          (async () => {
             await this.app.resources.network.post(
@@ -473,7 +473,7 @@ class Storage extends EventEmitter {
                   },
                },
                {
-                  targetEventKey: KEY_UPLOAD_FILE,
+                  targetEventKey: EVENT_KEY_UPLOAD_FILE,
                   targetEventPath: EVENT_PATH,
                   data: {
                      fileEntry: data.fileEntry,
