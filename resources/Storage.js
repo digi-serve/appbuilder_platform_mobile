@@ -9,14 +9,13 @@
 import EventEmitter from "eventemitter2";
 import { compressAccurately } from "image-conversion";
 import CryptoJS from "crypto-js";
-import Lock from "../utils/Lock.js";
 
 const DB_NAME = "app";
 const DEFAULT_FILE_SLICESIZE = 512;
 const EVENT_KEY_DOWNLOAD_FILE = "download.file";
 const EVENT_KEY_UPLOAD_FILE = "upload.file";
 const EVENT_PATH = "resources.storage";
-const defaultTableKeys = ["inbox", "jobResponse", "file", "user"];
+const defaultTableKeys = ["inbox", "jobPacket", "jobResponse", "file", "user"];
 
 class Storage extends EventEmitter {
    constructor() {
@@ -29,10 +28,6 @@ class Storage extends EventEmitter {
       this._pendingNetworkCallbacks = {
          downloadFile: null,
          uploadFile: null,
-      };
-      this._queueLocks = {
-         // a constant reference to available Synchronization Locks.
-         /* key : Lock() */
       };
       this.app = null;
       this.on(EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
@@ -497,20 +492,6 @@ class Storage extends EventEmitter {
             );
          })();
       });
-   }
-
-   /**
-    * Lock
-    * expose an Async Lock for a given Key.  This is designed to
-    * help ModelLocal objects synchronize data access.
-    * @param {string} key  a unique key (probably the ABObject.name)
-    * @return {Lock}
-    */
-   Lock(key) {
-      if (!this._queueLocks[key]) {
-         this._queueLocks[key] = new Lock(key);
-      }
-      return this._queueLocks[key];
    }
 
    get config() {

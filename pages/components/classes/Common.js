@@ -11,13 +11,16 @@ import EventEmitter from "eventemitter2";
 class Common extends EventEmitter {
    /**
     */
-   constructor(mainRoutes, menuRoutes, options) {
-      super(options);
-      this.page = null;
+   constructor(mainRoutes = [], menuRoutes = [], options = {}) {
+      super({
+         wildcard: options.wildcard ?? false,
+      });
+      this._dc = null;
       this._routes = {
          mainRoutes: (Array.isArray(mainRoutes) && mainRoutes) || [],
          menuRoutes: (Array.isArray(menuRoutes) && menuRoutes) || [],
       };
+      this.page = null;
    }
 
    get routes() {
@@ -26,6 +29,14 @@ class Common extends EventEmitter {
 
    async init(page) {
       this.page = page;
+   }
+
+   get dc() {
+      return this._dc;
+   }
+
+   set dc(value) {
+      this._dc = value;
    }
 }
 

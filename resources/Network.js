@@ -171,6 +171,7 @@ class NetworkRest extends EventEmitter {
     * @return {Promise}
     */
    async init(app) {
+      this._lock = new app.utils.Lock();
       this.app = app;
    }
 
@@ -344,10 +345,6 @@ class NetworkRest extends EventEmitter {
       return this._lock;
    }
 
-   set lock(value) {
-      this._lock = value;
-   }
-
    /**
     * sub classes can override this for their own separate Queue Data
     * @return {string}
@@ -398,9 +395,6 @@ class NetworkRelay extends NetworkRest {
       this._appUUID = null;
       this._importInProgress = false;
       this._isPolling = false;
-
-      // TODO (Guy): Storage won't save string encryption for callback functions. I will fix it later.
-      this._jobResponses = {};
       this._relayRequestRoute = null;
       this._relayState = null;
       this._tenantUUID = null;
@@ -483,14 +477,9 @@ class NetworkRelay extends NetworkRest {
          const app = this.app;
          const storage = app.resources.storage;
          const jobToken = app.utils.uuidv4();
-         const jobResponses =
-            this._jobResponses ||
-            (await storage.get("user", "jobResponse")) ||
-            {};
 
          // add our jobToken to the local data:
-         jobResponses[jobToken] = jobResponse;
-         await storage.set("user", "jobResponse", jobResponses);
+         await storage.set("jobResponse", jobToken, jobResponse);
          lock.release();
 
          // Split up large data into smaller packets
@@ -582,15 +571,6 @@ class NetworkRelay extends NetworkRest {
          const rsa = new app.utils.JSEncrypt();
          const storage = app.resources.storage;
          await Promise.all([
-            (async () => {
-               const jobResponses = await storage.get("user", "jobResponse");
-               if (jobResponses != null) {
-                  this._jobResponses = jobResponses;
-                  return;
-               }
-               await storage.set("user", "jobResponse", {});
-               this._jobResponses = {};
-            })(),
             (async () => {
                const relayState = (await storage.get("user", "relayState")) || {
                   aesKey: null,
@@ -716,7 +696,7 @@ class NetworkRelay extends NetworkRest {
                   data: { appUUID: this._appUUID },
                })
             ).data || [];
-         const lock = this._lock;
+         const lock = this.lock;
          try {
             await lock.acquire();
             const storage = this.app.resources.storage;
@@ -742,31 +722,26 @@ class NetworkRelay extends NetworkRest {
 
                // find the jobToken
                // trigger the registered .key callback
-               const jobResponses =
-                  this._jobResponses ||
-                  (await storage.get("user", "jobResponse")) ||
-                  {};
-               const jobResponse = jobResponses[response.jobToken];
-               if (jobResponse != null) {
+               const jobToken = response.jobToken;
+               const jobResponse = await storage.get("jobResponse", jobToken);
+               if (jobResponse != null)
                   this.emit(
                      jobResponse.key || this.defaultEventKeys.callback,
                      jobResponse.context,
                      data
                   );
-                  delete jobResponses[response.jobToken];
-                  await storage.set("user", "jobResponse", jobResponses);
-               } else
+               else
                   console.error(
                      "!!! Unknown job token in response packet:",
-                     response.jobToken,
-                     jobResponses,
+                     jobToken,
+                     jobResponse,
                      data
                   );
-               delete jobResponses[response.jobToken];
+               await storage.clear("jobResponse", jobToken);
             };
             const saveJobPackets = async (packets, timestamps) => {
                // save this back to our storage:
-               await storage.set("abRelayJobPackets", packets);
+               await storage.set("user", "abRelayJobPackets", packets);
 
                // update the timestamp info for any new jobs
                for (const token in packets) {
@@ -799,7 +774,7 @@ class NetworkRelay extends NetworkRest {
                   const [jobPackets, jobPacketsTimestamps] = await Promise.all([
                      storage.get("user", "abRelayJobPackets") ||
                         Promise.resolve({}),
-                     storage.get("abRelayJobPacketsTimestamps") ||
+                     storage.get("user", "abRelayJobPacketsTimestamps") ||
                         Promise.resolve({}),
                   ]);
 
@@ -942,7 +917,6 @@ class NetworkRelay extends NetworkRest {
     **/
    async init(app) {
       await super.init(app);
-      this.lock = new app.utils.Lock();
       this._relayRequestRoute = config.appbuilder.routes.relayRequest;
       this.baseURL = config.appbuilder.urlRelayServer;
       this._poll(config.appbuilder.relayPollFrequencyNormal);
@@ -1019,6 +993,7 @@ class NetworkRelay extends NetworkRest {
             storage.set("user", "rsaPublicKey", null),
             storage.set("user", "relayState", null),
             storage.set("user", "appUUID", null),
+            storage.clearAll("jobResponse"),
          ]);
          lock.release();
       } catch (err) {
