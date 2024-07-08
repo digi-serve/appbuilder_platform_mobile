@@ -38,7 +38,6 @@ class Profile extends Common {
    }
 
    loadProfileData() {
-      const app = this.page.app;
       this._userProfile = this.dc.getData(
          (e) =>
             e["System Access"] ===
