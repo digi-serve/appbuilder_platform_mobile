@@ -745,7 +745,9 @@ class NetworkRelay extends NetworkRest {
 
                // update the timestamp info for any new jobs
                for (const token in packets) {
-                  if (timestamps[token] != null) continue;
+                  if (timestamps && timestamps[token] != null) continue;
+                  
+                  timestamps = timestamps || {};
                   timestamps[token] = Date.now();
                }
                await storage.set(
@@ -771,7 +773,7 @@ class NetworkRelay extends NetworkRest {
                   // several more calls to getJobPackets() were fired off.  any processing
                   // or alterations to jobPackets inbetween these times would be overwritten
                   // by these new values, so make sure jobPackets are included in this chain:
-                  const [jobPackets, jobPacketsTimestamps] = await Promise.all([
+                  var [jobPackets, jobPacketsTimestamps] = await Promise.all([
                      storage.get("user", "abRelayJobPackets") ||
                         Promise.resolve({}),
                      storage.get("user", "abRelayJobPacketsTimestamps") ||
@@ -791,6 +793,12 @@ class NetworkRelay extends NetworkRest {
                   }
 
                   const jobToken = e.jobToken;
+                  if (!jobPackets || !jobPackets[jobToken]) {
+                     console.error('!!! Missing jobPackets')
+                     jobPackets = jobPackets || {};
+                     jobPackets[jobToken] = [];
+                  }
+
                   const packets = (jobPackets[jobToken] =
                      jobPackets[jobToken] || []);
                   packets.push(e);
