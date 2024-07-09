@@ -409,11 +409,6 @@ class NetworkRelay extends NetworkRest {
       document.addEventListener(
          "online",
          async () => {
-            // make sure we are properly initialized
-            // NOTE: should not be a problem to call even after we have
-            // .init() before.
-            await this.init(this.app);
-
             // now flush our pending requests
             await this.queueFlush();
 
@@ -422,11 +417,11 @@ class NetworkRelay extends NetworkRest {
          },
          false
       );
-      this.on(this.defaultEventKeys.offline, () => {
-         // TODO (Guy):
+      this.on(this.defaultEventKeys.offline, async () => {
+         // TODO:
       });
       this.on(this.defaultEventKeys.online, async () => {
-         // TODO (Guy):
+         // TODO:
       });
       this.on(this.defaultEventKeys.callback, (context, res) => {
          let instance = this.app;
@@ -700,6 +695,7 @@ class NetworkRelay extends NetworkRest {
          try {
             await lock.acquire();
             const storage = this.app.resources.storage;
+
             /**
              * take the response from the Public Relay Server, and publish it to
              * the jobResponse that was requested for it.
@@ -998,9 +994,11 @@ class NetworkRelay extends NetworkRest {
       try {
          await lock.acquire();
          await Promise.all([
-            storage.set("user", "rsaPublicKey", null),
-            storage.set("user", "relayState", null),
+            storage.set("user", "appPolicy", null),
             storage.set("user", "appUUID", null),
+            storage.set("user", "relayState", null),
+            storage.set("user", "rsaPublicKey", null),
+            storage.set("user", "uuid", null),
             storage.clearAll("jobResponse"),
          ]);
          lock.release();
@@ -1008,8 +1006,6 @@ class NetworkRelay extends NetworkRest {
          lock.release();
          throw err;
       }
-      await this.init(app);
-      await this._loadNetworkData();
    }
 
    ///
