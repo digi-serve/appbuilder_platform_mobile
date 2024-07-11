@@ -41,7 +41,9 @@ class Inbox extends Common {
          // This is in case we reload and still receive a job response from MCC.
          if (callbackQueue == null) {
             (res.status === "error" && console.error(res.data)) ||
-               this.requestProcessInbox(null, null, null, res.data);
+               this.requestProcessInbox(null, null, null, {
+                  taskUUID: context.queueUUID,
+               });
             return;
          }
          (res.status === "error" && callbackQueue.callback(res.data)) ||
