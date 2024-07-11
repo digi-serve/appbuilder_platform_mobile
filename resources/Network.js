@@ -425,7 +425,7 @@ class NetworkRelay extends NetworkRest {
       });
       this.on(this.defaultEventKeys.callback, (context, res) => {
          let instance = this.app;
-         console.assert(context, `no context${context}`)
+         console.assert(context, `no context${context}`);
          const targetEventPath = context.targetEventPath;
          if (targetEventPath != null) {
             const pathKeys = targetEventPath.split(".");
@@ -742,7 +742,7 @@ class NetworkRelay extends NetworkRest {
                // update the timestamp info for any new jobs
                for (const token in packets) {
                   if (timestamps && timestamps[token] != null) continue;
-                  
+
                   timestamps = timestamps || {};
                   timestamps[token] = Date.now();
                }
@@ -790,7 +790,7 @@ class NetworkRelay extends NetworkRest {
 
                   const jobToken = e.jobToken;
                   if (!jobPackets || !jobPackets[jobToken]) {
-                     console.error('!!! Missing jobPackets')
+                     console.error("!!! Missing jobPackets");
                      jobPackets = jobPackets || {};
                      jobPackets[jobToken] = [];
                   }
@@ -1102,6 +1102,7 @@ class NetworkRelay extends NetworkRest {
          fileBase64Download: "/file/:uuid/base64?mobile=true",
          fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
          data: "/app_builder/model/:objID/:id",
+         processInbox: "/process/inbox/:taskUUID",
       };
    }
 }

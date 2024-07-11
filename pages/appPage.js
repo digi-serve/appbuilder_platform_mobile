@@ -371,30 +371,6 @@ class AppPage extends Common {
    }
 
    /**
-    * @method fetchRecordData()
-    * perform a specific remote data update before moving on.
-    * a data collection
-    *
-    * @param {string} app
-    * @param {string} datacollection
-    */
-   fetchRecordData(app, datacollection) {
-      const targetDC = this.app.applications
-         .find((a) => {
-            return a.ID === app;
-         })
-         .datacollections.find((a) => {
-            return a.name === datacollection;
-            // TODO is this the right way to find the datacollection?
-         });
-      console.assert(
-         targetDC,
-         "appPage.fetchRecordData() could not find the datacollection"
-      );
-      return targetDC.reloadData();
-   }
-
-   /**
     * Reinitialize the AB Applications.
     * This is called after a new authToken is imported.
     *
