@@ -26,6 +26,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this._lock = null;
       this._model = null;
       this._isSyncing = false;
+      this._hasInitStarted = false;
       this.on(
          EVENT_KEY_BACKUP_CALL,
          async (backupMethod, newBackupMethodArgs) => {
@@ -185,6 +186,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    }
 
    async init() {
+      if (this._hasInitStarted) return;
+      this._hasInitStarted = true;
       super.init();
       const AB = this.AB;
 
