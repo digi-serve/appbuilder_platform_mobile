@@ -36,7 +36,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             } catch (err) {
                console.error(err);
             }
-         }
+         },
       );
       this.on(EVENT_KEY_MODEL, (context, res, instance) => {
          this.model.dataCallback(context, res, instance);
@@ -75,7 +75,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   await this.loadData();
 
                   return false; // <-- prevent the default "onDataRequest"
-               }
+               },
             );
          }
          if (!dc.___AD.onAfterLoadEvent) {
@@ -127,7 +127,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      )
                         this._latestItemDatetime = value["updated_at"];
                      pendingPromises.push(
-                        storage.set(refStorage, value.id, value)
+                        storage.set(refStorage, value.id, value),
                      );
 
                      // Wait for 100 promises each time.
@@ -139,7 +139,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   break;
                default:
                   pendingPromises.push(
-                     storage.set(refStorage, key, dcData[key].toString())
+                     storage.set(refStorage, key, dcData[key].toString()),
                   );
                   break;
             }
@@ -168,7 +168,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       await Promise.all(
          this.AB.app.abDCs
             .filter((dc) => connectedDatasources.includes(dc.datasource.id))
-            .map((dc) => dc.updateSyncData())
+            .map((dc) => dc.updateSyncData()),
       );
    }
 
@@ -198,7 +198,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
       // pull filter conditions
       let wheres = AB.cloneDeep(
-         this.settings.objectWorkspace.filterConditions || {}
+         this.settings.objectWorkspace.filterConditions || {},
       );
 
       // if we pass new wheres with a reload use them instead
@@ -304,7 +304,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             const dc = AB.datacollectionByID(rule.value);
             if (dc != null) {
                pendingRelatedRuleDC.push(
-                  this.waitForDataCollectionToInitialize(dc)
+                  this.waitForDataCollectionToInitialize(dc),
                );
             }
          }
@@ -360,7 +360,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             })(),
             (async () => {
                dcData.data = (await storage.getAll(refStorage)).filter(
-                  (value) => value instanceof Object
+                  (value) => value instanceof Object,
                );
             })(),
          ]);
@@ -450,7 +450,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                backupEvent: "backupCall",
                backupMethod: "loadData",
                backupMethodArgs: [],
-            })
+            }),
          );
          this._isSyncing = false;
       } catch (err) {
@@ -486,7 +486,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             storage.set(
                refStorage,
                "total_count",
-               (this.__totalCount - 1).toString()
+               (this.__totalCount - 1).toString(),
             ),
             this._updateSyncAffectedDCs(),
          ]);
@@ -593,7 +593,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            storage.set(
                               refStorage,
                               "total_count",
-                              (this.__totalCount + 1).toString()
+                              (this.__totalCount + 1).toString(),
                            ),
                         ]);
                         this.__dataCollection.add(value);
@@ -611,7 +611,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            new Date(value["updated_at"])
                      )
                         this._latestItemDatetime = value["updated_at"];
-                  })()
+                  })(),
                );
 
                // Wait for 100 promises each time.
@@ -644,7 +644,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   backupEvent: "backupCall",
                   backupMethod: "updateSyncData",
                   backupMethodArgs: [],
-               })
+               }),
             );
             this._isSyncing = false;
             return;
@@ -679,7 +679,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                backupEvent: "backupCall",
                backupMethod: "updateSyncData",
                backupMethodArgs: [],
-            })
+            }),
          );
          this._isSyncing = false;
       } catch (err) {
@@ -705,7 +705,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          (this._model = (() => {
             const model = super.model;
             model.contextKey(
-               this.AB.app.resources.network.defaultEventKeys.callback
+               this.AB.app.resources.network.defaultEventKeys.callback,
             );
             model.contextValues({
                targetEventKey: EVENT_KEY_MODEL,

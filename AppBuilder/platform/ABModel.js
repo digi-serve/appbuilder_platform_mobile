@@ -18,9 +18,9 @@ module.exports = class ABModel extends ABModelCore {
          const callbackQueues = this._callbackQueues;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
-               (callbackQueue) => callbackQueue.id === context.queueUUID
+               (callbackQueue) => callbackQueue.id === context.queueUUID,
             ),
-            1
+            1,
          )[0];
          const data = res.data;
          try {
@@ -101,7 +101,7 @@ module.exports = class ABModel extends ABModelCore {
          (async () => {
             await this.AB.app.resources.network[method](
                params,
-               copiedResponseContext
+               copiedResponseContext,
             );
          })();
       });
@@ -117,7 +117,7 @@ module.exports = class ABModel extends ABModelCore {
          "post",
          this.urlParamsCreate(value),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -140,7 +140,7 @@ module.exports = class ABModel extends ABModelCore {
          "delete",
          this.urlParamsDelete(id),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -167,7 +167,7 @@ module.exports = class ABModel extends ABModelCore {
          "get",
          this.urlParamsFind(copiedCond),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -186,7 +186,7 @@ module.exports = class ABModel extends ABModelCore {
          "put",
          this.urlParamsUpdate(id, copidData),
          this.responseContext,
-         options
+         options,
       );
    }
 };
