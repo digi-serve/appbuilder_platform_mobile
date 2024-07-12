@@ -107,6 +107,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       });
       const lock = this._lock;
       let pendingPromises = [];
+      this._pendingSaves = pendingPromises;
       try {
          await lock.acquire();
          for (const key in dcData) {
@@ -145,6 +146,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          }
          pendingPromises.length > 0 && (await Promise.all(pendingPromises));
          pendingPromises = null;
+         this._pendingSaves = null;
          lock.release();
       } catch (err) {
          lock.release();

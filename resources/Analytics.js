@@ -78,13 +78,20 @@ class Analytics extends EventEmitter {
 
       const monitorMemoryUsage = () => {
          const memoryUsage = getMemoryUsage();
+         let totalPendingSaves = 0;
+         this.app._abDCs.forEach((dc) => {
+            if (dc._pendingSaves) {
+               totalPendingSaves += dc._pendingSaves.length;
+            }
+         });
+
          if (memoryUsage > memoryPanic) {
-            const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env`;
+            const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env (pendingSaves: ${totalPendingSaves})`;
             let memoryError = new Error(alertMessage);
             console.error("Firing memory error message: ", alertMessage);
             this.logError(memoryError);
          } else if (memoryUsage > memoryThreshold) {
-            const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env`;
+            const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env (pendingSaves: ${totalPendingSaves})`;
             let memoryError = new Error(alertMessage);
             console.error("Firing memory error message: ", alertMessage);
             this.logError(memoryError);
