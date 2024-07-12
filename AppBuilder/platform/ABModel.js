@@ -72,6 +72,29 @@ module.exports = class ABModel extends ABModelCore {
                   reject(err);
                   return;
                }
+
+               // if a limit was set (we are paging)
+               if (result.limit > 0) {
+                  // if this isn't the last page
+                  if (result.offset + result.data.length < result.total_count) {
+                     let nextParam = structuredClone(params);
+                     nextParam.params.skip = result.offset_next;
+
+                     this._processRequest(
+                        method,
+                        nextParam,
+                        responseContext,
+                        options,
+                     ).then((nextPage) => {
+                        result.data = result.data.concat(nextPage.data);
+                        resolve(result);
+                     });
+
+                     return;
+                  }
+                  resolve(result);
+                  return;
+               }
                resolve(result);
             },
          });
@@ -136,6 +159,10 @@ module.exports = class ABModel extends ABModelCore {
       // Tell the server to get the fully populated relation data
       // This the old format, no longer giving by default for performance reasons
       copiedCond.disableMinifyRelation = true;
+
+      // Forced Paging
+      copiedCond.limit = 10;
+
       return this._processRequest(
          "get",
          this.urlParamsFind(copiedCond),
