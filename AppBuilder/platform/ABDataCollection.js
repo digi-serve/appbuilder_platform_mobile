@@ -311,6 +311,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await Promise.all(pendingRelatedRuleDC);
       this._cond = cond;
       this._lock = new AB.app.utils.Lock();
+
+      // at the end of init(), I'm forcing the status = 0
+      // this should cause loadData() to go out and force
+      // load the data.
+      // @Guy: Is this needed? <----
+      //
+      await this._lock.acquire();
+      await this.AB.app.resources.storage.set(this.refStorage(), "status", "0");
+      this._lock.release();
    }
 
    async _getDCData() {
