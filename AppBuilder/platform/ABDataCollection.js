@@ -382,11 +382,12 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             lock.release();
             throw err;
          }
-         console.assert(status, "ABDataCollection::loadData(): missing status");//
+         // console.assert(status, `ABDataCollection::loadData(): missing status ${this.label} , ${this.id}`);//
          switch (status) {
             case 1:
                if (this._dataStatus === this.dataStatusFlag.initialized) {
                   this._isSyncing = false;
+                  console.log(`ABDataCollection::loadData()::: initialized ${this.label} , ${this.id}`);
                   return;
                }
                const dcData = await this._getDCData();
@@ -407,9 +408,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                this._isSyncing = false;
                return;
             default:
+               // this means we are not initialized yet, so we need to load our data
                break;
          }
          if (this._dataStatus === this.dataStatusFlag.initializing) {
+            console.log(`ABDataCollection::loadData()::: initializing ${this.label} , ${this.id}`);
             await Promise.all([
                // If this method has already been called, just wait for a response.
                await new Promise((resolve) => {
