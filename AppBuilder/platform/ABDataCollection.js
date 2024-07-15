@@ -112,6 +112,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await lock.acquire();
          for (const key in dcData) {
             const refStorage = this.refStorage();
+            const keyPrefix = this.keyPrefix();
             switch (key) {
                case "data":
                   const data = dcData[key];
@@ -697,6 +698,16 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     */
    refStorage() {
       return `dc-${this.id}`;
+   }
+   /**
+    * keyPrefix
+    * return the key needed to access the storage for this datacollection.
+    *      "bootState" :  [ "uninitialized", "initialized" ]
+    * @return {string}
+    */
+   keyPrefix() {
+      return `meta-dc-${this.id}-`;
+
    }
 
    get model() {
