@@ -18,9 +18,9 @@ module.exports = class ABModel extends ABModelCore {
          const callbackQueues = this._callbackQueues;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
-               (callbackQueue) => callbackQueue.id === context.queueUUID
+               (callbackQueue) => callbackQueue.id === context.queueUUID,
             ),
-            1
+            1,
          )[0];
          const data = res.data;
          try {
@@ -72,13 +72,36 @@ module.exports = class ABModel extends ABModelCore {
                   reject(err);
                   return;
                }
+
+               // if a limit was set (we are paging)
+               if (result.limit > 0) {
+                  // if this isn't the last page
+                  if (result.offset + result.data.length < result.total_count) {
+                     let nextParam = structuredClone(params);
+                     nextParam.params.skip = result.offset_next;
+
+                     this._processRequest(
+                        method,
+                        nextParam,
+                        responseContext,
+                        options,
+                     ).then((nextPage) => {
+                        result.data = result.data.concat(nextPage.data);
+                        resolve(result);
+                     });
+
+                     return;
+                  }
+                  resolve(result);
+                  return;
+               }
                resolve(result);
             },
          });
          (async () => {
             await this.AB.app.resources.network[method](
                params,
-               copiedResponseContext
+               copiedResponseContext,
             );
          })();
       });
@@ -94,7 +117,7 @@ module.exports = class ABModel extends ABModelCore {
          "post",
          this.urlParamsCreate(value),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -117,7 +140,7 @@ module.exports = class ABModel extends ABModelCore {
          "delete",
          this.urlParamsDelete(id),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -136,11 +159,15 @@ module.exports = class ABModel extends ABModelCore {
       // Tell the server to get the fully populated relation data
       // This the old format, no longer giving by default for performance reasons
       copiedCond.disableMinifyRelation = true;
+
+      // Forced Paging
+      copiedCond.limit = 10;
+
       return this._processRequest(
          "get",
          this.urlParamsFind(copiedCond),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -159,7 +186,7 @@ module.exports = class ABModel extends ABModelCore {
          "put",
          this.urlParamsUpdate(id, copidData),
          this.responseContext,
-         options
+         options,
       );
    }
 };
