@@ -330,6 +330,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             pos: 0,
             total_count: 0,
          };
+         console.assert(dcData, `ABDataCollection::_getDCData(): missing dcData ${this.label} , ${this.id}`);//
          await Promise.all([
             (async () => {
                const key = "limit";
@@ -357,9 +358,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                );
             })(),
          ]);
+         console.assert(dcData.data, `ABDataCollection::_getDCData(): missing data ${this.label} , ${this.id}`);//
          lock.release();
          return dcData;
       } catch (err) {
+         console.assert(lock, "ABDataCollection::_getDCData(): missing lock");
          lock.release();
          throw err;
       }

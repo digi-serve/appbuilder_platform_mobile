@@ -157,12 +157,10 @@ class AppPage extends Common {
                await Promise.all(
                   app.abDCs.map((dc) =>
                      (async () => {
-                        //    try {
-                           console.error('arst');
+                           console.assert(dc.init != null, "Missing init() method");
                            await dc.init();
+                           console.assert(dc.loadData != null, "Missing loadData() method");
                            await dc.loadData();
-                        // } catch (err) {
-                        // }
                      })()
                   )
                );
