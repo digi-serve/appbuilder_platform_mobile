@@ -157,12 +157,12 @@ class AppPage extends Common {
                await Promise.all(
                   app.abDCs.map((dc) =>
                      (async () => {
-                        try {
+                        //    try {
+                           console.error('arst');
                            await dc.init();
                            await dc.loadData();
-                        } catch (err) {
-                           console.error(err);
-                        }
+                        // } catch (err) {
+                        // }
                      })()
                   )
                );
@@ -368,6 +368,30 @@ class AppPage extends Common {
       clearTimeout(waitToClose);
 
       if (refreshPage) this.appView.router.refreshPage();
+   }
+
+   /**
+    * @method fetchRecordData()
+    * perform a specific remote data update before moving on.
+    * a data collection
+    *
+    * @param {string} app
+    * @param {string} datacollection
+    */
+   fetchRecordData(app, datacollection) {
+      const targetDC = this.app.applications
+         .find((a) => {
+            return a.ID === app;
+         })
+         .datacollections.find((a) => {
+            return a.name === datacollection;
+            // TODO is this the right way to find the datacollection?
+         });
+      console.assert(
+         targetDC,
+         "appPage.fetchRecordData() could not find the datacollection"
+      );
+      return targetDC.reloadData();
    }
 
    /**

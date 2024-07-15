@@ -38,10 +38,18 @@ class Profile extends Common {
    }
 
    loadProfileData() {
+      console.assert(
+         this.dc,
+         "Profile.init() : this.dc not set. Did you forget to call super.init()?"
+      );
+      console.assert(
+         this.page.app.resources.account.userData?.user?.username,
+         "Profile.init() : this.page.app.resources.account.userData.user.username not set."
+      );
       this._userProfile = this.dc.getData(
          (e) =>
             e["System Access"] ===
-            this.page.app.resources.account.userData?.user.username
+            this.page.app.resources.account.userData?.user?.username
       )[0];
    }
 
