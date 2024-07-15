@@ -163,6 +163,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {Promise}
     */
    async _updateSyncAffectedDCs() {
+      console.assert(this.AB.app.abDCs, "this.AB.app.abDCs not defined");//
       const connectedDatasources = this.datasource
          .connectFields()
          .map((field) => field.datasourceLink.id);
@@ -189,8 +190,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    }
 
    async init() {
-      if (this._hasInitStarted) return;
-      this._hasInitStarted = true;
       super.init();
       const AB = this.AB;
 
@@ -314,15 +313,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await Promise.all(pendingRelatedRuleDC);
       this._cond = cond;
       this._lock = new AB.app.utils.Lock();
-
-      // at the end of init(), I'm forcing the status = 0
-      // this should cause loadData() to go out and force
-      // load the data.
-      // @Guy: Is this needed? <----
-      //
-      await this._lock.acquire();
-      await this.AB.app.resources.storage.set(this.refStorage(), "status", "0");
-      this._lock.release();
    }
 
    async _getDCData() {
@@ -392,6 +382,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             lock.release();
             throw err;
          }
+         console.assert(status, "ABDataCollection::loadData(): missing status");//
          switch (status) {
             case 1:
                if (this._dataStatus === this.dataStatusFlag.initialized) {
@@ -697,6 +688,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {string}
     */
    refStorage() {
+      console.assert(this.id, "ABDataCollection::refStorage(): missing id");
       return `dc-${this.id}`;
    }
    /**
