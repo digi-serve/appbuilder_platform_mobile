@@ -313,6 +313,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await Promise.all(pendingRelatedRuleDC);
       this._cond = cond;
       this._lock = new AB.app.utils.Lock();
+      console.assert(this._lock, "ABDataCollection::init(): missing this._lock");
+      console.assert(this._cond, "ABDataCollection::init(): missing this._cond");
    }
 
    async _getDCData() {
