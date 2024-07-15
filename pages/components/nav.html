@@ -278,20 +278,7 @@
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
-
-            const financialAppReady = () => {
-               cachedState.loadingFinancial = false;
-               this.$setState(cachedState);
-            };
-
-            // we need to check app status, if data is missing, don't allow user to navigate there.
-            if (financialApp.isReady()) {
-               financialAppReady();
-            } else {
-               financialApp.on("status", function (value) {
-                  if (value === "ready") financialAppReady();
-               });
-            }
+            cachedState.loadingFinancial = false;
             const checkDataUpdate = async () => {
                cachedState.userProfile = profileComponent.userProfile;
                if (cachedState.userProfile == null) {

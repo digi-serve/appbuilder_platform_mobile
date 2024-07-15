@@ -47,7 +47,7 @@
 
 <!-- framework7 component script -->
 <script>
-   var children = [];
+   const children = [];
    const cachedState = {
       items: [],
    };
@@ -94,8 +94,9 @@
       on: {
          popupClosed(popup) {},
          popupOpened(popup) {
-            const appPage = this.$root.app.pages.appPage;
-            const inboxApp = appPage.components.inbox;
+            const app = this.$root.app;
+            const appPage = app.pages.appPage;
+            const inboxComponent = appPage.components.inbox;
             const financialApp = appPage.getApplicationByID("FINANCIAL"); // we are including this because it has a good process for fetching images
             const activeIframes = [];
             const b = () => {
@@ -116,7 +117,6 @@
 
                   // add this to list of iframes we are using
                   children[curIndex] = child;
-                  const items = cachedState.items;
                   child.receive((d, e) => {
                      const event = d.task || null;
                      if (event == null) return false;
@@ -125,47 +125,43 @@
                         d.task.action === "event"
                      ) {
                         (async () => {
-                           await inboxApp.network.put(
-                              {
-                                 url: `/process/inbox/${
+                           const busy = app.resources.busy;
+                           busy.show("Processing...");
+                           try {
+                              const result =
+                                 await inboxComponent.requestProcessInbox(
                                     $(".swiper-slide-active")[0].dataset
-                                       .taskUuid
-                                 }`,
-                                 data: {
-                                    response: event.event,
-                                 },
-                              },
-                              { key: "save-inbox", context: {} }
-                           );
-                           const remainingItems = items.filter(
-                              (item) => item.uuid != uuid
-                           );
-                           // TODO (Guy):
-                           // inboxApp.storage.set(
-                           //    "user",
-                           //    "inbox-items",
-                           //    remainingItems
-                           // );
-                           $app.router.emit("updateInbox", remainingItems);
-                           $app.router.emit(
-                              "updateInboxCount",
-                              remainingItems.length
-                           );
-                           $app.toast
-                              .create({
-                                 icon: '<i class="fa-2x fas fa-star"></i>',
-                                 text: "<t>Item Saved</t>",
-                                 position: "center",
-                              })
-                              .open();
-
-                           const swiper =
-                              document.querySelector(
-                                 ".swiper-container"
-                              ).swiper;
-                           swiper.removeSlide(swiper.realIndex);
-                           if (swiper.slides.length !== 0) return;
-                           $app.popup.close();
+                                       .taskUuid,
+                                    event.event
+                                 );
+                              cachedState.items = cachedState.items.filter(
+                                 (item) => item.uuid != result.taskUUID
+                              );
+                              $app.toast
+                                 .create({
+                                    icon: '<i class="fa-2x fas fa-star"></i>',
+                                    text: "<t>Item Saved</t>",
+                                    position: "center",
+                                 })
+                                 .open();
+                              const swiper =
+                                 document.querySelector(
+                                    ".swiper-container"
+                                 ).swiper;
+                              swiper.removeSlide(swiper.realIndex);
+                              busy.hide();
+                              if (swiper.slides.length !== 0) return;
+                              $app.popup.close();
+                           } catch (err) {
+                              console.error(err);
+                              $app.toast
+                                 .create({
+                                    text: "<t>Processing error!</t>",
+                                    position: "center",
+                                 })
+                                 .open();
+                              busy.hide();
+                           }
                         })();
                      }
                      // go get images either stored locally already or download now
@@ -176,14 +172,20 @@
                   // load the source of the iframe in order to delay the image loading
                   f.src = "./js/formio/viewer/index.html?iframe=1&header=0";
                   const iframeReady = () => {
+                     let index = curIndex;
+                     let item = cachedState.items[index];
+                     if (item == null) {
+                        index = 0;
+                        item = cachedState.items[index];
+                     }
                      f.contentWindow.postMessage(
-                        items[curIndex].form,
+                        item.form,
                         f.contentWindow.document.location.protocol +
                            "//" +
                            f.contentWindow.document.location.host +
                            "/sdc-app/www/lib/applications/inbox/templates/formio.html"
                      );
-                     activeIframes.push(curIndex);
+                     activeIframes.push(index);
                   };
                   if (
                      f.src ===
@@ -199,8 +201,8 @@
             };
             const initSlide = (curIndex) => {
                ((d, w, u) => {
-                  var h = d.getElementsByTagName("head")[0];
-                  var s = d.createElement("script");
+                  const h = d.getElementsByTagName("head")[0];
+                  const s = d.createElement("script");
                   s.type = "text/javascript";
                   s.src =
                      "js/formio/viewer/lib/seamless/seamless.parent.min.js";

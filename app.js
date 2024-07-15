@@ -109,6 +109,12 @@ class App extends EventEmitter {
       });
    }
 
+   getABDCByKey(key) {
+      return this._abDCs.find(
+         (dc) => dc.id === key || dc.name === key || dc.label == key
+      );
+   }
+
    languageDefault() {
       return this.resources.translate.langCode || "en";
    }
