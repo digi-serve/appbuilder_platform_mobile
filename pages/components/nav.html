@@ -254,6 +254,7 @@
 
 <!-- framework7 component script -->
 <script>
+   const KEY_UPDATING_CALLBACK = "component.nav";
    const cachedState = {
       enabledApps: {
          financial: false,
@@ -264,7 +265,6 @@
       inboxBadge: 0,
       userProfile: null,
    };
-   const TIME_DATA_UPDATE = 1000;
    return {
       async data() {
          const storage = this.$root.app.resources.storage;
@@ -279,7 +279,7 @@
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
             cachedState.loadingFinancial = false;
-            const checkDataUpdate = async () => {
+            appPage.setUpdatingCallback(KEY_UPDATING_CALLBACK, () => {
                cachedState.userProfile = profileComponent.userProfile;
                if (cachedState.userProfile == null) {
                   cachedState.loading = true;
@@ -297,11 +297,12 @@
                   cachedState.loadingInbox = false;
                }
                this.$setState(cachedState);
-               setTimeout(async () => {
-                  await checkDataUpdate();
-               }, TIME_DATA_UPDATE);
-            };
-            checkDataUpdate();
+            });
+         },
+         pageBeforeRemove() {
+            this.$root.app.pages.appPage.removeUpdatingCallback(
+               KEY_UPDATING_CALLBACK
+            );
          },
       },
    };
