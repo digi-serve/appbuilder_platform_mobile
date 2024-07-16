@@ -264,6 +264,7 @@
       inboxBadge: 0,
       userProfile: null,
    };
+                     var checkDataUpdateLoops = 0;
    const TIME_DATA_UPDATE = 1000;
    return {
       async data() {
@@ -278,16 +279,19 @@
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
+            cachedState.financialApp = financialApp
             cachedState.userProfile = profileComponent.loadProfileData();
+            cachedState.enabledApps.financial = true;
             cachedState.loadingFinancial = false;
             const checkDataUpdate = async () => {
                cachedState.userProfile = profileComponent.userProfile;
+               console.log(cachedState.userProfile);
                if (cachedState.userProfile == null) {
-                  // if it defined, load it 
+                  financialApp.loadFinancialData();
                   cachedState.userProfile = profileComponent.loadProfileData();
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
-                  enabledApps.financial = false;
+                  enabledApps.financial = true;
                   cachedState.inboxBadge = 0;
                   cachedState.loadingInbox = true;
                } else {
@@ -304,7 +308,12 @@
                   await checkDataUpdate();
                }, TIME_DATA_UPDATE);
             };
-            checkDataUpdate();
+            if (checkDataUpdateLoops === 0) {
+               checkDataUpdateLoops++;
+               checkDataUpdate();
+            } else {
+               console.error("we are starting the checkDataUpdate again?")
+            }
          },
       },
    };

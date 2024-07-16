@@ -248,6 +248,8 @@ class AppPage extends Common {
                if (callbackResult instanceof Promise) await callbackResult;
             })
          );
+         console.assert(app.pages.appPage.components.profile.loadProfileData != null, "Missing loadProfileData() method");
+         app.pages.appPage.components.profile.loadProfileData()
          console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
