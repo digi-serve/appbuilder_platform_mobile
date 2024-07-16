@@ -278,6 +278,7 @@
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
+            cachedState.userProfile = profileComponent.loadProfileData();
             cachedState.loadingFinancial = false;
             const checkDataUpdate = async () => {
                cachedState.userProfile = profileComponent.userProfile;
