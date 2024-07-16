@@ -190,6 +190,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    }
 
    async init() {
+      if (this._hasInitStarted) return;
+      this._hasInitStarted = true;
       super.init();
       const AB = this.AB;
 
@@ -315,6 +317,12 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this._lock = new AB.app.utils.Lock();
       console.assert(this._lock, "ABDataCollection::init(): missing this._lock");
       console.assert(this._cond, "ABDataCollection::init(): missing this._cond");
+      // at the end of init(), I'm forcing the status = 0
+      // this should cause loadData() to go out and force
+      // load the data.
+      await this._lock.acquire();
+      await this.AB.app.resources.storage.set(this.refStorage(), "status", "0");
+      this._lock.release();
    }
 
    async _getDCData() {
