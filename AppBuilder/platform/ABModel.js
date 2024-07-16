@@ -74,7 +74,7 @@ module.exports = class ABModel extends ABModelCore {
                }
 
                // if a limit was set (we are paging)
-               if (result.limit > 0) {
+               if (result?.limit > 0) {
                   // if this isn't the last page
                   if (result.offset + result.data.length < result.total_count) {
                      let nextParam = structuredClone(params);
