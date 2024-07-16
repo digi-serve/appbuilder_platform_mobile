@@ -715,4 +715,83 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          })())
       );
    }
+
+   /**
+    * processIncomingData()
+    * is called from loadData() once the data is returned.  This method
+    * allows the platform to make adjustments to the data based upon any
+    * platform defined criteria.
+    * @param {obj} data  the data as it was returned from the Server
+    *        which should be in following format:
+    *        {
+    *          status: "success", // or "error"
+    *          data:[ {ABObjectData}, {ABObjectData}, ...]
+    *        }
+    */
+   processIncomingData(data) {
+      return Promise.resolve().then(() => {
+         // store total count
+         this.__totalCount = data.total_count;
+
+         // Need to .parse at the first time
+         if (!this.__dataCollection.find({}).length) {
+            this.__dataCollection.clearAll();
+            // this.__dataCollection.parse(data);
+         }
+
+         if (this.__throttleIncoming) clearTimeout(this.__throttleIncoming);
+         this.__throttleIncoming = setTimeout(async () => {
+            // In order to get the total_count updated I had to use .load()
+            this.__dataCollection.load(() => {
+               // setTimeout(() => {
+               //    this.refreshLinkCursor();
+               // }, 250);
+
+               return {
+                  // NOTE: return a empty array to prevent render items in DataTable twice. (Items are rendered in .queuedParse function)
+                  data: data.data,
+                  pos: data.pos,
+                  total_count: data.total_count,
+               };
+            });
+
+            // using queuedParse() to responsively handle large datasets.
+            // await this.queuedParse(data);
+
+            // this does nothing???
+            this.parseTreeCollection(data);
+
+            // if we are linked, then refresh our cursor
+            var linkDv = this.datacollectionLink;
+            if (linkDv) {
+               // filter data by match link data collection
+               this.refreshLinkCursor();
+               this.setStaticCursor();
+            } else {
+               // set static cursor
+               this.setStaticCursor();
+            }
+
+            // now we close out our .loadData() promise.resolve() :
+            if (this._pendingLoadDataResolve) {
+               this._pendingLoadDataResolve.resolve();
+
+               // after we call .resolve() stop tracking this:
+               this._pendingLoadDataResolve = null;
+            }
+
+            // If dc set load all, then it will not trigger .loadData in dc at
+            // .onAfterLoad event
+            if (this.settings.loadAll) {
+               this.emit("loadData", {});
+            }
+
+            // mark initialized data
+            if (this._dataStatus != this.dataStatusFlag.initialized) {
+               this._dataStatus = this.dataStatusFlag.initialized;
+               this.emit("initializedData", {});
+            }
+         }, 100);
+      });
+   }
 };
