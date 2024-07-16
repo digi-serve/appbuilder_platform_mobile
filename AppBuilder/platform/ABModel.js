@@ -161,7 +161,7 @@ module.exports = class ABModel extends ABModelCore {
       copiedCond.disableMinifyRelation = true;
 
       // Forced Paging
-      copiedCond.limit = 10;
+      copiedCond.limit = 40;
 
       return this._processRequest(
          "get",

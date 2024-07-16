@@ -76,7 +76,7 @@ class Analytics extends EventEmitter {
       const memoryPanic = 500000000; // ios threshold in bytes
       const monitoringInterval = 500000; // Example interval in milliseconds
 
-      const monitorMemoryUsage = () => {
+      const monitorMemoryUsage = async () => {
          const memoryUsage = getMemoryUsage();
          let totalPendingSaves = 0;
          this.app._abDCs.forEach((dc) => {
@@ -85,13 +85,17 @@ class Analytics extends EventEmitter {
             }
          });
 
+         let networkQueue =
+            (await this.app.resources.storage.get("user", "networkQueue")) ||
+            [];
+
          if (memoryUsage > memoryPanic) {
-            const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env (pendingSaves: ${totalPendingSaves})`;
+            const alertMessage = `Memory usage exceeded the ios threshold: ${memoryUsage} bytes in a ${chromeFlag} env (pendingSaves: ${totalPendingSaves}) (NetworkQ:${networkQueue.length})`;
             let memoryError = new Error(alertMessage);
             console.error("Firing memory error message: ", alertMessage);
             this.logError(memoryError);
          } else if (memoryUsage > memoryThreshold) {
-            const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env (pendingSaves: ${totalPendingSaves})`;
+            const alertMessage = `Memory usage is high: ${memoryUsage} bytes in a ${chromeFlag} env (pendingSaves: ${totalPendingSaves}) (NetworkQ:${networkQueue.length})`;
             let memoryError = new Error(alertMessage);
             console.error("Firing memory error message: ", alertMessage);
             this.logError(memoryError);

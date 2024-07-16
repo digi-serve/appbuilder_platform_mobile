@@ -282,6 +282,7 @@
             cachedState.loadingFinancial = false;
             const reload = async () => {
                cachedState.userProfile = profileComponent.userProfile;
+               // console.warn("nav.html:: checkDataUpdate() :: ", cachedState.loading);
                if (cachedState.userProfile == null) {
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
