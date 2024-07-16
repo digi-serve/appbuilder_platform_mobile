@@ -283,6 +283,8 @@
             const checkDataUpdate = async () => {
                cachedState.userProfile = profileComponent.userProfile;
                if (cachedState.userProfile == null) {
+                  // if it defined, load it 
+                  cachedState.userProfile = profileComponent.loadProfileData();
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
                   enabledApps.financial = false;
