@@ -844,7 +844,7 @@ return {
                                     })
                                     .catch((err) => {
                                         self.$root.app.resources.busy.hide();
-                                        self.$app.dialog.alert(err.message || err, "<t>Error</t>");
+                                        app.dialog.alert(err.message || err, "<t>Error</t>");
                                     });
                                 } else {
                                     // TODO: show error message
@@ -934,7 +934,7 @@ return {
                                         })
                                         .catch((err) => {
                                             self.$root.app.resources.busy.hide();
-                                            self.$app.dialog.alert(err.message || err, "<t>Error</t>");
+                                            app.dialog.alert(err.message || err, "<t>Error</t>");
                                         });
                                 }
                             }

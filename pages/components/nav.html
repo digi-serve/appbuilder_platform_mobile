@@ -278,13 +278,19 @@
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
+            cachedState.financialApp = financialApp
+            cachedState.userProfile = profileComponent.loadProfileData();
+            cachedState.enabledApps.financial = true;
             cachedState.loadingFinancial = false;
             appPage.setUpdatingCallback(KEY_UPDATING_CALLBACK, () => {
                cachedState.userProfile = profileComponent.userProfile;
+               console.log(cachedState.userProfile);
                if (cachedState.userProfile == null) {
+                  financialApp.loadFinancialData();
+                  cachedState.userProfile = profileComponent.loadProfileData();
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
-                  enabledApps.financial = false;
+                  enabledApps.financial = true;
                   cachedState.inboxBadge = 0;
                   cachedState.loadingInbox = true;
                } else {
@@ -297,12 +303,25 @@
                   cachedState.loadingInbox = false;
                }
                this.$setState(cachedState);
+<<<<<<< HEAD
             });
          },
          pageBeforeRemove() {
             this.$root.app.pages.appPage.removeUpdatingCallback(
                KEY_UPDATING_CALLBACK
             );
+=======
+               setTimeout(async () => {
+                  await checkDataUpdate();
+               }, TIME_DATA_UPDATE);
+            };
+            if (checkDataUpdateLoops === 0) {
+               checkDataUpdateLoops++;
+               checkDataUpdate();
+            } else {
+               console.error("we are starting the checkDataUpdate again?")
+            }
+>>>>>>> develop
          },
       },
    };

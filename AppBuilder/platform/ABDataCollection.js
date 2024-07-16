@@ -161,6 +161,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await lock.acquire();
          for (const key in dcData) {
             const refStorage = this.refStorage();
+            const keyPrefix = this.keyPrefix();
             switch (key) {
                case "data":
                   const data = dcData[key];
@@ -228,6 +229,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
       await this.processIncomingData(dcData);
       await pendingLoadData;
+      if (this.name === "Expense Report - Mobile")
+         console.log(this.__dataCollection.find({}));
    }
 
    /**
@@ -236,6 +239,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {Promise}
     */
    async _updateSyncAffectedDCs() {
+      console.assert(this.AB.app.abDCs, "this.AB.app.abDCs not defined");//
       const connectedDatasources = this.datasource
          .connectFields()
          .map((field) => field.datasourceLink.id);
@@ -408,10 +412,12 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             lock.release();
             throw err;
          }
+         // console.assert(status, `ABDataCollection::loadData(): missing status ${this.label} , ${this.id}`);//
          switch (status) {
             case 1:
                if (this._dataStatus === this.dataStatusFlag.initialized) {
                   this._isSyncing = false;
+                  console.log(`ABDataCollection::loadData()::: initialized ${this.label} , ${this.id}`);
                   return;
                }
                const dcData = await this._getDCData();
@@ -432,9 +438,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                this._isSyncing = false;
                return;
             default:
+               // this means we are not initialized yet, so we need to load our data
                break;
          }
          if (this._dataStatus === this.dataStatusFlag.initializing) {
+            console.log(`ABDataCollection::loadData()::: initializing ${this.label} , ${this.id}`);
             await Promise.all([
                // If this method has already been called, just wait for a response.
                await new Promise((resolve) => {
@@ -719,7 +727,18 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {string}
     */
    refStorage() {
+      console.assert(this.id, "ABDataCollection::refStorage(): missing id");
       return `dc-${this.id}`;
+   }
+   /**
+    * keyPrefix
+    * return the key needed to access the storage for this datacollection.
+    *      "bootState" :  [ "uninitialized", "initialized" ]
+    * @return {string}
+    */
+   keyPrefix() {
+      return `meta-dc-${this.id}-`;
+
    }
 
    get model() {
