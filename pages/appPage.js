@@ -31,6 +31,7 @@ class AppPage extends Common {
       // TODO (Guy): Refactor this in the future;
       this._isUpdating = false;
       this._pendingApplicationReset = false;
+      this._updatingCallbacks = [];
       this.appView = null;
       this.components = {
          feedback,
@@ -157,12 +158,17 @@ class AppPage extends Common {
                await Promise.all(
                   app.abDCs.map((dc) =>
                      (async () => {
-                        try {
-                           await dc.init();
-                           await dc.loadData();
-                        } catch (err) {
-                           console.error(err);
-                        }
+                        console.assert(
+                           dc.init != null,
+                           "Missing init() method",
+                        );
+                        if (dc.name === "Family Worker Information") return;
+                        await dc.init();
+                        console.assert(
+                           dc.loadData != null,
+                           "Missing loadData() method",
+                        );
+                        await dc.loadData();
                      })(),
                   ),
                );
@@ -176,6 +182,8 @@ class AppPage extends Common {
                   }),
                );
                pendingPromises = null;
+               this.components.profile.loadProfileData();
+               await this._updateSyncUI();
                this._checkForUpdate(true);
             })();
          } catch (err) {
@@ -226,6 +234,8 @@ class AppPage extends Common {
                })(),
             ].concat(
                app.abDCs.map(async (abDC) => {
+                  // TODO (Guy): Force ignoring "Family Worker Information" (Get rid if this dc is fixed)
+                  if (abDC.name === "Family Worker Information") return;
                   try {
                      await abDC.updateSyncData();
                   } catch (err) {
@@ -239,9 +249,19 @@ class AppPage extends Common {
          // loadProfileData() is no longer a thing?  How do we initialize the
          // Profile Display?
          this.components.profile.loadProfileData();
+         await this._updateSyncUI();
          console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
+   }
+
+   async _updateSyncUI() {
+      await Promise.all(
+         this._updatingCallbacks.map(async (e) => {
+            const callbackResult = e.callback();
+            if (callbackResult instanceof Promise) await callbackResult;
+         }),
+      );
    }
 
    async init(app) {
@@ -283,6 +303,29 @@ class AppPage extends Common {
             else if (page.route?.path != null) pageName = page.route.path;
             this.app.resources.analytics.pageView(pageName);
          });
+   }
+
+   setUpdatingCallback(key, callback) {
+      const updatingCallbacks = this._updatingCallbacks;
+      const updatingCallback = updatingCallbacks.find((e) => e.key === key);
+      if (updatingCallback == null) {
+         updatingCallbacks.push({
+            key,
+            callback,
+         });
+         return;
+      }
+      updatingCallback.callback = callback;
+   }
+
+   removeUpdatingCallback(key) {
+      const updatingCallbacks = this._updatingCallbacks;
+      updatingCallbacks.splice(
+         updatingCallbacks.findIndex(
+            (updatingCallback) => updatingCallback.key === key,
+         ),
+         1,
+      );
    }
 
    /**
@@ -368,6 +411,30 @@ class AppPage extends Common {
       clearTimeout(waitToClose);
 
       if (refreshPage) this.appView.router.refreshPage();
+   }
+
+   /**
+    * @method fetchRecordData()
+    * perform a specific remote data update before moving on.
+    * a data collection
+    *
+    * @param {string} app
+    * @param {string} datacollection
+    */
+   fetchRecordData(app, datacollection) {
+      const targetDC = this.app.applications
+         .find((a) => {
+            return a.ID === app;
+         })
+         .datacollections.find((a) => {
+            return a.name === datacollection;
+            // TODO is this the right way to find the datacollection?
+         });
+      console.assert(
+         targetDC,
+         "appPage.fetchRecordData() could not find the datacollection",
+      );
+      return targetDC.reloadData();
    }
 
    /**

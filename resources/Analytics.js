@@ -74,7 +74,7 @@ class Analytics extends EventEmitter {
       };
       const memoryThreshold = 450000000; // ios threshold in bytes
       const memoryPanic = 500000000; // ios threshold in bytes
-      const monitoringInterval = 5000; // Example interval in milliseconds
+      const monitoringInterval = 500000; // Example interval in milliseconds
 
       const monitorMemoryUsage = async () => {
          const memoryUsage = getMemoryUsage();

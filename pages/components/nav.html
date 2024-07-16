@@ -254,6 +254,7 @@
 
 <!-- framework7 component script -->
 <script>
+   const KEY_UPDATING_CALLBACK = "component.nav";
    const cachedState = {
       enabledApps: {
          financial: false,
@@ -264,25 +265,27 @@
       inboxBadge: 0,
       userProfile: null,
    };
-   const TIME_DATA_UPDATE = 1000;
    return {
       async data() {
          const storage = this.$root.app.resources.storage;
          return cachedState;
       },
       on: {
-         pageInit() {
+         async pageInit() {
             const app = this.$root.app;
             const appPage = app.pages.appPage;
 
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
+            cachedState.userProfile = profileComponent.loadProfileData();
             cachedState.loadingFinancial = false;
-            const checkDataUpdate = async () => {
+            const reload = async () => {
                cachedState.userProfile = profileComponent.userProfile;
                // console.warn("nav.html:: checkDataUpdate() :: ", cachedState.loading);
                if (cachedState.userProfile == null) {
+                  // if it defined, load it 
+                  cachedState.userProfile = profileComponent.loadProfileData();
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
                   enabledApps.financial = false;
@@ -298,11 +301,16 @@
                   cachedState.loadingInbox = false;
                }
                this.$setState(cachedState);
-               setTimeout(async () => {
-                  await checkDataUpdate();
-               }, TIME_DATA_UPDATE);
             };
-            checkDataUpdate();
+            await reload();
+            appPage.setUpdatingCallback(KEY_UPDATING_CALLBACK, async () => {
+               await reload();
+            });
+         },
+         pageBeforeRemove() {
+            this.$root.app.pages.appPage.removeUpdatingCallback(
+               KEY_UPDATING_CALLBACK
+            );
          },
       },
    };

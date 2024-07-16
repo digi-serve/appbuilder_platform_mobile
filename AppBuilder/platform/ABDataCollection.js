@@ -36,7 +36,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             } catch (err) {
                console.error(err);
             }
-         },
+         }
       );
       this.on(EVENT_KEY_MODEL, (context, res, instance) => {
          this.model.dataCallback(context, res, instance);
@@ -75,7 +75,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   await this.loadData();
 
                   return false; // <-- prevent the default "onDataRequest"
-               },
+               }
             );
          }
          if (!dc.___AD.onAfterLoadEvent) {
@@ -92,8 +92,57 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       return dc;
    }
 
+   async _getDCData() {
+      const storage = this.AB.app.resources.storage;
+      const refStorage = this.refStorage();
+      const lock = this._lock;
+      try {
+         await lock.acquire();
+         const dcData = {
+            data: [],
+            limit: 0,
+            offset: 0,
+            pos: 0,
+            total_count: 0,
+         };
+         await Promise.all([
+            (async () => {
+               const key = "limit";
+               dcData[key] =
+                  parseInt(await storage.get(refStorage, key)) || dcData[key];
+            })(),
+            (async () => {
+               const key = "offset";
+               dcData[key] =
+                  parseInt(await storage.get(refStorage, key)) || dcData[key];
+            })(),
+            (async () => {
+               const key = "pos";
+               dcData[key] =
+                  parseInt(await storage.get(refStorage, key)) || dcData[key];
+            })(),
+            (async () => {
+               const key = "total_count";
+               dcData[key] =
+                  parseInt(await storage.get(refStorage, key)) || dcData[key];
+            })(),
+            (async () => {
+               dcData.data = (await storage.getAll(refStorage)).filter(
+                  (value) => value instanceof Object
+               );
+            })(),
+         ]);
+         lock.release();
+         return dcData;
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
+   }
+
    async _saveDCData(dcData) {
       const storage = this.AB.app.resources.storage;
+
       // Pull data to data collection
       // we will keep track of the resolve, reject for this
       // operation.
@@ -112,12 +161,38 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await lock.acquire();
          for (const key in dcData) {
             const refStorage = this.refStorage();
+            const keyPrefix = this.keyPrefix();
             switch (key) {
                case "data":
                   const data = dcData[key];
+
+                  // Clear old data.
+                  this._latestItemDatetime = null;
+                  const storedValues = await storage.getAll(refStorage);
+                  for (const storedValue of storedValues) {
+                     if (
+                        !(storedValue instanceof Object) ||
+                        data.find((e) => e.id === storedValue.id) != null
+                     )
+                        continue;
+                     pendingPromises.push(
+                        (async () => {
+                           const key = storedValue.id;
+                           await storage.clear(refStorage, key);
+                           this.__dataCollection.remove(key);
+                        })()
+                     );
+                     if (pendingPromises.length < PENDING_PROMISE_LIMIT)
+                        continue;
+                     await Promise.all(pendingPromises);
+                     pendingPromises = [];
+                  }
+                  pendingPromises.length > 0 &&
+                     (await Promise.all(pendingPromises));
+                  pendingPromises = [];
                   if (data.length === 0) break;
                   const isSourceTypeObject = this.sourceType === "object";
-                  if (isSourceTypeObject && this._latestItemDatetime == null)
+                  if (isSourceTypeObject)
                      this._latestItemDatetime = data[0]["updated_at"];
                   for (const value of data) {
                      if (
@@ -127,7 +202,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      )
                         this._latestItemDatetime = value["updated_at"];
                      pendingPromises.push(
-                        storage.set(refStorage, value.id, value),
+                        storage.set(refStorage, value.id, value)
                      );
 
                      // Wait for 100 promises each time.
@@ -139,7 +214,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   break;
                default:
                   pendingPromises.push(
-                     storage.set(refStorage, key, dcData[key].toString()),
+                     storage.set(refStorage, key, dcData[key].toString())
                   );
                   break;
             }
@@ -162,13 +237,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {Promise}
     */
    async _updateSyncAffectedDCs() {
+      console.assert(this.AB.app.abDCs, "this.AB.app.abDCs not defined");//
       const connectedDatasources = this.datasource
          .connectFields()
          .map((field) => field.datasourceLink.id);
       await Promise.all(
          this.AB.app.abDCs
             .filter((dc) => connectedDatasources.includes(dc.datasource.id))
-            .map((dc) => dc.updateSyncData()),
+            .map((dc) => dc.updateSyncData())
       );
    }
 
@@ -198,7 +274,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
       // pull filter conditions
       let wheres = AB.cloneDeep(
-         this.settings.objectWorkspace.filterConditions || {},
+         this.settings.objectWorkspace.filterConditions || {}
       );
 
       // if we pass new wheres with a reload use them instead
@@ -304,7 +380,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             const dc = AB.datacollectionByID(rule.value);
             if (dc != null) {
                pendingRelatedRuleDC.push(
-                  this.waitForDataCollectionToInitialize(dc),
+                  this.waitForDataCollectionToInitialize(dc)
                );
             }
          }
@@ -313,63 +389,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await Promise.all(pendingRelatedRuleDC);
       this._cond = cond;
       this._lock = new AB.app.utils.Lock();
-
-      // at the end of init(), I'm forcing the status = 0
-      // this should cause loadData() to go out and force
-      // load the data.
-      // @Guy: Is this needed? <----
-      //
-      await this._lock.acquire();
-      await this.AB.app.resources.storage.set(this.refStorage(), "status", "0");
-      this._lock.release();
-   }
-
-   async _getDCData() {
-      const storage = this.AB.app.resources.storage;
-      const refStorage = this.refStorage();
-      const lock = this._lock;
-      try {
-         await lock.acquire();
-         const dcData = {
-            data: [],
-            limit: 0,
-            offset: 0,
-            pos: 0,
-            total_count: 0,
-         };
-         await Promise.all([
-            (async () => {
-               const key = "limit";
-               dcData[key] =
-                  parseInt(await storage.get(refStorage, key)) || dcData[key];
-            })(),
-            (async () => {
-               const key = "offset";
-               dcData[key] =
-                  parseInt(await storage.get(refStorage, key)) || dcData[key];
-            })(),
-            (async () => {
-               const key = "pos";
-               dcData[key] =
-                  parseInt(await storage.get(refStorage, key)) || dcData[key];
-            })(),
-            (async () => {
-               const key = "total_count";
-               dcData[key] =
-                  parseInt(await storage.get(refStorage, key)) || dcData[key];
-            })(),
-            (async () => {
-               dcData.data = (await storage.getAll(refStorage)).filter(
-                  (value) => value instanceof Object,
-               );
-            })(),
-         ]);
-         lock.release();
-         return dcData;
-      } catch (err) {
-         lock.release();
-         throw err;
-      }
    }
 
    async loadData(backupDCData) {
@@ -391,10 +410,12 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             lock.release();
             throw err;
          }
+         // console.assert(status, `ABDataCollection::loadData(): missing status ${this.label} , ${this.id}`);//
          switch (status) {
             case 1:
                if (this._dataStatus === this.dataStatusFlag.initialized) {
                   this._isSyncing = false;
+                  console.log(`ABDataCollection::loadData()::: initialized ${this.label} , ${this.id}`);
                   return;
                }
                const dcData = await this._getDCData();
@@ -415,9 +436,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                this._isSyncing = false;
                return;
             default:
+               // this means we are not initialized yet, so we need to load our data
                break;
          }
          if (this._dataStatus === this.dataStatusFlag.initializing) {
+            console.log(`ABDataCollection::loadData()::: initializing ${this.label} , ${this.id}`);
             await Promise.all([
                // If this method has already been called, just wait for a response.
                await new Promise((resolve) => {
@@ -450,7 +473,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                backupEvent: "backupCall",
                backupMethod: "loadData",
                backupMethodArgs: [],
-            }),
+            })
          );
          this._isSyncing = false;
       } catch (err) {
@@ -486,7 +509,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             storage.set(
                refStorage,
                "total_count",
-               (this.__totalCount - 1).toString(),
+               (this.__totalCount - 1).toString()
             ),
             this._updateSyncAffectedDCs(),
          ]);
@@ -541,11 +564,13 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          (await this.model.create(value));
       await Promise.all([
          this._updateSyncAffectedDCs(),
-         this.updateSyncData({
-            data: [result],
-         }),
+         (result != null &&
+            this.updateSyncData({
+               data: [result],
+            })) ||
+            this.updateSyncData(),
       ]);
-      if (callback == null) return resData;
+      if (callback == null) return result;
       const callbackResult = callback(result);
       callbackResult instanceof Promise && (await callbackResult);
    }
@@ -593,14 +618,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            storage.set(
                               refStorage,
                               "total_count",
-                              (this.__totalCount + 1).toString(),
+                              (this.__totalCount + 1).toString()
                            ),
                         ]);
+
                         this.__dataCollection.add(value);
                         this.__totalCount = this.__totalCount + 1;
                      } else {
                         await storage.set(refStorage, key, value);
-                        const oldValue = this.getData((e) => e.key === key)[0];
+                        const oldValue = this.getData((e) => e.id === key)[0];
                         (oldValue == null &&
                            this.__dataCollection.add(value)) ||
                            this.__dataCollection.updateItem(key, value);
@@ -611,7 +637,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            new Date(value["updated_at"])
                      )
                         this._latestItemDatetime = value["updated_at"];
-                  })(),
+                  })()
                );
 
                // Wait for 100 promises each time.
@@ -639,12 +665,25 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
       try {
          if (!isSourceTypeObject) {
-            await saveData(
+            await this._saveDCData(
                await this.model.findAll(this._cond, {
                   backupEvent: "backupCall",
                   backupMethod: "updateSyncData",
                   backupMethodArgs: [],
-               }),
+               })
+            );
+            this._isSyncing = false;
+            return;
+         }
+
+         // TODO (Guy): Fix the force sync all in the future.
+         if (this._latestItemDatetime != null || true) {
+            await this._saveDCData(
+               await this.model.findAll(this._cond, {
+                  backupEvent: "backupCall",
+                  backupMethod: "updateSyncData",
+                  backupMethodArgs: [],
+               })
             );
             this._isSyncing = false;
             return;
@@ -657,29 +696,19 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             where.rules = [structuredClone(where)];
             where.glue = "and";
          }
-         const rules = where.rules;
-         if (this._latestItemDatetime == null)
-            rules.push({
-               key: "updated_at",
-               rule: "less_or_equal",
-               value: moment(new Date().toISOString())
-                  .utc()
-                  .format("YYYY-MM-DD HH:mm:ss"),
-            });
-         else
-            rules.push({
-               key: "updated_at",
-               rule: "greater",
-               value: moment(new Date(this._latestItemDatetime).toISOString())
-                  .utc()
-                  .format("YYYY-MM-DD HH:mm:ss"),
-            });
+         where.rules.push({
+            key: "updated_at",
+            rule: "greater",
+            value: moment(new Date(this._latestItemDatetime).toISOString())
+               .utc()
+               .format("YYYY-MM-DD HH:mm:ss"),
+         });
          await saveData(
             await this.model.findAll(cond, {
                backupEvent: "backupCall",
                backupMethod: "updateSyncData",
                backupMethodArgs: [],
-            }),
+            })
          );
          this._isSyncing = false;
       } catch (err) {
@@ -696,7 +725,18 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {string}
     */
    refStorage() {
+      console.assert(this.id, "ABDataCollection::refStorage(): missing id");
       return `dc-${this.id}`;
+   }
+   /**
+    * keyPrefix
+    * return the key needed to access the storage for this datacollection.
+    *      "bootState" :  [ "uninitialized", "initialized" ]
+    * @return {string}
+    */
+   keyPrefix() {
+      return `meta-dc-${this.id}-`;
+
    }
 
    get model() {
@@ -705,7 +745,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          (this._model = (() => {
             const model = super.model;
             model.contextKey(
-               this.AB.app.resources.network.defaultEventKeys.callback,
+               this.AB.app.resources.network.defaultEventKeys.callback
             );
             model.contextValues({
                targetEventKey: EVENT_KEY_MODEL,
