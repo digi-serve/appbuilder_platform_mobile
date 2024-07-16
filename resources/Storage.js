@@ -189,7 +189,7 @@ class Storage extends EventEmitter {
                         }
                         return value;
                      })) ||
-                     value
+                     value,
                );
             })()) ||
          value;
@@ -236,6 +236,28 @@ class Storage extends EventEmitter {
    }
 
    /**
+    * Return the count of entries in a given tabkeKey
+    *
+    * @param {string} tableKey
+    *      Name of the Table to return a count of records from.
+    * @return {Promise}
+    */
+   count(tableKey) {
+      return new Promise((resolve, reject) => {
+         const transaction = this._db.transaction(tableKey, "readonly");
+         transaction.onerror = (event) => {
+            console.error("DB error during count", transaction.error);
+            reject(transaction.error);
+         };
+         const store = transaction.objectStore(tableKey);
+         const req = store.count();
+         req.onsuccess = (event) => {
+            resolve(req.result);
+         };
+      });
+   }
+
+   /**
     * Load something from persistent storage.
     *
     * @param {string} key
@@ -264,9 +286,32 @@ class Storage extends EventEmitter {
                   } catch (err) {
                      return result;
                   }
-               })
+               }),
             );
          };
+      });
+   }
+
+   getAllKeys(tableKey, query) {
+      return new Promise((resolve, reject) => {
+         try {
+            const transaction = this._db.transaction(tableKey, "readonly");
+            transaction.onerror = (event) => {
+               console.error("DB error during get", transaction.error);
+               reject(transaction.error);
+            };
+            const store = transaction.objectStore(tableKey);
+            const req = store.getAllKeys(query);
+            req.onsuccess = (event) => {
+               resolve(req.result);
+            };
+         } catch (e) {
+            if (e.toString().indexOf("object stores was not found") > -1) {
+               resolve([]);
+            } else {
+               reject(e);
+            }
+         }
       });
    }
 
@@ -345,7 +390,7 @@ class Storage extends EventEmitter {
                   file.name,
                   {
                      type: compressedFile.type,
-                  }
+                  },
                );
                resolve(compressedFileFromBlob);
             } else {
@@ -421,7 +466,7 @@ class Storage extends EventEmitter {
             (async () => {
                this._pendingNetworkCallbacks.downloadFile = async (
                   err,
-                  result
+                  result,
                ) => {
                   if (err != null) reject(new Error(err.message));
                   if (err != null || result.uuid == null)
@@ -435,7 +480,7 @@ class Storage extends EventEmitter {
                   {
                      url: network.validRoutes.fileBase64Download.replace(
                         ":uuid",
-                        uuid
+                        uuid,
                      ),
                   },
                   {
@@ -447,7 +492,7 @@ class Storage extends EventEmitter {
                            reject(new Error(`No file data (${uuid})`));
                         resolve(result);
                      },
-                  }
+                  },
                );
             })();
          }))
@@ -483,12 +528,12 @@ class Storage extends EventEmitter {
                      if (result.uuid == null)
                         reject(
                            new Error(
-                              `Failed to upload the file! (${data.filename})`
-                           )
+                              `Failed to upload the file! (${data.filename})`,
+                           ),
                         );
                      resolve(data);
                   },
-               }
+               },
             );
          })();
       });
