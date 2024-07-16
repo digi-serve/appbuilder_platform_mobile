@@ -47,7 +47,7 @@ class NetworkRest extends EventEmitter {
          const queue = (await storage.get("user", refQueue)) || [];
          queue.push({ data, jobResponse });
          console.log(
-            `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`
+            `:::: ${queue.length} request${queue.length > 1 ? "s" : ""} queued`,
          );
          await storage.set("user", refQueue, queue);
          lock.release();
@@ -93,7 +93,7 @@ class NetworkRest extends EventEmitter {
                if (text === "timeout" || jqXHR.readyState === 0) {
                   //// Network Error: conneciton refused, access denied, etc...
                   console.error(
-                     "*** NetworkRest._request():network connection error detected."
+                     "*** NetworkRest._request():network connection error detected.",
                   );
                   // retry the attempt:
                   if (numRetries > 0) {
@@ -103,8 +103,8 @@ class NetworkRest extends EventEmitter {
                            await this._request(
                               params,
                               jobResponse,
-                              numRetries - 1
-                           )
+                              numRetries - 1,
+                           ),
                         );
                      } catch (err) {
                         reject(err);
@@ -120,7 +120,7 @@ class NetworkRest extends EventEmitter {
                } else if (jqXHR.readyState == 4) {
                   //// an HTTP error
                   console.error(
-                     "HTTP error while communicating with relay server"
+                     "HTTP error while communicating with relay server",
                   );
                   console.error(`status code: ${jqXHR.status}`);
                }
@@ -130,14 +130,14 @@ class NetworkRest extends EventEmitter {
                   // add it to the queue and retry later
                   this._queue(params, jobResponse);
                   let error = new Error(
-                     "Network error: adding to queue for later retry."
+                     "Network error: adding to queue for later retry.",
                   );
                   resolve({ status: "queued" });
                   return;
                }
 
                const error = new Error(
-                  "NetworkRest._request() error with .ajax() command:"
+                  "NetworkRest._request() error with .ajax() command:",
                );
                error.response = jqXHR.responseText;
                error.text = text;
@@ -404,7 +404,7 @@ class NetworkRelay extends NetworkRest {
             // trigger an 'online' event
             this.emit("offline");
          },
-         false
+         false,
       );
       document.addEventListener(
          "online",
@@ -415,7 +415,7 @@ class NetworkRelay extends NetworkRest {
             // trigger an 'online' event
             this.emit("online");
          },
-         false
+         false,
       );
       this.on(this.defaultEventKeys.offline, async () => {
          // TODO:
@@ -433,7 +433,7 @@ class NetworkRelay extends NetworkRest {
                if (Array.isArray(instance)) {
                   const [objKey, objValue] = pathKey.split("=");
                   instance = instance.find(
-                     (e) => e instanceof Object && e[objKey] === objValue
+                     (e) => e instanceof Object && e[objKey] === objValue,
                   );
                } else instance = instance[pathKey];
                if (instance == null) return;
@@ -502,7 +502,7 @@ class NetworkRelay extends NetworkRest {
                      data: packets[i],
                      tenant: config.appbuilder.tenantUUID,
                   },
-               })
+               }),
             );
          return mccRes;
       } catch (err) {
@@ -527,7 +527,7 @@ class NetworkRelay extends NetworkRest {
          const decrypted = CryptoJS.AES.decrypt(
             dataParts[0],
             CryptoJS.enc.Hex.parse(this._relayState.aesKey),
-            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) }
+            { iv: CryptoJS.enc.Hex.parse(dataParts[1]) },
          );
 
          // Parse JSON to plantext.
@@ -551,7 +551,7 @@ class NetworkRelay extends NetworkRest {
       return `${CryptoJS.AES.encrypt(
          JSON.stringify(data),
          CryptoJS.enc.Hex.parse(aesKey),
-         { iv: CryptoJS.enc.Hex.parse(iv) }
+         { iv: CryptoJS.enc.Hex.parse(iv) },
       ).toString()}:::${iv}`;
    }
 
@@ -633,7 +633,7 @@ class NetworkRelay extends NetworkRest {
          // prevent offline attempt.
          if (!navigator.onLine)
             throw new Error(
-               "NetworkRelay:init(): prevent initresolve when no network conencted."
+               "NetworkRelay:init(): prevent initresolve when no network conencted.",
             );
 
          // NOTE: use super.post() here so we don't do our .post()
@@ -644,7 +644,7 @@ class NetworkRelay extends NetworkRest {
                rsa_aes: rsa.encrypt(
                   JSON.stringify({
                      aesKey: relayState.aesKey,
-                  })
+                  }),
                ),
                userUUID: await storage.get("user", "uuid"),
                appID: config.appbuilder.maID,
@@ -976,7 +976,7 @@ class NetworkRelay extends NetworkRest {
                },
             },
             null,
-            false
+            false,
          );
          await storage.set("user", "authToken", newAuthToken);
          this._authToken = newAuthToken;

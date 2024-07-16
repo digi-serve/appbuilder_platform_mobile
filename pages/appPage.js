@@ -24,7 +24,7 @@ class AppPage extends Common {
       super(
          "app-page",
          "lib/platform/pages/appPage.html",
-         "lib/platform/pages/appPage.css"
+         "lib/platform/pages/appPage.css",
       );
 
       // Are the AB Applications in the middle of being reset?
@@ -58,7 +58,7 @@ class AppPage extends Common {
             const hash = String(document.location.hash);
             await network.importCredentials(
                hash.match(/JRR=(\w+)/)?.[1],
-               hash.match(/tenant=(\w+)/)?.[1]
+               hash.match(/tenant=(\w+)/)?.[1],
             );
 
             // Remove tokens from current URL, for bookmarkability
@@ -80,7 +80,7 @@ class AppPage extends Common {
                            "<t>Problem authenticating with server</t>",
                            () => {
                               resolve();
-                           }
+                           },
                         )
                         .open();
                      break;
@@ -92,7 +92,7 @@ class AppPage extends Common {
                            "<t>Error</t>",
                            () => {
                               resolve();
-                           }
+                           },
                         )
                         .open();
                      break;
@@ -163,8 +163,8 @@ class AppPage extends Common {
                         } catch (err) {
                            console.error(err);
                         }
-                     })()
-                  )
+                     })(),
+                  ),
                );
                await Promise.all(
                   pendingPromises.map(async (pendingPromise) => {
@@ -173,7 +173,7 @@ class AppPage extends Common {
                      } catch (err) {
                         console.error(err);
                      }
-                  })
+                  }),
                );
                pendingPromises = null;
                this._checkForUpdate(true);
@@ -231,8 +231,8 @@ class AppPage extends Common {
                   } catch (err) {
                      console.error(err);
                   }
-               })
-            )
+               }),
+            ),
          );
 
          // TODO:
@@ -358,7 +358,7 @@ class AppPage extends Common {
          this.f7App.dialog
             .alert(
                "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
-               "<t>Sorry</t>"
+               "<t>Sorry</t>",
             )
             .open();
       }, 90000);
