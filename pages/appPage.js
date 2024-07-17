@@ -24,7 +24,7 @@ class AppPage extends Common {
       super(
          "app-page",
          "lib/platform/pages/appPage.html",
-         "lib/platform/pages/appPage.css"
+         "lib/platform/pages/appPage.css",
       );
 
       // Are the AB Applications in the middle of being reset?
@@ -59,7 +59,7 @@ class AppPage extends Common {
             const hash = String(document.location.hash);
             await network.importCredentials(
                hash.match(/JRR=(\w+)/)?.[1],
-               hash.match(/tenant=(\w+)/)?.[1]
+               hash.match(/tenant=(\w+)/)?.[1],
             );
 
             // Remove tokens from current URL, for bookmarkability
@@ -81,7 +81,7 @@ class AppPage extends Common {
                            "<t>Problem authenticating with server</t>",
                            () => {
                               resolve();
-                           }
+                           },
                         )
                         .open();
                      break;
@@ -93,7 +93,7 @@ class AppPage extends Common {
                            "<t>Error</t>",
                            () => {
                               resolve();
-                           }
+                           },
                         )
                         .open();
                      break;
@@ -158,13 +158,19 @@ class AppPage extends Common {
                await Promise.all(
                   app.abDCs.map((dc) =>
                      (async () => {
-                           console.assert(dc.init != null, "Missing init() method");
+                        console.assert(
+                           dc.init != null,
+                           "Missing init() method",
+                        );
                         if (dc.name === "Family Worker Information") return;
-                           await dc.init();
-                           console.assert(dc.loadData != null, "Missing loadData() method");
-                           await dc.loadData();
-                     })()
-                  )
+                        await dc.init();
+                        console.assert(
+                           dc.loadData != null,
+                           "Missing loadData() method",
+                        );
+                        await dc.loadData();
+                     })(),
+                  ),
                );
                await Promise.all(
                   pendingPromises.map(async (pendingPromise) => {
@@ -173,7 +179,7 @@ class AppPage extends Common {
                      } catch (err) {
                         console.error(err);
                      }
-                  })
+                  }),
                );
                pendingPromises = null;
                this.components.profile.loadProfileData();
@@ -235,8 +241,8 @@ class AppPage extends Common {
                   } catch (err) {
                      console.error(err);
                   }
-               })
-            )
+               }),
+            ),
          );
 
          // TODO:
@@ -254,7 +260,7 @@ class AppPage extends Common {
          this._updatingCallbacks.map(async (e) => {
             const callbackResult = e.callback();
             if (callbackResult instanceof Promise) await callbackResult;
-         })
+         }),
       );
    }
 
@@ -316,9 +322,9 @@ class AppPage extends Common {
       const updatingCallbacks = this._updatingCallbacks;
       updatingCallbacks.splice(
          updatingCallbacks.findIndex(
-            (updatingCallback) => updatingCallback.key === key
+            (updatingCallback) => updatingCallback.key === key,
          ),
-         1
+         1,
       );
    }
 
@@ -395,7 +401,7 @@ class AppPage extends Common {
          this.f7App.dialog
             .alert(
                "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
-               "<t>Sorry</t>"
+               "<t>Sorry</t>",
             )
             .open();
       }, 90000);
@@ -426,7 +432,7 @@ class AppPage extends Common {
          });
       console.assert(
          targetDC,
-         "appPage.fetchRecordData() could not find the datacollection"
+         "appPage.fetchRecordData() could not find the datacollection",
       );
       return targetDC.reloadData();
    }
