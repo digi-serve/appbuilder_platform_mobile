@@ -300,11 +300,13 @@
                   cachedState.loading = false;
                   const enabledApps = cachedState.enabledApps;
                   enabledApps.financial = true;
-                  if (app && app.resources && app.resources.storage) {
+                  if (app && app?.resources && app?.resources?.storage) {
                      cachedState.inboxBadge =
                         (await app.resources.storage.get("user", "siteUserData"))
                            ?.inbox.length ?? 0;
                      cachedState.loadingInbox = false;
+                  } else {
+                     console.error('inbox state not set: is app defined in nav.html')
                   }
                   // cachedState.inboxBadge =
                   //    (await app.resources.storage.get("user", "siteUserData"))
