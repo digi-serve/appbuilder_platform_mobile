@@ -280,23 +280,34 @@
             const financialApp = appPage.getApplicationByID("FINANCIAL");
             cachedState.userProfile = profileComponent.loadProfileData();
             cachedState.loadingFinancial = false;
+            cachedState.financialApp = financialApp.loadFinancialData();
+            cachedState.enabledApps.financial = true;
             const reload = async () => {
                cachedState.userProfile = profileComponent.userProfile;
                if (cachedState.userProfile == null) {
                   // if it defined, load it 
                   cachedState.userProfile = profileComponent.loadProfileData();
+                  cachedState.financialApp = financialApp.loadFinancialData();
+
+                  financialApp.loadFinancialData();
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
-                  enabledApps.financial = false;
+                  enabledApps.financial = true;
                   cachedState.inboxBadge = 0;
                   cachedState.loadingInbox = true;
                } else {
                   cachedState.loading = false;
                   const enabledApps = cachedState.enabledApps;
                   enabledApps.financial = true;
-                  cachedState.inboxBadge =
-                     (await app.resources.storage.get("user", "siteUserData"))
-                        ?.inbox.length ?? 0;
+                  if (app && app.resources && app.resources.storage) {
+                     cachedState.inboxBadge =
+                        (await app.resources.storage.get("user", "siteUserData"))
+                           ?.inbox.length ?? 0;
+                     cachedState.loadingInbox = false;
+                  }
+                  // cachedState.inboxBadge =
+                  //    (await app.resources.storage.get("user", "siteUserData"))
+                  //       ?.inbox.length ?? 0;
                   cachedState.loadingInbox = false;
                }
                this.$setState(cachedState);
