@@ -138,7 +138,6 @@ class Storage extends EventEmitter {
       const _db =
          this._db ||
          (this._db = await new Promise((resolve, reject) => {
-
             console.assert(indexedDB, "IndexedDB is not available");
             console.assert(DB_NAME, "DB_NAME is not set");
             const request = indexedDB.open(DB_NAME);
@@ -197,11 +196,13 @@ class Storage extends EventEmitter {
             })()) ||
          value;
       return new Promise((resolve, reject) => {
-
          console.assert(key, "key is required");
          console.assert(tableKey, "tableKey is required");
          console.assert(this._db, "this._db is required");
-         console.assert(this._db.objectStoreNames, "this._db.objectStoreNames is required");
+         console.assert(
+            this._db.objectStoreNames,
+            "this._db.objectStoreNames is required",
+         );
          const transaction = this._db.transaction(tableKey, "readwrite");
 
          transaction.oncomplete = (event) => {
@@ -335,8 +336,11 @@ class Storage extends EventEmitter {
          console.assert(typeof key != "undefined", "key is required");
          console.assert(tableKey, "tableKey is required");
          console.assert(this._db, "this._db is required");
-         console.assert(this._db.objectStoreNames, "this._db.objectStoreNames is required");
-            const transaction = this._db.transaction(tableKey, "readwrite");
+         console.assert(
+            this._db.objectStoreNames,
+            "this._db.objectStoreNames is required",
+         );
+         const transaction = this._db.transaction(tableKey, "readwrite");
          transaction.onerror = (event) => {
             console.error("DB error during clear", event.error);
             err.message += `DB Error clearing record: ${key}`;
