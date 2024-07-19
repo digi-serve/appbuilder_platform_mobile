@@ -332,7 +332,7 @@ class Storage extends EventEmitter {
     */
    clear(tableKey, key) {
       return new Promise((resolve, reject) => {
-         console.assert(key, "key is required");
+         console.assert(typeof key != "undefined", "key is required");
          console.assert(tableKey, "tableKey is required");
          console.assert(this._db, "this._db is required");
          console.assert(this._db.objectStoreNames, "this._db.objectStoreNames is required");
@@ -342,11 +342,11 @@ class Storage extends EventEmitter {
             err.message += `DB Error clearing record: ${key}`;
             reject(event.error);
          };
-         const store = transaction.objectStore(tableKey);
-         const req = store.delete(key);
-         req.onsuccess = (event) => {
+         transaction.onsuccess = (event) => {
             resolve();
          };
+         const store = transaction.objectStore(tableKey);
+         const req = store.delete(key);
       });
    }
 
