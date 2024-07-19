@@ -278,18 +278,22 @@
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
-            cachedState.userProfile = profileComponent.loadProfileData();
+            cachedState.userProfile = profileComponent.userProfile;
             cachedState.loadingFinancial = false;
-            cachedState.financialApp = financialApp.loadFinancialData();
             // always set to true, while we are developing
+            // cachedState.financialApp = financialApp.loadFinancialData();
+
             cachedState.enabledApps.financial = true;
             const reload = async () => {
+               profileComponent.loadProfileData();
                cachedState.userProfile = profileComponent.userProfile;
                // console.warn("nav.html:: checkDataUpdate() :: ", cachedState.loading);
                if (cachedState.userProfile == null) {
                   // if it defined, load it 
-                  cachedState.userProfile = profileComponent.loadProfileData();
-                  cachedState.financialApp = financialApp.loadFinancialData(); // This currently does nothing, but accessing the financialApp object seems to trigger the data load?
+                  cachedState.userProfile = profileComponent.userProfile;
+                  // cachedState.financialApp = financialApp.loadFinancialData();
+                  // financialApp.loadFinancialData();
+
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
                   // always set to true, while we are developing
