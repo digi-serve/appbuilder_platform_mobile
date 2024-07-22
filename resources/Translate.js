@@ -142,6 +142,9 @@ class Translate extends EventEmitter {
    }
 
    t(text) {
+      if (!text) {
+         return "";
+      }
       text = text.trim().replace(/\s+/g, " ");
       var translated = this.data[text];
 
