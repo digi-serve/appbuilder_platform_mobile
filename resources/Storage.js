@@ -25,23 +25,35 @@ class Storage extends EventEmitter {
          key: null, // 256-bit key
       };
       this._db = null;
-      this._pendingNetworkCallbacks = {
-         downloadFile: null,
-         uploadFile: null,
-      };
+      this._callbackQueues = [];
       this.app = null;
       this.on(EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
-         const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
-         const downloadFile = pendingNetworkCallbacks.downloadFile;
+         const callbackQueues = this._callbackQueues;
+         const callbackQueue = callbackQueues.splice(
+            callbackQueues.findIndex(
+               (callbackQueue) => callbackQueue.id === context.queueUUID
+            ),
+            1
+         )[0];
          const data = res.data;
-         if (downloadFile == null) {
-            if (context.error != null) console.error(context.error);
-            else this.downloadFile(null, data);
-            return;
+         try {
+            if (res.status === "error") {
+               if (callbackQueue == null) throw new Error(res.message);
+               const callbackResult = callbackQueue.callback(
+                  new Error(res.message)
+               );
+               callbackResult instanceof Promise && (await callbackResult);
+               return;
+            }
+            if (callbackQueue == null) {
+               await this.downloadFile(null, null, data);
+               return;
+            }
+            const callbackResult = callbackQueue.callback(null, data);
+            callbackResult instanceof Promise && (await callbackResult);
+         } catch (err) {
+            console.error(err);
          }
-         if (context.error != null) downloadFile(context.error);
-         else downloadFile(null, data);
-         pendingNetworkCallbacks.downloadFile = null;
 
          // if (context.callback == null) return;
          // const callbackResult =
@@ -70,23 +82,50 @@ class Storage extends EventEmitter {
          //    }
          // }
       });
-      this.on(EVENT_KEY_UPLOAD_FILE, async (context, data) => {
-         if (context.callback == null) return;
-         const callbackResult =
-            (context.error != null && context.callback(context.error)) ||
-            context.callback(null, {
-               uuid: data.uuid,
-               filename: data.file,
-               type: data.type,
-               fileEntry: context.data.fileEntry,
-            });
-         if (callbackResult instanceof Promise) {
-            try {
-               await callbackResult;
-            } catch (err) {
-               console.error(err);
+      this.on(EVENT_KEY_UPLOAD_FILE, async (context, res) => {
+         const callbackQueues = this._callbackQueues;
+         const callbackQueue = callbackQueues.splice(
+            callbackQueues.findIndex(
+               (callbackQueue) => callbackQueue.id === context.queueUUID
+            ),
+            1
+         )[0];
+         const data = res.data;
+         try {
+            if (res.status === "error") {
+               if (callbackQueue == null) throw new Error(res.message);
+               const callbackResult = callbackQueue.callback(
+                  new Error(res.message)
+               );
+               callbackResult instanceof Promise && (await callbackResult);
+               return;
             }
+            if (callbackQueue == null) {
+               await this.uploadFile(null, null, null, data);
+               return;
+            }
+            const callbackResult = callbackQueue.callback(null, data);
+            callbackResult instanceof Promise && (await callbackResult);
+         } catch (err) {
+            console.error(err);
          }
+
+         // if (context.callback == null) return;
+         // const callbackResult =
+         //    (context.error != null && context.callback(context.error)) ||
+         //    context.callback(null, {
+         //       uuid: data.uuid,
+         //       filename: data.file,
+         //       type: data.type,
+         //       fileEntry: context.data.fileEntry,
+         //    });
+         // if (callbackResult instanceof Promise) {
+         //    try {
+         //       await callbackResult;
+         //    } catch (err) {
+         //       console.error(err);
+         //    }
+         // }
       });
    }
 
@@ -138,7 +177,6 @@ class Storage extends EventEmitter {
       const _db =
          this._db ||
          (this._db = await new Promise((resolve, reject) => {
-
             console.assert(indexedDB, "IndexedDB is not available");
             console.assert(DB_NAME, "DB_NAME is not set");
             const request = indexedDB.open(DB_NAME);
@@ -192,16 +230,18 @@ class Storage extends EventEmitter {
                         }
                         return value;
                      })) ||
-                     value,
+                     value
                );
             })()) ||
          value;
       return new Promise((resolve, reject) => {
-
          console.assert(key, "key is required");
          console.assert(tableKey, "tableKey is required");
          console.assert(this._db, "this._db is required");
-         console.assert(this._db.objectStoreNames, "this._db.objectStoreNames is required");
+         console.assert(
+            this._db.objectStoreNames,
+            "this._db.objectStoreNames is required"
+         );
          const transaction = this._db.transaction(tableKey, "readwrite");
 
          transaction.oncomplete = (event) => {
@@ -295,7 +335,7 @@ class Storage extends EventEmitter {
                   } catch (err) {
                      return result;
                   }
-               }),
+               })
             );
          };
       });
@@ -335,8 +375,11 @@ class Storage extends EventEmitter {
          console.assert(key, "key is required");
          console.assert(tableKey, "tableKey is required");
          console.assert(this._db, "this._db is required");
-         console.assert(this._db.objectStoreNames, "this._db.objectStoreNames is required");
-            const transaction = this._db.transaction(tableKey, "readwrite");
+         console.assert(
+            this._db.objectStoreNames,
+            "this._db.objectStoreNames is required"
+         );
+         const transaction = this._db.transaction(tableKey, "readwrite");
          transaction.onerror = (event) => {
             console.error("DB error during clear", event.error);
             err.message += `DB Error clearing record: ${key}`;
@@ -403,7 +446,7 @@ class Storage extends EventEmitter {
                   file.name,
                   {
                      type: compressedFile.type,
-                  },
+                  }
                );
                resolve(compressedFileFromBlob);
             } else {
@@ -472,14 +515,14 @@ class Storage extends EventEmitter {
       });
    }
 
-   async downloadFile(uuid, data) {
+   async downloadFile(uuid, data, backupData) {
       return (
          data ||
          (await new Promise((resolve, reject) => {
             (async () => {
                this._pendingNetworkCallbacks.downloadFile = async (
                   err,
-                  result,
+                  result
                ) => {
                   if (err != null) reject(new Error(err.message));
                   if (err != null || result.uuid == null)
@@ -493,7 +536,7 @@ class Storage extends EventEmitter {
                   {
                      url: network.validRoutes.fileBase64Download.replace(
                         ":uuid",
-                        uuid,
+                        uuid
                      ),
                   },
                   {
@@ -505,21 +548,41 @@ class Storage extends EventEmitter {
                            reject(new Error(`No file data (${uuid})`));
                         resolve(result);
                      },
-                  },
+                  }
                );
             })();
          }))
       );
    }
 
-   uploadFile(objID, fieldID, data) {
+   uploadFile(objID, fieldID, data, backupData) {
       // if (data.fileEntry.type)
       //    throw new Error(`This file type is invalid: ${type}`);
+      if (backupData != null) {
+         // TODO (Guy): Logic.
+         return;
+      }
+      const app = this.app;
+      const network = app.resources.network;
       return new Promise((resolve, reject) => {
          (async () => {
-            await this.app.resources.network.post(
+            const queueUUID = app.utils.uuidv4();
+            this._callbackQueues.push({
+               id: queueUUID,
+               callback: (err, result) => {
+                  if (err != null) {
+                     reject(new Error(err.message));
+                     return;
+                  }
+                  resolve(result);
+               },
+            });
+            await network.post(
                {
-                  url: `/file/upload/base64/${objID}/${fieldID}`,
+                  url: network.validRoutes.fileBase64Upload.replace(
+                     ":objID/:fieldID",
+                     `${objID}/${fieldID}`
+                  ),
                   data: {
                      fieldID,
                      file: data.file,
@@ -531,22 +594,15 @@ class Storage extends EventEmitter {
                   },
                },
                {
-                  targetEventKey: EVENT_KEY_UPLOAD_FILE,
-                  targetEventPath: EVENT_PATH,
-                  data: {
-                     fileEntry: data.fileEntry,
+                  context: {
+                     data: {
+                        fileEntry: data.fileEntry,
+                     },
+                     queueUUID,
+                     targetEventKey: EVENT_KEY_UPLOAD_FILE,
+                     targetEventPath: EVENT_PATH,
                   },
-                  callback: async (err, result) => {
-                     if (err != null) reject(new Error(err.message));
-                     if (result.uuid == null)
-                        reject(
-                           new Error(
-                              `Failed to upload the file! (${data.filename})`,
-                           ),
-                        );
-                     resolve(data);
-                  },
-               },
+               }
             );
          })();
       });

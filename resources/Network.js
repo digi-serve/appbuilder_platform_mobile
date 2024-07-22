@@ -1106,7 +1106,7 @@ class NetworkRelay extends NetworkRest {
       return {
          config: "/config",
          fileBase64Download: "/file/:uuid/base64?mobile=true",
-         fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
+         fileBase64Upload: "/file/upload/base64/:objID/:fieldID",
          data: "/app_builder/model/:objID/:id",
          processInbox: "/process/inbox/:taskUUID",
       };
