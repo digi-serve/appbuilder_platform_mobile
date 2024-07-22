@@ -748,7 +748,7 @@ class NetworkRelay extends NetworkRest {
                // find the jobToken
                // trigger the registered .key callback
                const jobToken = response.jobToken;
-               console.assert(response.jobToken, 'No Job Token found in response at Network.js'
+               console.assert(response.jobToken, 'No Job Token found in response at Network.js');
                const jobResponse = await storage.get("jobResponse", jobToken);
                if (jobResponse != null)
                   this.emit(
@@ -1107,7 +1107,7 @@ class NetworkRelay extends NetworkRest {
       return {
          config: "/config",
          fileBase64Download: "/file/:uuid/base64?mobile=true",
-         fileBase64Upload: "/file/upload/base64/:objID:/:fieldID",
+         fileBase64Upload: "/file/upload/base64/:objID/:fieldID",
          data: "/app_builder/model/:objID/:id",
          processInbox: "/process/inbox/:taskUUID",
       };

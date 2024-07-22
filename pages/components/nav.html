@@ -278,25 +278,14 @@
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
-            cachedState.userProfile = profileComponent.userProfile;
             cachedState.loadingFinancial = false;
-            // always set to true, while we are developing
-            // cachedState.financialApp = financialApp.loadFinancialData();
-
             cachedState.enabledApps.financial = true;
             const reload = async () => {
                profileComponent.loadProfileData();
                cachedState.userProfile = profileComponent.userProfile;
-               // console.warn("nav.html:: checkDataUpdate() :: ", cachedState.loading);
                if (cachedState.userProfile == null) {
-                  // if it defined, load it 
-                  cachedState.userProfile = profileComponent.userProfile;
-                  // cachedState.financialApp = financialApp.loadFinancialData();
-                  // financialApp.loadFinancialData();
-
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
-                  // always set to true, while we are developing
                   enabledApps.financial = true;
                   cachedState.inboxBadge = 0;
                   cachedState.loadingInbox = true;
@@ -304,17 +293,9 @@
                   cachedState.loading = false;
                   const enabledApps = cachedState.enabledApps;
                   enabledApps.financial = true;
-                  if (app && app?.resources && app?.resources?.storage) {
-                     cachedState.inboxBadge =
-                        (await app.resources.storage.get("user", "siteUserData"))
-                           ?.inbox.length ?? 0;
-                     cachedState.loadingInbox = false;
-                  } else {
-                     console.error('inbox state not set: is app defined in nav.html')
-                  }
-                  // cachedState.inboxBadge =
-                  //    (await app.resources.storage.get("user", "siteUserData"))
-                  //       ?.inbox.length ?? 0;
+                  cachedState.inboxBadge =
+                     (await app.resources.storage.get("user", "siteUserData"))
+                        ?.inbox.length ?? 0;
                   cachedState.loadingInbox = false;
                }
                this.$setState(cachedState);
