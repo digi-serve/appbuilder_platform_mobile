@@ -279,12 +279,13 @@
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
             cachedState.loadingFinancial = false;
+            cachedState.enabledApps.financial = true;
             const reload = async () => {
                cachedState.userProfile = profileComponent.userProfile;
                if (cachedState.userProfile == null) {
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
-                  enabledApps.financial = false;
+                  enabledApps.financial = true;
                   cachedState.inboxBadge = 0;
                   cachedState.loadingInbox = true;
                } else {
