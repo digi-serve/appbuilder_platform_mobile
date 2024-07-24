@@ -217,54 +217,6 @@ class Camera extends EventEmitter {
       this._$reset = this._$backend.find("input[type='reset']");
    }
 
-   //////
-   //  Camera
-   //////
-
-   /**
-    * Activate the camera for the user, and obtain the photo taken.
-    *
-    * @param {int} width
-    * @param {int} height
-    * @return {Promise}
-    *    Resolves with metadata of the saved photo.
-    *    {
-    *       filename: <string>,
-    *       File: <File|Blob>,
-    *       url: <string> // only valid for current session
-    *    }
-    */
-   async getCameraPhoto(
-      width = DEFAULT_WIDTH,
-      height = DEFAULT_HEIGHT,
-      timeout = 5000
-   ) {
-      try {
-         const file = await this._getPicture("camera");
-
-         // check the format and the size of the image
-         // if it is not a jpeg or png reject the promise
-         if (!this.validImageTypes.includes(file["type"]))
-            throw new Error("Image is not a valid type");
-
-         const compressFile = await this._recurseShrink(file, null, {
-            timeout,
-         });
-         const imageUUID = this.app.utils.uuidv4()
-
-         return {
-            uuid: imageUUID,
-            filename: `${imageUUID}_${compressFile.name}`,
-            fileEntry: compressFile,
-         };
-      } catch (err) {
-         // User canceled the photo. Not a real error.
-         if (err.message !== "Canceled")
-            console.error("CameraPWA:getCameraPhoto():Error", err);
-         throw err;
-      }
-   }
-
    /**
     * Prompt the user to select an existing photo from their library, and
     * obtain a copy of the chosen photo.
@@ -279,64 +231,26 @@ class Camera extends EventEmitter {
     *       url: <string> // only valid for current session
     *    }
     */
-   async getLibraryPhoto(
+   async getPhoto(
+      isCamera = false,
       width = DEFAULT_WIDTH,
       height = DEFAULT_HEIGHT,
       timeout = 10000
    ) {
       try {
-         const file = await this._recurseShrink(
-            await this._getPicture("library"),
+         return await this._recurseShrink(
+            await this._getPicture((isCamera && "camera") || "library"),
             null,
             {
                timeout,
             }
          );
-
-         const imageUUID = this.app.utils.uuidv4()
-
-         return {
-            uuid: imageUUID,
-            filename: `${imageUUID}_${file.name}`,
-            fileEntry: file,
-         };
       } catch (err) {
          // User canceled the photo. Not a real error.
          if (err.message !== "Canceled")
             console.error("CameraPWA:getCameraPhoto():Error", err);
          throw err;
       }
-   }
-
-   /**
-    * Loads a previously saved photo by its uuid.
-    *
-    * @param {string} key
-    * @return {Promise}
-    */
-   async findPhoto(key) {
-      return {
-         uuid: key,
-         data: await this.app.resources.storage.get("file", key),
-      };
-   }
-
-   /**
-    * Save a File object to Local Storage.
-    *
-    * @param {string} key
-    * @param {File} file
-    * @return {Promise}
-    */
-   async savePhoto(key, file) {
-      if (!(file instanceof File))
-         throw new Error('The "file" parameter is not a File object.');
-      this._checkFileType(file.type);
-      await this.app.resources.storage.set("file", key, file);
-      return {
-         uuid: key,
-         data: file,
-      };
    }
 }
 

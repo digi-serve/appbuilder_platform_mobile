@@ -15,84 +15,104 @@ const DEFAULT_FILE_SLICESIZE = 512;
 const EVENT_KEY_DOWNLOAD_FILE = "download.file";
 const EVENT_KEY_UPLOAD_FILE = "upload.file";
 const EVENT_PATH = "resources.storage";
+const TIME_WAIT = 1000;
 const defaultTableKeys = ["inbox", "jobPacket", "jobResponse", "file", "user"];
 
 class Storage extends EventEmitter {
    constructor() {
       super();
+      this._callbackQueues = [];
       this._config = {
          encrypt: false,
          key: null, // 256-bit key
       };
       this._db = null;
-      this._callbackQueues = [];
+      this._lock = null;
       this.app = null;
       this.on(EVENT_KEY_DOWNLOAD_FILE, async (context, res) => {
          const callbackQueues = this._callbackQueues;
-         const callbackQueue = callbackQueues.splice(
-            callbackQueues.findIndex(
-               (callbackQueue) => callbackQueue.id === context.queueUUID
-            ),
-            1
-         )[0];
-         const data = res.data;
+         const queueUUID = context.queueUUID;
+         const callbackQueueIndex = callbackQueues.findIndex(
+            (callbackQueue) => callbackQueue.id === queueUUID
+         );
+         const callbackQueue = callbackQueues[callbackQueueIndex];
          try {
             if (res.status === "error") {
-               if (callbackQueue == null) throw new Error(res.message);
-               const callbackResult = callbackQueue.callback(
-                  new Error(res.message)
-               );
-               callbackResult instanceof Promise && (await callbackResult);
+               const lock = this._lock;
+               if (callbackQueue == null) {
+                  try {
+                     await lock.acquire();
+                     await this.clear("file", queueUUID);
+                     lock.release();
+                  } catch (err) {
+                     lock.release();
+                     throw err;
+                  }
+                  throw new Error(res.message);
+               }
+               try {
+                  await lock.acquire();
+                  await this.clear("file", queueUUID);
+                  lock.release();
+               } catch (err) {
+                  lock.release();
+                  callbackQueues.splice(callbackQueueIndex, 1);
+                  throw err;
+               }
+               try {
+                  const callbackResult = callbackQueue.callback(
+                     new Error(res.message)
+                  );
+                  callbackResult instanceof Promise && (await callbackResult);
+                  callbackQueues.splice(callbackQueueIndex, 1);
+               } catch (err) {
+                  callbackQueues.splice(callbackQueueIndex, 1);
+                  throw err;
+               }
                return;
             }
             if (callbackQueue == null) {
-               await this.downloadFile(null, null, data);
+               await this.downloadFile(null, {
+                  data: res.data,
+                  isConfirmed: true,
+               });
                return;
             }
-            const callbackResult = callbackQueue.callback(null, data);
-            callbackResult instanceof Promise && (await callbackResult);
+            try {
+               const callbackResult = callbackQueue.callback(null, {
+                  data: res.data,
+                  isConfirmed: true,
+               });
+               callbackResult instanceof Promise && (await callbackResult);
+               callbackQueues.splice(callbackQueueIndex, 1);
+            } catch (err) {
+               callbackQueues.splice(callbackQueueIndex, 1);
+               throw err;
+            }
          } catch (err) {
             console.error(err);
          }
-
-         // if (context.callback == null) return;
-         // const callbackResult =
-         //    (context.error != null && context.callback(context.error)) ||
-         //    (!this.validFileTypes.includes(data.type) &&
-         //       context.callback(
-         //          new Error(`This file type is invalid: ${data.type}`)
-         //       )) ||
-         //    context.callback(null, {
-         //       uuid: data.uuid,
-         //       filename: data.file,
-         //       type: data.type,
-         //       fileEntry: this.convertBase64DataToFile(
-         //          data.file,
-         //          data.contents,
-         //          {
-         //             type: data.type,
-         //          }
-         //       ),
-         //    });
-         // if (callbackResult instanceof Promise) {
-         //    try {
-         //       await callbackResult;
-         //    } catch (err) {
-         //       console.error(err);
-         //    }
-         // }
       });
       this.on(EVENT_KEY_UPLOAD_FILE, async (context, res) => {
          const callbackQueues = this._callbackQueues;
+         const queueUUID = context.queueUUID;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
-               (callbackQueue) => callbackQueue.id === context.queueUUID
+               (callbackQueue) => callbackQueue.id === queueUUID
             ),
             1
          )[0];
-         const data = res.data;
          try {
             if (res.status === "error") {
+               const lock = this._lock;
+               try {
+                  await lock.acquire;
+                  await this.clear("file", queueUUID);
+                  lock.release();
+               } catch (err) {
+                  lock.release();
+                  throw err;
+               }
                if (callbackQueue == null) throw new Error(res.message);
                const callbackResult = callbackQueue.callback(
                   new Error(res.message)
@@ -101,31 +121,22 @@ class Storage extends EventEmitter {
                return;
             }
             if (callbackQueue == null) {
-               await this.uploadFile(null, null, null, data);
+               const resData = res.data;
+               const fileBase64 = context.fileBase64;
+               await this.uploadFile(null, null, null, {
+                  data: Object.assign({ contents: fileBase64 }, resData),
+                  isConfirmed: true,
+               });
                return;
             }
-            const callbackResult = callbackQueue.callback(null, data);
+            const callbackResult = callbackQueue.callback(null, {
+               data: Object.assign({ contents: context.fileBase64 }, res.data),
+               isConfirmed: true,
+            });
             callbackResult instanceof Promise && (await callbackResult);
          } catch (err) {
             console.error(err);
          }
-
-         // if (context.callback == null) return;
-         // const callbackResult =
-         //    (context.error != null && context.callback(context.error)) ||
-         //    context.callback(null, {
-         //       uuid: data.uuid,
-         //       filename: data.file,
-         //       type: data.type,
-         //       fileEntry: context.data.fileEntry,
-         //    });
-         // if (callbackResult instanceof Promise) {
-         //    try {
-         //       await callbackResult;
-         //    } catch (err) {
-         //       console.error(err);
-         //    }
-         // }
       });
    }
 
@@ -201,6 +212,7 @@ class Storage extends EventEmitter {
       _db.onerror = (event) => {
          console.error("IndexedDB error", event.target.errorCode);
       };
+      this._lock = new this.app.utils.Lock();
    }
 
    /**
@@ -507,7 +519,7 @@ class Storage extends EventEmitter {
    convertFileToBase64Data(file) {
       return new Promise((resolve) => {
          const reader = new FileReader();
-         reader.onloadend = function () {
+         reader.onloadend = () => {
             const base64 = reader.result.split(",")[1]; // Remove data URL prefix
             resolve(base64);
          };
@@ -515,60 +527,79 @@ class Storage extends EventEmitter {
       });
    }
 
-   async downloadFile(uuid, data, backupData) {
-      return (
-         data ||
-         (await new Promise((resolve, reject) => {
-            (async () => {
-               this._pendingNetworkCallbacks.downloadFile = async (
-                  err,
-                  result
-               ) => {
-                  if (err != null) reject(new Error(err.message));
-                  if (err != null || result.uuid == null)
-                     reject(new Error(`No file data (${uuid})`));
-                  resolve(result);
-               };
-
-               // image was not found on device you need to fetch it
-               const network = this.app.resources.network;
-               await network.get(
-                  {
-                     url: network.validRoutes.fileBase64Download.replace(
-                        ":uuid",
-                        uuid
-                     ),
-                  },
-                  {
-                     targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
-                     targetEventPath: EVENT_PATH,
-                     callback: async (err, result) => {
-                        if (err != null) reject(new Error(err.message));
-                        if (err != null || result.uuid == null)
-                           reject(new Error(`No file data (${uuid})`));
-                        resolve(result);
-                     },
-                  }
-               );
-            })();
-         }))
-      );
-   }
-
-   uploadFile(objID, fieldID, data, backupData) {
-      // if (data.fileEntry.type)
-      //    throw new Error(`This file type is invalid: ${type}`);
+   async downloadFile(key, backupData) {
+      let fileObj = null;
+      const lock = this._lock;
       if (backupData != null) {
-         // TODO (Guy): Logic.
-         return;
+         try {
+            await lock.acquire();
+            await this.set("file", backupData.data.uuid, backupData);
+            lock.release();
+            return backupData;
+         } catch (err) {
+            lock.release();
+            throw err;
+         }
       }
-      const app = this.app;
-      const network = app.resources.network;
-      return new Promise((resolve, reject) => {
+      try {
+         await lock.acquire();
+         fileObj = await this.get("file", key);
+         if (fileObj == null) {
+            fileObj = {
+               isConfirmed: false,
+            };
+            await this.set("file", key, fileObj);
+         }
+         if (fileObj.isConfirmed) {
+            lock.release();
+            return fileObj;
+         }
+         lock.release();
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
+      const callbackQueues = this._callbackQueues;
+      if (
+         callbackQueues.find((callbackQueue) => callbackQueue.id === key) !=
+         null
+      ) {
+         try {
+            return await Promise((resolve, reject) => {
+               const waitForSync = () => {
+                  setTimeout(async () => {
+                     try {
+                        await lock.acquire();
+                        fileObj = await this.get("file", key);
+                        if (
+                           callbackQueues.find(
+                              (callbackQueue) => callbackQueue.id === key
+                           ) == null
+                        ) {
+                           lock.release();
+                           if (fileObj != null && fileObj.isConfirmed)
+                              resolve(fileObj);
+                           else reject(new Error(""));
+                           return;
+                        }
+                        lock.release();
+                        waitForSync();
+                     } catch (err) {
+                        lock.release();
+                        reject(err);
+                     }
+                  }, TIME_WAIT);
+               };
+               waitForSync();
+            });
+         } catch (err) {
+            // Do nothing.
+         }
+      }
+      const resData = await new Promise((resolve, reject) => {
          (async () => {
-            const queueUUID = app.utils.uuidv4();
-            this._callbackQueues.push({
-               id: queueUUID,
+            callbackQueues.push({
+               id: key,
                callback: (err, result) => {
                   if (err != null) {
                      reject(new Error(err.message));
@@ -577,35 +608,104 @@ class Storage extends EventEmitter {
                   resolve(result);
                },
             });
-            await network.post(
+
+            // image was not found on device you need to fetch it
+            const network = this.app.resources.network;
+            await network.get(
                {
-                  url: network.validRoutes.fileBase64Upload.replace(
-                     ":objID/:fieldID",
-                     `${objID}/${fieldID}`
+                  url: network.validRoutes.fileBase64Download.replace(
+                     ":uuid",
+                     key
                   ),
-                  data: {
-                     fieldID,
-                     file: data.file,
-                     fileID: data.uuid,
-                     fileName: data.filename,
-                     objID,
-                     type: data.fileEntry.type,
-                     uploadedBy: data.user,
-                  },
                },
                {
                   context: {
-                     data: {
-                        fileEntry: data.fileEntry,
-                     },
-                     queueUUID,
-                     targetEventKey: EVENT_KEY_UPLOAD_FILE,
+                     queueUUID: key,
+                     targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
                      targetEventPath: EVENT_PATH,
                   },
                }
             );
          })();
       });
+      try {
+         await lock.acquire();
+         await this.set("file", resData.data.uuid, resData);
+         lock.release();
+         return resData;
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
+   }
+
+   async uploadFile(objID, fieldID, data, backupData) {
+      const lock = this._lock;
+      const resData =
+         backupData ||
+         (await new Promise((resolve, reject) => {
+            const app = this.app;
+            const network = app.resources.network;
+            (async () => {
+               const queueUUID = app.utils.uuidv4();
+               const file = data.file;
+               this._callbackQueues.push({
+                  id: queueUUID,
+                  callback: (err, result) => {
+                     if (err != null) {
+                        reject(new Error(err.message));
+                        return;
+                     }
+                     resolve(result);
+                  },
+               });
+               const fileBase64 = await this.convertFileToBase64Data(file);
+               try {
+                  await lock.acquire();
+                  await this.set("file", queueUUID, {
+                     isConfirmed: false,
+                  });
+                  lock.release();
+               } catch (err) {
+                  lock.release();
+                  throw err;
+               }
+               await network.post(
+                  {
+                     url: network.validRoutes.fileBase64Upload.replace(
+                        ":objID/:fieldID",
+                        `${objID}/${fieldID}`
+                     ),
+                     data: {
+                        fieldID,
+                        file: fileBase64,
+                        fileID: queueUUID,
+                        fileName: `${queueUUID}_${file.name}`,
+                        objID,
+                        type: file.type,
+                        uploadedBy: data.uploadedBy,
+                     },
+                  },
+                  {
+                     context: {
+                        fileBase64,
+                        queueUUID,
+                        targetEventKey: EVENT_KEY_UPLOAD_FILE,
+                        targetEventPath: EVENT_PATH,
+                     },
+                  }
+               );
+            })();
+         }));
+      try {
+         await lock.acquire();
+         await this.set("file", resData.data.uuid, resData);
+         lock.release();
+         return resData;
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
    }
 
    get config() {
