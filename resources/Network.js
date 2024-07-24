@@ -748,7 +748,6 @@ class NetworkRelay extends NetworkRest {
                // find the jobToken
                // trigger the registered .key callback
                const jobToken = response.jobToken;
-               console.assert(response.jobToken, 'No Job Token found in response at Network.js');
                const jobResponse = await storage.get("jobResponse", jobToken);
                if (jobResponse != null)
                   this.emit(
