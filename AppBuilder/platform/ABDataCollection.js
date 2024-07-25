@@ -161,10 +161,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          await lock.acquire();
          for (const key in dcData) {
             const refStorage = this.refStorage();
-            const keyPrefix = this.keyPrefix();
             switch (key) {
                case "data":
-                  const data = dcData[key];
+                  const values = dcData[key];
 
                   // Clear old data.
                   this._latestItemDatetime = null;
@@ -172,12 +171,13 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   for (const storedValue of storedValues) {
                      if (
                         !(storedValue instanceof Object) ||
-                        data.find((e) => e.id === storedValue.id) != null
+                        values.find((e) => e.id === storedValue.data.id) != null
                      )
                         continue;
                      pendingPromises.push(
                         (async () => {
-                           const key = storedValue.id;
+                           if (!storedValue.isConfirmed) return;
+                           const key = storedValue.data.id;
                            await storage.clear(refStorage, key);
                            this.__dataCollection.remove(key);
                         })()
@@ -190,11 +190,12 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   pendingPromises.length > 0 &&
                      (await Promise.all(pendingPromises));
                   pendingPromises = [];
-                  if (data.length === 0) break;
+                  if (values.length === 0) break;
                   const isSourceTypeObject = this.sourceType === "object";
                   if (isSourceTypeObject)
-                     this._latestItemDatetime = data[0]["updated_at"];
-                  for (const value of data) {
+                     this._latestItemDatetime = values[0]["updated_at"];
+                  for (let i = 0; i < values.length; i++) {
+                     const value = values[i];
                      if (
                         isSourceTypeObject &&
                         new Date(this._latestItemDatetime) <
@@ -202,7 +203,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      )
                         this._latestItemDatetime = value["updated_at"];
                      pendingPromises.push(
-                        storage.set(refStorage, value.id, value)
+                        storage.set(
+                           refStorage,
+                           value.id,
+                           (values[i] = {
+                              data: value,
+                              id: value.id,
+                              isConfirmed: true,
+                           })
+                        )
                      );
 
                      // Wait for 100 promises each time.
@@ -237,7 +246,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {Promise}
     */
    async _updateSyncAffectedDCs() {
-      console.assert(this.AB.app.abDCs, "this.AB.app.abDCs not defined");//
+      console.assert(this.AB.app.abDCs, "this.AB.app.abDCs not defined"); //
       const connectedDatasources = this.datasource
          .connectFields()
          .map((field) => field.datasourceLink.id);
@@ -415,7 +424,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             case 1:
                if (this._dataStatus === this.dataStatusFlag.initialized) {
                   this._isSyncing = false;
-                  console.log(`ABDataCollection::loadData()::: initialized ${this.label} , ${this.id}`);
+                  console.log(
+                     `ABDataCollection::loadData()::: initialized ${this.label} , ${this.id}`
+                  );
                   return;
                }
                const dcData = await this._getDCData();
@@ -440,7 +451,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                break;
          }
          if (this._dataStatus === this.dataStatusFlag.initializing) {
-            console.log(`ABDataCollection::loadData()::: initializing ${this.label} , ${this.id}`);
+            console.log(
+               `ABDataCollection::loadData()::: initializing ${this.label} , ${this.id}`
+            );
             await Promise.all([
                // If this method has already been called, just wait for a response.
                await new Promise((resolve) => {
@@ -520,9 +533,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
       this.__dataCollection.remove(id);
       this.__totalCount = this.__totalCount - 1;
-      if (callback == null) return id;
-      const callbackResult = callback(id);
-      callbackResult instanceof Promise && (await callbackResult);
+      return id;
    }
 
    async reloadData() {
@@ -555,24 +566,139 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
    }
 
-   async setData(id, value, callback) {
+   setData(id, value, isAwaiting = false) {
       // if not valid for this DC
-      if (!this.__filterDatasource.isValid(value)) return;
+      if (!this.__filterDatasource.isValid(value))
+         throw Error("Some value is not valid!");
+      const app = this.AB.app;
+      const storage = app.resources.storage;
+      const lock = this._lock;
+      return new Promise((resolve, reject) => {
+         (async () => {
+            if (id != null) {
+               const pendingPromise = this.model.update(id, value);
+               const newValue = {
+                  data: value,
+                  id,
+                  isConfirmed: false,
+               };
+               try {
+                  await lock.acquire();
+                  await storage.set(this.refStorage(), id, newValue);
+                  lock.release();
+               } catch (err) {
+                  lock.release();
+                  reject(err);
+                  return;
+               }
+               // Check existing value.
+               (this.getData((e) => e.id === id)[0] == null &&
+                  this.__dataCollection.add(newValue)) ||
+                  this.__dataCollection.updateItem(id, newValue);
+               if (!isAwaiting) {
+                  resolve(newValue);
+                  try {
+                     const result = await pendingPromise;
+                     await Promise.all([
+                        this._updateSyncAffectedDCs(),
+                        this.updateSyncData(),
+                     ]);
 
-      const result =
-         (id != null && (await this.model.update(id, value))) ||
-         (await this.model.create(value));
-      await Promise.all([
-         this._updateSyncAffectedDCs(),
-         (result != null &&
-            this.updateSyncData({
-               data: [result],
-            })) ||
-            this.updateSyncData(),
-      ]);
-      if (callback == null) return result;
-      const callbackResult = callback(result);
-      callbackResult instanceof Promise && (await callbackResult);
+                     // Uodated resuilt.
+                     if (this.getData((e) => e.id === id)[0] == null)
+                        await this.updateSyncData({
+                           data: [result],
+                        });
+                  } catch (err) {
+                     console.error(err);
+                  }
+                  return;
+               }
+               try {
+                  const result = await pendingPromise;
+                  await Promise.all([
+                     this._updateSyncAffectedDCs(),
+                     this.updateSyncData(),
+                  ]);
+
+                  // Uodated resuilt.
+                  if (this.getData((e) => e.id === id)[0] == null)
+                     await this.updateSyncData({
+                        data: [result],
+                     });
+                  resolve({
+                     data: result,
+                     id,
+                     isConfirmed: true,
+                  });
+               } catch (err) {
+                  reject(err);
+               }
+               return;
+            }
+            const newID = app.utils.uuidv4();
+            const newData = Object.assign({ id: newID, uuid: newID }, value);
+            const pendingPromise = this.model.create(newData);
+            const newValue = {
+               data: newData,
+               id: newID,
+               isConfirmed: false,
+            };
+            try {
+               await lock.acquire();
+               await storage.set(this.refStorage(), newID, newValue);
+               lock.release();
+            } catch (err) {
+               lock.release();
+               reject(err);
+               return;
+            }
+
+            // Check existing value.
+            (this.getData((e) => e.id === newID)[0] == null &&
+               this.__dataCollection.add(newValue)) ||
+               this.__dataCollection.updateItem(newID, newValue);
+            if (!isAwaiting) {
+               resolve(newValue);
+               try {
+                  const result = await pendingPromise;
+                  await Promise.all([
+                     this._updateSyncAffectedDCs(),
+                     this.updateSyncData(),
+                  ]);
+
+                  // Uodated resuilt.
+                  if (this.getData((e) => e.id === newID)[0] == null)
+                     await this.updateSyncData({
+                        data: [result],
+                     });
+               } catch (err) {
+                  console.error(err);
+               }
+               return;
+            }
+            try {
+               const result = await pendingPromise;
+               await Promise.all([
+                  this._updateSyncAffectedDCs(),
+                  this.updateSyncData(),
+               ]);
+
+               // Uodated resuilt.
+               if (this.getData((e) => e.id === newID)[0] == null)
+                  await this.updateSyncData({
+                     data: [result],
+                  });
+               resolve({
+                  data: result,
+                  id: newID,
+                  isConfirmed: true,
+               });
+            } catch (err) {
+               reject(err);
+            }
+         })();
+      });
    }
 
    async updateSyncData(backupDcData) {
@@ -606,12 +732,23 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          const lock = this._lock;
          try {
             await lock.acquire();
-            for (const value of dcData.data) {
+            for (let value of dcData.data) {
                pendingPromises.push(
                   (async () => {
-                     const id = value.id;
+                     if (
+                        isSourceTypeObject &&
+                        new Date(this._latestItemDatetime) <
+                           new Date(value["updated_at"])
+                     )
+                        this._latestItemDatetime = value["updated_at"];
                      const key =
-                        (typeof id === "string" && id) || id.toString();
+                        (typeof value.id === "string" && value.id) ||
+                        value.id.toString();
+                     value = {
+                        data: value,
+                        id: key,
+                        isConfirmed: true,
+                     };
                      if ((await storage.get(refStorage, key)) == null) {
                         await Promise.all([
                            storage.set(refStorage, key, value),
@@ -624,19 +761,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
                         this.__dataCollection.add(value);
                         this.__totalCount = this.__totalCount + 1;
-                     } else {
-                        await storage.set(refStorage, key, value);
-                        const oldValue = this.getData((e) => e.id === key)[0];
-                        (oldValue == null &&
-                           this.__dataCollection.add(value)) ||
-                           this.__dataCollection.updateItem(key, value);
+                        return;
                      }
-                     if (
-                        isSourceTypeObject &&
-                        new Date(this._latestItemDatetime) <
-                           new Date(value["updated_at"])
-                     )
-                        this._latestItemDatetime = value["updated_at"];
+                     await storage.set(refStorage, key, value);
+
+                     // Check existing value.
+                     (this.getData((e) => e.id === key)[0] == null &&
+                        this.__dataCollection.add(value)) ||
+                        this.__dataCollection.updateItem(key, value);
                   })()
                );
 
@@ -725,7 +857,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     * @return {string}
     */
    refStorage() {
-      console.assert(this.id, "ABDataCollection::refStorage(): missing id");
       return `dc-${this.id}`;
    }
    /**
@@ -736,7 +867,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
     */
    keyPrefix() {
       return `meta-dc-${this.id}-`;
-
    }
 
    get model() {

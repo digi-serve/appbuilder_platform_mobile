@@ -59,37 +59,48 @@ class Inbox extends Common {
       }
       const network = this.page.app.resources.network;
       await new Promise((resolve, reject) => {
-         (async () => {
-            const queueUUID = app.utils.uuidv4();
-            this._callbackQueues.push({
-               id: queueUUID,
-               callback: (err, result) => {
-                  if (err != null) {
-                     reject(err);
-                     return;
-                  }
-                  resolve(result);
-               },
-            });
-            await network.put(
-               {
-                  url: network.validRoutes.processInbox.replace(
-                     ":taskUUID",
-                     taskUUID
-                  ),
-                  data: {
-                     response: event,
-                  },
-               },
-               {
-                  context: {
-                     queueUUID,
-                     targetEventKey: EVENT_KEY_REQUEST_PROCESS_INBOX,
-                     targetEventPath: EVENT_PATH,
-                     taskUUID,
-                  },
+         const queueUUID = app.utils.uuidv4();
+         this._callbackQueues.push({
+            id: queueUUID,
+            callback: (err, result) => {
+               if (err != null) {
+                  reject(err);
+                  return;
                }
-            );
+               resolve(result);
+            },
+         });
+         (async () => {
+            try {
+               await network.put(
+                  {
+                     url: network.validRoutes.processInbox.replace(
+                        ":taskUUID",
+                        taskUUID
+                     ),
+                     data: {
+                        response: event,
+                     },
+                  },
+                  {
+                     context: {
+                        queueUUID,
+                        targetEventKey: EVENT_KEY_REQUEST_PROCESS_INBOX,
+                        targetEventPath: EVENT_PATH,
+                        taskUUID,
+                     },
+                  }
+               );
+            } catch (err) {
+               const callbackQueues = this._callbackQueues;
+               callbackQueues.splice(
+                  callbackQueues.findIndex(
+                     (callbackQueue) => callbackQueue.id === queueUUID
+                  ),
+                  1
+               );
+               reject(err);
+            }
          })();
       });
       await app.resources.account.loadUserData(true);
