@@ -33,7 +33,7 @@ class Profile extends Common {
          (abDC) =>
             abDC.id === "User Person" ||
             // TODO (Guy):
-            abDC.name === "User Person",
+            abDC.name === "User Person"
       );
       if (this.dc) {
          this.dc.on("loadData", () => {
@@ -43,19 +43,12 @@ class Profile extends Common {
    }
 
    loadProfileData() {
-      console.assert(
-         this.dc,
-         "Profile.init() : this.dc not set. Did you forget to call super.init()?",
-      );
-      console.assert(
-         this.page.app.resources.account.userData?.user?.username,
-         "Profile.init() : this.page.app.resources.account.userData.user.username not set.",
-      );
+      const username = this.page.app.resources.account.userData?.user.username;
       this._userProfile = this.dc.getData(
          (e) =>
-            e["System Access"] ===
-            this.page.app.resources.account.userData?.user?.username,
-      )[0];
+            e.data["System Access"] ===
+            this.page.app.resources.account.userData?.user?.username
+      )[0].data;
    }
 
    get userProfile() {

@@ -35,7 +35,9 @@ class Storage extends EventEmitter {
          const callbackQueueIndex = callbackQueues.findIndex(
             (callbackQueue) => callbackQueue.id === queueUUID
          );
-         const callbackQueue = callbackQueues[callbackQueueIndex];
+         const callbackQueue =
+            (callbackQueueIndex > -1 && callbackQueues[callbackQueueIndex]) ||
+            null;
          try {
             if (res.status === "error") {
                const lock = this._lock;
@@ -60,27 +62,31 @@ class Storage extends EventEmitter {
                   throw err;
                }
                try {
+                  if (callbackQueue.callback == null) return;
                   const callbackResult = callbackQueue.callback(
                      new Error(res.message)
                   );
                   callbackResult instanceof Promise && (await callbackResult);
                   callbackQueues.splice(callbackQueueIndex, 1);
+                  return;
                } catch (err) {
                   callbackQueues.splice(callbackQueueIndex, 1);
                   throw err;
                }
-               return;
             }
             if (callbackQueue == null) {
-               await this.downloadFile(null, {
+               await this.downloadFile(null, false, {
                   data: res.data,
+                  id: queueUUID,
                   isConfirmed: true,
                });
                return;
             }
             try {
+               if (callbackQueue.callback == null) return;
                const callbackResult = callbackQueue.callback(null, {
                   data: res.data,
+                  id: queueUUID,
                   isConfirmed: true,
                });
                callbackResult instanceof Promise && (await callbackResult);
@@ -114,6 +120,7 @@ class Storage extends EventEmitter {
                   throw err;
                }
                if (callbackQueue == null) throw new Error(res.message);
+               if (callbackQueue.callback == null) return;
                const callbackResult = callbackQueue.callback(
                   new Error(res.message)
                );
@@ -123,14 +130,17 @@ class Storage extends EventEmitter {
             if (callbackQueue == null) {
                const resData = res.data;
                const fileBase64 = context.fileBase64;
-               await this.uploadFile(null, null, null, {
+               await this.uploadFile(null, null, null, false, {
                   data: Object.assign({ contents: fileBase64 }, resData),
+                  id: queueUUID,
                   isConfirmed: true,
                });
                return;
             }
+            if (callbackQueue.callback == null) return;
             const callbackResult = callbackQueue.callback(null, {
                data: Object.assign({ contents: context.fileBase64 }, res.data),
+               id: queueUUID,
                isConfirmed: true,
             });
             callbackResult instanceof Promise && (await callbackResult);
@@ -520,110 +530,200 @@ class Storage extends EventEmitter {
       });
    }
 
-   async downloadFile(key, backupData) {
-      let fileObj = null;
+   async downloadFile(key, isAwaiting = false, backupData) {
       const lock = this._lock;
-      if (backupData != null) {
-         try {
-            await lock.acquire();
-            await this.set("file", backupData.data.uuid, backupData);
-            lock.release();
-            return backupData;
-         } catch (err) {
-            lock.release();
-            throw err;
-         }
-      }
-      try {
-         await lock.acquire();
-         fileObj = await this.get("file", key);
-         if (fileObj == null) {
-            fileObj = {
-               isConfirmed: false,
-            };
-            await this.set("file", key, fileObj);
-         }
-         if (fileObj.isConfirmed) {
-            lock.release();
-            return fileObj;
-         }
-         lock.release();
-      } catch (err) {
-         lock.release();
-         throw err;
-      }
-      const callbackQueues = this._callbackQueues;
-      if (
-         callbackQueues.find((callbackQueue) => callbackQueue.id === key) !=
-         null
-      ) {
-         try {
-            return await Promise((resolve, reject) => {
-               const waitForSync = () => {
-                  setTimeout(async () => {
-                     try {
-                        await lock.acquire();
-                        fileObj = await this.get("file", key);
-                        if (
-                           callbackQueues.find(
-                              (callbackQueue) => callbackQueue.id === key
-                           ) == null
-                        ) {
-                           lock.release();
-                           if (fileObj != null && fileObj.isConfirmed)
-                              resolve(fileObj);
-                           else reject(new Error(""));
-                           return;
-                        }
-                        lock.release();
-                        waitForSync();
-                     } catch (err) {
-                        lock.release();
-                        reject(err);
-                     }
-                  }, TIME_WAIT);
-               };
-               waitForSync();
-            });
-         } catch (err) {
-            // Do nothing.
-         }
-      }
-      const resData = await new Promise((resolve, reject) => {
-         (async () => {
-            callbackQueues.push({
-               id: key,
-               callback: (err, result) => {
-                  if (err != null) {
-                     reject(new Error(err.message));
-                     return;
-                  }
-                  resolve(result);
-               },
-            });
-
-            // image was not found on device you need to fetch it
-            const network = this.app.resources.network;
-            await network.get(
-               {
-                  url: network.validRoutes.fileBase64Download.replace(
-                     ":uuid",
-                     key
-                  ),
-               },
-               {
-                  context: {
-                     queueUUID: key,
-                     targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
-                     targetEventPath: EVENT_PATH,
+      let isSaved = true;
+      const resData =
+         backupData ||
+         (await new Promise((resolve, reject) => {
+            (async () => {
+               const fileValue = {
+                  data: {
+                     contents: null,
+                     file: null,
+                     type: null,
+                     uuid: key,
                   },
+                  id: key,
+                  isConfirmed: false,
+               };
+               try {
+                  await lock.acquire();
+                  const storedValue = await this.get("file", key);
+                  if (storedValue != null) {
+                     const fileValueData = fileValue.data;
+                     const storedValueData = storedValue.data;
+                     fileValueData.contents = storedValueData.contents;
+                     fileValueData.file = storedValueData.file;
+                     fileValueData.type = storedValueData.type;
+                     fileValue.isConfirmed = storedValue.isConfirmed;
+                     isSaved = false;
+                     if (fileValue.isConfirmed) {
+                        lock.release();
+                        resolve(fileValue);
+                        return;
+                     }
+                  }
+                  lock.release();
+               } catch (err) {
+                  lock.release();
+                  reject(err);
+                  return;
                }
-            );
-         })();
-      });
+               const network = this.app.resources.network;
+               const callbackQueues = this._callbackQueues;
+               if (!isAwaiting) {
+                  resolve(fileValue);
+                  try {
+                     if (
+                        callbackQueues.find(
+                           (callbackQueue) => callbackQueue.id === key
+                        ) != null
+                     ) {
+                        await new Promise((resolve2, reject2) => {
+                           const waitForSync = () => {
+                              setTimeout(async () => {
+                                 try {
+                                    await lock.acquire();
+                                    if (
+                                       callbackQueues.find(
+                                          (callbackQueue) =>
+                                             callbackQueue.id === key
+                                       ) == null
+                                    ) {
+                                       lock.release();
+                                       const fileValue = await this.get(
+                                          "file",
+                                          key
+                                       );
+                                       if (
+                                          fileValue != null &&
+                                          fileValue.isConfirmed
+                                       )
+                                          resolve2();
+                                       else resolve2();
+                                       return;
+                                    }
+                                    lock.release();
+                                    waitForSync();
+                                 } catch (err) {
+                                    lock.release();
+                                    reject2(err);
+                                 }
+                              }, TIME_WAIT);
+                           };
+                           waitForSync();
+                        });
+                        return;
+                     }
+                     await network.get(
+                        {
+                           url: network.validRoutes.fileBase64Download.replace(
+                              ":uuid",
+                              key
+                           ),
+                        },
+                        {
+                           context: {
+                              queueUUID: key,
+                              targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
+                              targetEventPath: EVENT_PATH,
+                           },
+                        }
+                     );
+                  } catch (err) {
+                     console.error(err);
+                  }
+                  return;
+               }
+               if (
+                  callbackQueues.find(
+                     (callbackQueue) => callbackQueue.id === key
+                  ) != null
+               ) {
+                  try {
+                     resolve(
+                        await new Promise((resolve2, reject2) => {
+                           const waitForSync = () => {
+                              setTimeout(async () => {
+                                 try {
+                                    await lock.acquire();
+                                    if (
+                                       callbackQueues.find(
+                                          (callbackQueue) =>
+                                             callbackQueue.id === key
+                                       ) == null
+                                    ) {
+                                       lock.release();
+                                       const fileValue = await this.get(
+                                          "file",
+                                          key
+                                       );
+                                       if (
+                                          fileValue != null &&
+                                          fileValue.isConfirmed
+                                       )
+                                          resolve2(fileValue);
+                                       else resolve2();
+                                       return;
+                                    }
+                                    lock.release();
+                                    waitForSync();
+                                 } catch (err) {
+                                    lock.release();
+                                    reject2(err);
+                                 }
+                              }, TIME_WAIT);
+                           };
+                           waitForSync();
+                        })
+                     );
+                  } catch (err) {
+                     reject(err);
+                  }
+                  return;
+               }
+               callbackQueues.push({
+                  id: key,
+                  callback: (err, result) => {
+                     if (err != null) {
+                        reject(new Error(err.message));
+                        return;
+                     }
+                     resolve(result);
+                  },
+               });
+               try {
+                  await network.get(
+                     {
+                        url: network.validRoutes.fileBase64Download.replace(
+                           ":uuid",
+                           key
+                        ),
+                     },
+                     {
+                        context: {
+                           queueUUID: key,
+                           targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
+                           targetEventPath: EVENT_PATH,
+                        },
+                     }
+                  );
+               } catch (err) {
+                  callbackQueues.splice(
+                     callbackQueues.findIndex(
+                        (callbackQueue) => callbackQueue.id === key
+                     ),
+                     1
+                  );
+                  reject(err);
+               }
+            })();
+         }));
+      if (!isSaved) return resData;
       try {
          await lock.acquire();
-         await this.set("file", resData.data.uuid, resData);
+         await this.set("file", resData.id, resData);
          lock.release();
          return resData;
       } catch (err) {
@@ -632,7 +732,7 @@ class Storage extends EventEmitter {
       }
    }
 
-   async uploadFile(objID, fieldID, data, backupData) {
+   async uploadFile(objID, fieldID, data, isAwaiting = false, backupData) {
       const lock = this._lock;
       const resData =
          backupData ||
@@ -642,6 +742,53 @@ class Storage extends EventEmitter {
             (async () => {
                const queueUUID = app.utils.uuidv4();
                const file = data.file;
+               const fileBase64 = await this.convertFileToBase64Data(file);
+               if (!isAwaiting) {
+                  resolve({
+                     data: {
+                        contents: fileBase64,
+                        file: file.name,
+                        type: file.type,
+                        uuid: queueUUID,
+                     },
+                     id: queueUUID,
+                     isConfirmed: false,
+                  });
+                  try {
+                     this._callbackQueues.push({
+                        id: queueUUID,
+                        callback: null,
+                     })
+                     await network.post(
+                        {
+                           url: network.validRoutes.fileBase64Upload.replace(
+                              ":objID/:fieldID",
+                              `${objID}/${fieldID}`
+                           ),
+                           data: {
+                              fieldID,
+                              file: fileBase64,
+                              fileID: queueUUID,
+                              fileName: `${queueUUID}_${file.name}`,
+                              objID,
+                              type: file.type,
+                              uploadedBy: data.uploadedBy,
+                           },
+                        },
+                        {
+                           context: {
+                              fileBase64,
+                              queueUUID,
+                              targetEventKey: EVENT_KEY_UPLOAD_FILE,
+                              targetEventPath: EVENT_PATH,
+                           },
+                        }
+                     );
+                  } catch (err) {
+                     console.error(err);
+                  }
+                  return;
+               }
                this._callbackQueues.push({
                   id: queueUUID,
                   callback: (err, result) => {
@@ -652,47 +799,47 @@ class Storage extends EventEmitter {
                      resolve(result);
                   },
                });
-               const fileBase64 = await this.convertFileToBase64Data(file);
                try {
-                  await lock.acquire();
-                  await this.set("file", queueUUID, {
-                     isConfirmed: false,
-                  });
-                  lock.release();
+                  await network.post(
+                     {
+                        url: network.validRoutes.fileBase64Upload.replace(
+                           ":objID/:fieldID",
+                           `${objID}/${fieldID}`
+                        ),
+                        data: {
+                           fieldID,
+                           file: fileBase64,
+                           fileID: queueUUID,
+                           fileName: `${queueUUID}_${file.name}`,
+                           objID,
+                           type: file.type,
+                           uploadedBy: data.uploadedBy,
+                        },
+                     },
+                     {
+                        context: {
+                           fileBase64,
+                           queueUUID,
+                           targetEventKey: EVENT_KEY_UPLOAD_FILE,
+                           targetEventPath: EVENT_PATH,
+                        },
+                     }
+                  );
                } catch (err) {
-                  lock.release();
-                  throw err;
-               }
-               await network.post(
-                  {
-                     url: network.validRoutes.fileBase64Upload.replace(
-                        ":objID/:fieldID",
-                        `${objID}/${fieldID}`
+                  const callbackQueues = this._callbackQueues;
+                  callbackQueues.splice(
+                     callbackQueues.findIndex(
+                        (callbackQueue) => callbackQueue.id === queueUUID
                      ),
-                     data: {
-                        fieldID,
-                        file: fileBase64,
-                        fileID: queueUUID,
-                        fileName: `${queueUUID}_${file.name}`,
-                        objID,
-                        type: file.type,
-                        uploadedBy: data.uploadedBy,
-                     },
-                  },
-                  {
-                     context: {
-                        fileBase64,
-                        queueUUID,
-                        targetEventKey: EVENT_KEY_UPLOAD_FILE,
-                        targetEventPath: EVENT_PATH,
-                     },
-                  }
-               );
+                     1
+                  );
+                  reject(err);
+               }
             })();
          }));
       try {
          await lock.acquire();
-         await this.set("file", resData.data.uuid, resData);
+         await this.set("file", resData.id, resData);
          lock.release();
          return resData;
       } catch (err) {

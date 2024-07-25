@@ -35,7 +35,6 @@ class App extends EventEmitter {
       this._abDatacollections = [];
       this._abObjects = [];
       this._abQuerys = [];
-      this.f7App = null;
       this.pages = {
          appPage,
          loadingPage,
