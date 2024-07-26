@@ -592,7 +592,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   return;
                }
                // Check existing value.
-               (this.getData((e) => e.id === id)[0] == null &&
+               (!this.__dataCollection.exist(id) &&
                   this.__dataCollection.add(newValue)) ||
                   this.__dataCollection.updateItem(id, newValue);
                if (!isAwaiting) {
@@ -605,7 +605,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      ]);
 
                      // Uodated resuilt.
-                     if (this.getData((e) => e.id === id)[0] == null)
+                     if (!this.__dataCollection.exist(id))
                         await this.updateSyncData({
                            data: [result],
                         });
@@ -622,7 +622,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   ]);
 
                   // Uodated resuilt.
-                  if (this.getData((e) => e.id === id)[0] == null)
+                  if (!this.__dataCollection.exist(id))
                      await this.updateSyncData({
                         data: [result],
                      });
@@ -637,7 +637,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                return;
             }
             const newID = app.utils.uuidv4();
-            const newData = Object.assign({ id: newID, uuid: newID }, value);
+            const newData = Object.assign({}, value, {
+               id: newID,
+               uuid: newID,
+            });
             const pendingPromise = this.model.create(newData);
             const newValue = {
                data: newData,
@@ -655,7 +658,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             }
 
             // Check existing value.
-            (this.getData((e) => e.id === newID)[0] == null &&
+            (!this.__dataCollection.exist(newID) &&
                this.__dataCollection.add(newValue)) ||
                this.__dataCollection.updateItem(newID, newValue);
             if (!isAwaiting) {
@@ -668,7 +671,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   ]);
 
                   // Uodated resuilt.
-                  if (this.getData((e) => e.id === newID)[0] == null)
+                  if (!this.__dataCollection.exist(newID))
                      await this.updateSyncData({
                         data: [result],
                      });
@@ -685,7 +688,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                ]);
 
                // Uodated resuilt.
-               if (this.getData((e) => e.id === newID)[0] == null)
+               if (!this.__dataCollection.exist(newID))
                   await this.updateSyncData({
                      data: [result],
                   });
@@ -766,7 +769,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      await storage.set(refStorage, key, value);
 
                      // Check existing value.
-                     (this.getData((e) => e.id === key)[0] == null &&
+                     (!this.__dataCollection.exist(key) == null &&
                         this.__dataCollection.add(value)) ||
                         this.__dataCollection.updateItem(key, value);
                   })()
