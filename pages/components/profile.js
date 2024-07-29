@@ -33,7 +33,7 @@ class Profile extends Common {
          (abDC) =>
             abDC.id === "User Person" ||
             // TODO (Guy):
-            abDC.name === "User Person"
+            abDC.name === "User Person",
       );
       if (this.dc) {
          this.dc.on("loadData", () => {

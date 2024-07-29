@@ -33,9 +33,9 @@ class Inbox extends Common {
          const callbackQueues = this._callbackQueues;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
-               (callbackQueue) => callbackQueue.id === context.queueUUID
+               (callbackQueue) => callbackQueue.id === context.queueUUID,
             ),
-            1
+            1,
          )[0];
 
          // This is in case we reload and still receive a job response from MCC.
@@ -76,7 +76,7 @@ class Inbox extends Common {
                   {
                      url: network.validRoutes.processInbox.replace(
                         ":taskUUID",
-                        taskUUID
+                        taskUUID,
                      ),
                      data: {
                         response: event,
@@ -89,15 +89,15 @@ class Inbox extends Common {
                         targetEventPath: EVENT_PATH,
                         taskUUID,
                      },
-                  }
+                  },
                );
             } catch (err) {
                const callbackQueues = this._callbackQueues;
                callbackQueues.splice(
                   callbackQueues.findIndex(
-                     (callbackQueue) => callbackQueue.id === queueUUID
+                     (callbackQueue) => callbackQueue.id === queueUUID,
                   ),
-                  1
+                  1,
                );
                reject(err);
             }
