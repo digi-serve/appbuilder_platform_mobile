@@ -33,6 +33,7 @@ module.exports = class ABModel extends ABModelCore {
             }
             if (callbackQueue == null) {
                if (instance == null) throw new Error("No instance");
+               if (context.backupEvent == null) return;
                instance.emit(context.backupEvent, context.backupMethod, [
                   ...context.backupMethodArgs,
                   data,
