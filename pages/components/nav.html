@@ -179,34 +179,14 @@
          </div>
          <div class="list" style="margin: 0">
             <ul>
-               {{#if enabledApps.financial}} {{#if loadingFinancial}}
-               <li key="navFinancial" class="swipeout">
-                  <a
-                     href="#"
-                     data-view=".view-left"
-                     data-cy="financial-disabled"
-                     class="item-link item-content emphasis text-color-grey disabled"
-                  >
-                     <div class="item-inner">
-                        <div class="item-title">
-                           <span translate="1" class="text-color-white"
-                              >ministry</span
-                           >
-                           <t>finances</t>
-                           <i
-                              class="fas fa-cloud-download-alt blink skeleton-effect-fade"
-                           ></i>
-                        </div>
-                     </div>
-                  </a>
-               </li>
-               {{else}}
+               {{#if enabledApps.financial}}
                <li key="navFinancial" class="swipeout">
                   <a
                      href="/financial/ministry/"
                      data-cy="ministry"
                      data-view=".view-left"
-                     class="item-link item-content emphasis text-color-green"
+                     class="item-link item-content emphasis text-color-green 
+                     {{#if loadingFinancial}}blink skeleton-effect-fade {{/if}}"
                   >
                      <div class="item-inner">
                         <div class="item-title">
@@ -234,7 +214,7 @@
                      ></a>
                   </div>
                </li>
-               {{/if}} {{/if}}
+               {{/if}}
             </ul>
          </div>
          <a
