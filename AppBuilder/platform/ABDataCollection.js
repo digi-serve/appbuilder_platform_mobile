@@ -592,7 +592,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   return;
                }
                // Check existing value.
-               (!this.__dataCollection.exist(id) &&
+               (!this.__dataCollection.exists(id) &&
                   this.__dataCollection.add(newValue)) ||
                   this.__dataCollection.updateItem(id, newValue);
                if (!isAwaiting) {
@@ -605,7 +605,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      ]);
 
                      // Uodated resuilt.
-                     if (!this.__dataCollection.exist(id))
+                     if (!this.__dataCollection.exists(id))
                         await this.updateSyncData({
                            data: [result],
                         });
@@ -622,7 +622,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   ]);
 
                   // Uodated resuilt.
-                  if (!this.__dataCollection.exist(id))
+                  if (!this.__dataCollection.exists(id))
                      await this.updateSyncData({
                         data: [result],
                      });
@@ -658,7 +658,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             }
 
             // Check existing value.
-            (!this.__dataCollection.exist(newID) &&
+            (!this.__dataCollection.exists(newID) &&
                this.__dataCollection.add(newValue)) ||
                this.__dataCollection.updateItem(newID, newValue);
             if (!isAwaiting) {
@@ -671,7 +671,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   ]);
 
                   // Uodated resuilt.
-                  if (!this.__dataCollection.exist(newID))
+                  if (!this.__dataCollection.exists(newID))
                      await this.updateSyncData({
                         data: [result],
                      });
@@ -688,7 +688,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                ]);
 
                // Uodated resuilt.
-               if (!this.__dataCollection.exist(newID))
+               if (!this.__dataCollection.exists(newID))
                   await this.updateSyncData({
                      data: [result],
                   });
