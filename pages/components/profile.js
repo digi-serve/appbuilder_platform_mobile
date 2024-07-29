@@ -47,8 +47,8 @@ class Profile extends Common {
       this._userProfile = this.dc.getData(
          (e) =>
             e.data["System Access"] ===
-            this.page.app.resources.account.userData?.user?.username
-      )[0].data;
+            this.page.app.resources.account.userData?.user?.username,
+      )[0]?.data;
    }
 
    get userProfile() {
