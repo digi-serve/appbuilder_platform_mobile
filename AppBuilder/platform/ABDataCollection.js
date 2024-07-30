@@ -533,6 +533,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
    async deleteData(id, isAwaiting = false) {
       // TODO (Guy): Not await logic.
       await this.model.delete(id);
+      await this.updateSyncData();
+      await this._updateSyncAffectedDCs();
       const storage = this.AB.app.resources.storage;
       const refStorage = this.refStorage();
       const lock = this._lock;
@@ -545,7 +547,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                "total_count",
                (this.__totalCount - 1).toString(),
             ),
-            this._updateSyncAffectedDCs(),
          ]);
          lock.release();
       } catch (err) {
