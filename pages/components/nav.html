@@ -179,36 +179,21 @@
          </div>
          <div class="list" style="margin: 0">
             <ul>
-               {{#if enabledApps.financial}} {{#if loadingFinancial}}
+               {{#if enabledApps.financial}}
                <li key="navFinancial" class="swipeout">
                   <a
-                     href="#"
-                     data-view=".view-left"
-                     data-cy="financial-disabled"
-                     class="item-link item-content emphasis text-color-grey disabled"
+                  href="/financial/ministry/"
+                  data-cy="ministry"
+                  data-view=".view-left"
+                  class="item-link item-content emphasis 
+                  {{#if loadingFinancial}}
+                     text-color-grey disabled " data-cy="financial-disabled"
+                  {{else}}
+                     text-color-green"
+                  {{/if}}
+
                   >
-                     <div class="item-inner">
-                        <div class="item-title">
-                           <span translate="1" class="text-color-white"
-                              >ministry</span
-                           >
-                           <t>finances</t>
-                           <i
-                              class="fas fa-cloud-download-alt blink skeleton-effect-fade"
-                           ></i>
-                        </div>
-                     </div>
-                  </a>
-               </li>
-               {{else}}
-               <li key="navFinancial" class="swipeout">
-                  <a
-                     href="/financial/ministry/"
-                     data-cy="ministry"
-                     data-view=".view-left"
-                     class="item-link item-content emphasis text-color-green"
-                  >
-                     <div class="item-inner">
+                     <div class="item-inner {{#if loadingFinancial}}blink skeleton-effect-fade{{/if}}">
                         <div class="item-title">
                            <span translate="1" class="text-color-white"
                               >ministry</span
@@ -217,6 +202,8 @@
                         </div>
                      </div>
                   </a>
+                  <!-- The following code is for the swipeout actions
+                                          These actions are not currently supported 
                   <div class="swipeout-actions-right">
                      <a
                         href="/financial/ministry/donors/add/"
@@ -257,10 +244,14 @@
    const KEY_UPDATING_CALLBACK = "component.nav";
    const cachedState = {
       enabledApps: {
+         // The reason for this variable is to hide that the website
+         // has a financial section if a valid QR code was NOT scanned
          financial: false,
       },
       loading: true,
       loadingInbox: true,
+      // If we know there was a valid QR, then we can use `loadingFinancial` to
+      // tell the user that the financial section is loading
       loadingFinancial: true,
       inboxBadge: 0,
       userProfile: null,
@@ -278,17 +269,23 @@
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
             const financialApp = appPage.getApplicationByID("FINANCIAL");
-            cachedState.loadingFinancial = false;
             const reload = async () => {
+               // check if the user is logged in
+               if (app?.resources?.account?._userData?.user?.authname) {
+                  // user is logged in
+                  cachedState.enabledApps.financial = true;
+               }
+               
                profileComponent.loadProfileData();
                cachedState.userProfile = profileComponent.userProfile;
                if (cachedState.userProfile == null) {
                   cachedState.loading = true;
                   const enabledApps = cachedState.enabledApps;
-                  enabledApps.financial = false;
+                  // enabledApps.financial = false;
                   cachedState.inboxBadge = 0;
                   cachedState.loadingInbox = true;
                } else {
+                  cachedState.loadingFinancial = false;
                   cachedState.loading = false;
                   const enabledApps = cachedState.enabledApps;
                   enabledApps.financial = true;
