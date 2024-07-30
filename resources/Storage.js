@@ -16,7 +16,14 @@ const EVENT_KEY_DOWNLOAD_FILE = "download.file";
 const EVENT_KEY_UPLOAD_FILE = "upload.file";
 const EVENT_PATH = "resources.storage";
 const TIME_WAIT = 1000;
-const defaultTableKeys = ["inbox", "jobPacket", "jobResponse", "file", "user"];
+const defaultTableKeys = [
+   "inbox",
+   "inboxMeta",
+   "jobPacket",
+   "jobResponse",
+   "file",
+   "user",
+];
 
 class Storage extends EventEmitter {
    constructor() {
@@ -33,7 +40,7 @@ class Storage extends EventEmitter {
          const callbackQueues = this._callbackQueues;
          const queueUUID = context.queueUUID;
          const callbackQueueIndex = callbackQueues.findIndex(
-            (callbackQueue) => callbackQueue.id === queueUUID
+            (callbackQueue) => callbackQueue.id === queueUUID,
          );
          const callbackQueue =
             (callbackQueueIndex > -1 && callbackQueues[callbackQueueIndex]) ||
@@ -64,7 +71,7 @@ class Storage extends EventEmitter {
                try {
                   if (callbackQueue.callback == null) return;
                   const callbackResult = callbackQueue.callback(
-                     new Error(res.message)
+                     new Error(res.message),
                   );
                   callbackResult instanceof Promise && (await callbackResult);
                   callbackQueues.splice(callbackQueueIndex, 1);
@@ -104,9 +111,9 @@ class Storage extends EventEmitter {
          const queueUUID = context.queueUUID;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
-               (callbackQueue) => callbackQueue.id === queueUUID
+               (callbackQueue) => callbackQueue.id === queueUUID,
             ),
-            1
+            1,
          )[0];
          try {
             if (res.status === "error") {
@@ -122,7 +129,7 @@ class Storage extends EventEmitter {
                if (callbackQueue == null) throw new Error(res.message);
                if (callbackQueue.callback == null) return;
                const callbackResult = callbackQueue.callback(
-                  new Error(res.message)
+                  new Error(res.message),
                );
                callbackResult instanceof Promise && (await callbackResult);
                return;
@@ -252,7 +259,7 @@ class Storage extends EventEmitter {
                         }
                         return value;
                      })) ||
-                     value
+                     value,
                );
             })()) ||
          value;
@@ -262,7 +269,7 @@ class Storage extends EventEmitter {
          console.assert(this._db, "this._db is required");
          console.assert(
             this._db.objectStoreNames,
-            "this._db.objectStoreNames is required"
+            "this._db.objectStoreNames is required",
          );
          const transaction = this._db.transaction(tableKey, "readwrite");
 
@@ -357,7 +364,7 @@ class Storage extends EventEmitter {
                   } catch (err) {
                      return result;
                   }
-               })
+               }),
             );
          };
       });
@@ -461,7 +468,7 @@ class Storage extends EventEmitter {
                   file.name,
                   {
                      type: compressedFile.type,
-                  }
+                  },
                );
                resolve(compressedFileFromBlob);
             } else {
@@ -577,7 +584,7 @@ class Storage extends EventEmitter {
                   try {
                      if (
                         callbackQueues.find(
-                           (callbackQueue) => callbackQueue.id === key
+                           (callbackQueue) => callbackQueue.id === key,
                         ) != null
                      ) {
                         await new Promise((resolve2, reject2) => {
@@ -588,13 +595,13 @@ class Storage extends EventEmitter {
                                     if (
                                        callbackQueues.find(
                                           (callbackQueue) =>
-                                             callbackQueue.id === key
+                                             callbackQueue.id === key,
                                        ) == null
                                     ) {
                                        lock.release();
                                        const fileValue = await this.get(
                                           "file",
-                                          key
+                                          key,
                                        );
                                        if (
                                           fileValue != null &&
@@ -620,7 +627,7 @@ class Storage extends EventEmitter {
                         {
                            url: network.validRoutes.fileBase64Download.replace(
                               ":uuid",
-                              key
+                              key,
                            ),
                         },
                         {
@@ -629,7 +636,7 @@ class Storage extends EventEmitter {
                               targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
                               targetEventPath: EVENT_PATH,
                            },
-                        }
+                        },
                      );
                   } catch (err) {
                      console.error(err);
@@ -638,7 +645,7 @@ class Storage extends EventEmitter {
                }
                if (
                   callbackQueues.find(
-                     (callbackQueue) => callbackQueue.id === key
+                     (callbackQueue) => callbackQueue.id === key,
                   ) != null
                ) {
                   try {
@@ -651,13 +658,13 @@ class Storage extends EventEmitter {
                                     if (
                                        callbackQueues.find(
                                           (callbackQueue) =>
-                                             callbackQueue.id === key
+                                             callbackQueue.id === key,
                                        ) == null
                                     ) {
                                        lock.release();
                                        const fileValue = await this.get(
                                           "file",
-                                          key
+                                          key,
                                        );
                                        if (
                                           fileValue != null &&
@@ -676,7 +683,7 @@ class Storage extends EventEmitter {
                               }, TIME_WAIT);
                            };
                            waitForSync();
-                        })
+                        }),
                      );
                   } catch (err) {
                      reject(err);
@@ -698,7 +705,7 @@ class Storage extends EventEmitter {
                      {
                         url: network.validRoutes.fileBase64Download.replace(
                            ":uuid",
-                           key
+                           key,
                         ),
                      },
                      {
@@ -707,14 +714,14 @@ class Storage extends EventEmitter {
                            targetEventKey: EVENT_KEY_DOWNLOAD_FILE,
                            targetEventPath: EVENT_PATH,
                         },
-                     }
+                     },
                   );
                } catch (err) {
                   callbackQueues.splice(
                      callbackQueues.findIndex(
-                        (callbackQueue) => callbackQueue.id === key
+                        (callbackQueue) => callbackQueue.id === key,
                      ),
-                     1
+                     1,
                   );
                   reject(err);
                }
@@ -758,12 +765,12 @@ class Storage extends EventEmitter {
                      this._callbackQueues.push({
                         id: queueUUID,
                         callback: null,
-                     })
+                     });
                      await network.post(
                         {
                            url: network.validRoutes.fileBase64Upload.replace(
                               ":objID/:fieldID",
-                              `${objID}/${fieldID}`
+                              `${objID}/${fieldID}`,
                            ),
                            data: {
                               fieldID,
@@ -782,7 +789,7 @@ class Storage extends EventEmitter {
                               targetEventKey: EVENT_KEY_UPLOAD_FILE,
                               targetEventPath: EVENT_PATH,
                            },
-                        }
+                        },
                      );
                   } catch (err) {
                      console.error(err);
@@ -804,7 +811,7 @@ class Storage extends EventEmitter {
                      {
                         url: network.validRoutes.fileBase64Upload.replace(
                            ":objID/:fieldID",
-                           `${objID}/${fieldID}`
+                           `${objID}/${fieldID}`,
                         ),
                         data: {
                            fieldID,
@@ -823,15 +830,15 @@ class Storage extends EventEmitter {
                            targetEventKey: EVENT_KEY_UPLOAD_FILE,
                            targetEventPath: EVENT_PATH,
                         },
-                     }
+                     },
                   );
                } catch (err) {
                   const callbackQueues = this._callbackQueues;
                   callbackQueues.splice(
                      callbackQueues.findIndex(
-                        (callbackQueue) => callbackQueue.id === queueUUID
+                        (callbackQueue) => callbackQueue.id === queueUUID,
                      ),
-                     1
+                     1,
                   );
                   reject(err);
                }

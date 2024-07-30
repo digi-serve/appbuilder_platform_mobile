@@ -712,6 +712,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   this.__dataCollection.add(newValue)) ||
                   this.__dataCollection.updateItem(newID, newValue);
             }
+
             if (!isAwaiting) {
                resolve(newValue);
                try {

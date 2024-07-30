@@ -245,9 +245,6 @@ class AppPage extends Common {
             ),
          );
 
-         // TODO:
-         // loadProfileData() is no longer a thing?  How do we initialize the
-         // Profile Display?
          this.components.profile.loadProfileData();
          await this._updateSyncUI();
          console.log("Check for update!!!!!!!!!!!!!!!!!!!!");

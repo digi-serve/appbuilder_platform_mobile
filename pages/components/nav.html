@@ -280,6 +280,7 @@
             const financialApp = appPage.getApplicationByID("FINANCIAL");
             cachedState.loadingFinancial = false;
             const reload = async () => {
+               profileComponent.loadProfileData();
                cachedState.userProfile = profileComponent.userProfile;
                if (cachedState.userProfile == null) {
                   cachedState.loading = true;
