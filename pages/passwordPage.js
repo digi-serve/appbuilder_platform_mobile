@@ -106,8 +106,6 @@ class PasswordPage extends Common {
           * param {void}
           */
          const unlockFunction = async ($button) => {
-            console.error("passwordPage.js unlockFunction()");
-
             $unlock_p1.blur();
             const $warningWrongPass = $unlock.find(".warning-wrong-pass");
             $warningWrongPass.hide();
@@ -152,6 +150,12 @@ class PasswordPage extends Common {
             );
          });
 
+         // RELOAD DATA button on Unlock screen
+         // Needed in case user wants to reload
+         $unlock.find(".refreshAppButton button").on("click", () => {
+            location.reload();
+         });
+
          // "Go" button or ENTER key submits the form
          $unlock.find("form").on("submit", (ev) => {
             const $go = this.$(".go button");
@@ -180,31 +184,18 @@ class PasswordPage extends Common {
       // Detects if device is on iOS
       const userAgent = navigator.userAgent.toLowerCase();
 
-      // detect if in chrome
-      const $useChromeWarning = this.$("div.use-chrome-warning");
+      // install instructions
       const $iOSInstruct = this.$("div.ios-instruct");
-      const $chromeInstallInstructions = this.$(
-         "div.chrome-install-instructions"
-      );
-      if (/crios/.test(userAgent)) {
-         $useChromeWarning.hide();
-         $chromeInstallInstructions.show();
-         $iOSInstruct.hide();
-      } else {
-         $useChromeWarning.show();
-         $chromeInstallInstructions.hide();
-         this.$("div.safari-install-instructions").show();
-      }
-
-      // Show install instructions
       // Detects if device is in standalone mode
-      if (/iphone|ipad|ipod/.test(userAgent) && navigator.standalone === false)
-         $iOSInstruct.show();
-      else {
+      try {
+         if (/iphone|ipad|ipod/.test(userAgent) && navigator.standalone === false)
+            $iOSInstruct.show();
+         else {
+            $setup.show();
+         }
+      } catch (error) {
+         console.error("Error detecting iOS standalone mode on passwordPage:", error);
          $setup.show();
-         // if the user is on iOS and Safari, and it is their first time using the app,
-         // show a message explaining that they should use Chrome.
-         // class: use-chrome-warning
       }
 
       const $form = $setup.find("form");

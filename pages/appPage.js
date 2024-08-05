@@ -445,30 +445,37 @@ class AppPage extends Common {
     * @return {Promise}
     */
    async forceApplicationReset(includeLocal = false) {
-      this._pendingApplicationReset = true;
-      // TODO: Implement code to clear local code and get new code from the server
-      // ex: the platform code, the ABApplication code, and the ABObject code
-      //
+      try {
+         this._pendingApplicationReset = true;
+         // TODO: Implement code to clear local code and get new code from the server
+         // ex: the platform code, the ABApplication code, and the ABObject code
+         //
 
-      // TODO: Implement any additional logic or actions required after clearing and getting new code
+         // TODO: Implement any additional logic or actions required after clearing and getting new code
 
-      // Reset the cached application data
-      const app = this.app;
-      await app.resources.network.init(this.app);
-      const allClears = [];
-      const allResets = [];
+         // Reset the cached application data
+         const app = this.app;
+         await app.resources.network.init(this.app);
+         const allClears = [];
+         const allResets = [];
 
-      // tell all apps to .init() again
-      app.applications.forEach((app) => {
-         if (app.clearSystemData != null) allClears.push(app.clearSystemData());
-         allResets.push(app.reset());
-      });
-      await Promise.all(allClears);
-      await Promise.all(allResets);
-      this.f7App.panel.open("left");
+         // tell all apps to .init() again
+         app.applications.forEach((app) => {
+            if (app.clearSystemData != null) allClears.push(app.clearSystemData());
+            allResets.push(app.reset());
+         });
+         await Promise.all(allClears);
+         await Promise.all(allResets);
+         this.f7App.panel.open("left");
+      } catch (err){
+         // user may be trying to refresh before data collections exist, 
+         // they just want to reload the app
+         console.error("appPage forceapplicationreset() err: ",err)
 
+      }
       // wipe the cache and hard reload
       this._pendingApplicationReset = false;
+      window.location.reload(true);
    }
 }
 

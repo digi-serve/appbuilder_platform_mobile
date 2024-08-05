@@ -190,7 +190,7 @@
                   return;
                }
                dialog.confirm(
-                  "<t>This will fetch the latest data from the server, clearing all local data. Continue?</t>",
+                  "<t>This will fetch the latest data from the server, Continue?</t>",
                   `<t data-cy="confirmReset" >Reset Data</t>`,
                   // TODO
                   async () => {
@@ -386,13 +386,14 @@
                   cachedState.systemInfo = app.pages.appPage.components.welcome.getSystemInfo();
                   toast
                      .create({
-                        text: "<t>Finished!</t>",
+                        text: "<t>Finished, reloading!</t>",
                         position: "center",
                      })
                      .open();
                   this.$setState(cachedState);
                   clearTimeout(pendingLoadData);
                   pendingLoadData = null;
+                  window.location.reload(true);
                } catch (error) {
                   console.error(error);
                   outputMessage.hidden = false;
