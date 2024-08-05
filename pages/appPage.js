@@ -74,6 +74,10 @@ class AppPage extends Common {
                const dialog = f7App.dialog;
                switch (err.code) {
                   case "E_NOJRRTOKEN":
+                     dialog.alert("<t>Please re-scan the QR code from inside this app. iOS does not allow homescreen apps to recive data from Safari.</t>", "<t>Be ready to scan QR</t>", function () {
+                        resolve();
+                     }).open();
+                     break;
                   case "E_BADAUTHTOKEN":
                      dialog
                         .alert(
@@ -344,17 +348,17 @@ class AppPage extends Common {
    async updateAccount(preToken, tenantUUID) {
       // check both variables to be sure they are safe strings
       // check for sql symbols
+
+      // No token in URL
+      if (!preToken || !tenantUUID || preToken == null) {
+         const err = new Error("No pre-token found");
+         err.code = "E_NOJRRTOKEN";
+         throw err;
+      }
       const sqlCheck = /['";]/;
       if (sqlCheck.test(preToken) || sqlCheck.test(tenantUUID)) {
          const err = new Error("Invalid authToken or tenantUUID");
          err.code = "E_BADAUTHTOKEN";
-         throw err;
-      }
-
-      // No token in URL
-      if (preToken == null) {
-         const err = new Error("No pre-token found");
-         err.code = "E_NOJRRTOKEN";
          throw err;
       }
       // Import pre-token from the URL. Generate new authToken.

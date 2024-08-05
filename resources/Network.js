@@ -958,7 +958,8 @@ class NetworkRelay extends NetworkRest {
                null
             ) {
                const err = new Error("Not found authToken!");
-               err.code = "E_BADAUTHTOKEN";
+               // if it isn't found, the error code should identify that there is no token
+               err.code = "E_NOJRRTOKEN";
                throw err;
             }
             await this._loadNetworkData();
