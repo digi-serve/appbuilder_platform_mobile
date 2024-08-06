@@ -53,6 +53,10 @@ class PasswordPage extends Common {
       const $setup_p2 = $setup.find('input[name="p2"]');
       const $unlock = this.$("div.unlock");
       const $unlock_p1 = $unlock.find('input[name="p1"]');
+      //get buildTimestamp from resources
+      const buildTimestamp = await app.buildTimeStamp;
+      this.$("div.timeStamp").html(`<div class="card-header bg-color-gray text-color-white">${buildTimestamp}</div>`);
+
 
       /**
        * This animation plays after the password has been confirmed. The password
@@ -188,7 +192,7 @@ class PasswordPage extends Common {
       const $iOSInstruct = this.$("div.ios-instruct");
       // Detects if device is in standalone mode
       try {
-         if (/iphone|ipad|ipod/.test(userAgent) && navigator.standalone === false)
+         if (/iphone|ipad|ipod/.test(userAgent) && navigator?.standalone === false)
             $iOSInstruct.show();
          else {
             $setup.show();
