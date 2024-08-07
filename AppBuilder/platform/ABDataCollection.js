@@ -691,6 +691,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      this._removeInterruptingData(id);
                      console.error(err);
                   }
+                  this.emit("updated");
                   return;
                }
                try {
@@ -702,6 +703,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         }),
                         this._updateSyncAffectedDCs(),
                      ]);
+                     this.emit("updated");
                      resolve({
                         data: result,
                         id,
@@ -759,6 +761,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   this.__dataCollection.updateItem(newID, newValue);
             }
             if (!isAwaiting) {
+               this.emit("updated");
                resolve(newValue);
                try {
                   const result = await this.model.create(newData);
@@ -784,6 +787,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      }),
                      this._updateSyncAffectedDCs(),
                   ]);
+                  this.emit("updated");
                   resolve({
                      data: result,
                      id: newID,
@@ -912,6 +916,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       if (backupDcData != null) {
          if (this._isSyncing) await this._waitForSync();
          await saveData(backupDcData);
+         this.emit("updated");
          return;
       } else if (this._isSyncing) {
          await this._waitForSync();
@@ -928,6 +933,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                }),
             );
             this._isSyncing = false;
+            this.emit("updated");
             return;
          }
 
@@ -941,6 +947,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                }),
             );
             this._isSyncing = false;
+            this.emit("updated");
             return;
          }
          const cond = structuredClone(this._cond);
@@ -966,6 +973,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             }),
          );
          this._isSyncing = false;
+         this.emit("updated");
       } catch (err) {
          this._isSyncing = false;
          throw err;
