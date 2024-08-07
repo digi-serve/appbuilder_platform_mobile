@@ -732,6 +732,7 @@ class Storage extends EventEmitter {
          await lock.acquire();
          await this.set("file", resData.id, resData);
          lock.release();
+         this.emit("file-updated");
          return resData;
       } catch (err) {
          lock.release();
