@@ -188,6 +188,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         values.find((e) => e.id === storedValue.id) != null
                      )
                         continue;
+
+                     // if the stored value wasn't found in the incoming values
+                     // remove it from our stored data.
                      pendingPromises.push(
                         (async () => {
                            if (!storedValue.isConfirmed) return;
@@ -454,6 +457,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          }
          // console.assert(status, `ABDataCollection::loadData(): missing status ${this.label} , ${this.id}`);//
          switch (status) {
+            // status == 1: The local DC storage has been initialize in the past
             case 1: {
                if (this._dataStatus === this.dataStatusFlag.initialized) {
                   this._isSyncing = false;
@@ -462,10 +466,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   );
                   return;
                }
+
+               // since we have pulled data before, just get the local data
+               // and work with that.
                const dcData = await this._getDCData();
                const data = dcData.data;
                const isSourceTypeObject = this.sourceType === "object";
+               // figure out the latest time an item has been updated
                if (data.length > 0) {
+                  // scan through each entry and grab the latest update time
                   if (isSourceTypeObject && this._latestItemDatetime == null)
                      this._latestItemDatetime = data[0]["updated_at"];
                   for (const value of data)
@@ -484,6 +493,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                // this means we are not initialized yet, so we need to load our data
                break;
          }
+         // At this point, we have NOT loaded data from the server before:
+         // if we are .initializing, then simply wait for it to be done
+         // most likely we have called .loadData() before and it isn't complete.
          if (this._dataStatus === this.dataStatusFlag.initializing) {
             console.log(
                `ABDataCollection::loadData()::: initializing ${this.label} , ${this.id}`,
@@ -515,6 +527,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             this._isSyncing = false;
             return;
          }
+         // if (this.model.object.id == "839ac470-8f77-420c-9a30-aeaf0a9f509c") {
+         //    console.log(`Project .loadData()`);
+         // }
          await this._saveDCData(
             await this.model.findAll(this._cond, {
                backupEvent: EVENT_KEY_BACKUP_CALL,
@@ -621,6 +636,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       const lock = this._lock;
       return new Promise((resolve, reject) => {
          (async () => {
+            // UPDATE Operation
             if (id != null) {
                this._addInterruptingData(id);
                const newValue = {
@@ -628,6 +644,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   id,
                   isConfirmed: false,
                };
+               // 1) Store unconfirmed version of value in local storage
                try {
                   await lock.acquire();
                   await storage.set(this.refStorage(), id, newValue);
@@ -640,6 +657,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                }
 
                // TODO (Guy):
+               // 2) update the DC with the new value
                const dcValues = this.getData();
                try {
                   (!this.__dataCollection.exists(id) &&
@@ -654,6 +672,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      this.__dataCollection.add(newValue)) ||
                      this.__dataCollection.updateItem(id, newValue);
                }
+
+               // 3) if the external code is not awaiting us, then
+               //    respond quickly with a usable newValue
+               //    && behind the scenes
                if (!isAwaiting) {
                   resolve(newValue);
                   try {
@@ -695,6 +717,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                }
                return;
             }
+            // ADD Operation
             const newID = app.utils.uuidv4();
             this._addInterruptingData(newID);
             const newData = Object.assign({}, value, {
@@ -706,6 +729,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                id: newID,
                isConfirmed: false,
             };
+            // 1) Store data locally
             try {
                await lock.acquire();
                await storage.set(this.refStorage(), newID, newValue);
@@ -719,6 +743,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
             // TODO (Guy): Sometimes this gets an error. To reproduce, add data continuously until you get an error.
             // TODO (Guy): This is temporary fix.
+            // 2) update our DataCollection with newValue
             const dcValues = this.getData();
             try {
                (!this.__dataCollection.exists(newID) &&
@@ -819,7 +844,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         id: key,
                         isConfirmed: true,
                      };
+                     // if not there, add it
                      if ((await storage.get(refStorage, key)) == null) {
+                        // add it locally
                         await Promise.all([
                            storage.set(refStorage, key, value),
                            storage.set(
@@ -830,6 +857,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         ]);
 
                         // TODO (Guy):
+                        // add it to DC / or update it
                         const dcValues = this.getData();
                         try {
                            (!this.__dataCollection.exists(key) &&
@@ -847,6 +875,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         this.__totalCount++;
                         return;
                      }
+                     // else update existing entry
                      await storage.set(refStorage, key, value);
 
                      // TODO (Guy):
