@@ -59,9 +59,12 @@ class Storage extends EventEmitter {
          } catch (err) {
             console.error(err);
          }
+         const queues = this._queues;
+         const queueIndex = queues.indexOf(queueUUID);
+         if (queueIndex < 0) return;
+         queues.splice(queueIndex, 1);
       });
       this.on(EVENT_KEY_UPLOAD_FILE, async (context, res) => {
-         const queues = this._queues;
          const queueUUID = context.queueUUID;
          try {
             if (res.status === "error") {
@@ -84,6 +87,7 @@ class Storage extends EventEmitter {
          } catch (err) {
             console.error(err);
          }
+         const queues = this._queues;
          const queueIndex = queues.indexOf(queueUUID);
          if (queueIndex < 0) return;
          queues.splice(queueIndex, 1);
@@ -529,6 +533,7 @@ class Storage extends EventEmitter {
                      });
                      if (result != null && result.isConfirmed) return;
                   }
+                  queues.push(key);
                   await network.get(
                      {
                         url: network.validRoutes.fileBase64Download.replace(
