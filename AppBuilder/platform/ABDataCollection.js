@@ -182,6 +182,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   // Clear old data.
                   this._latestItemDatetime = null;
                   const storedValues = await storage.getAll(refStorage);
+                  const interruptingData = this._interruptingData;
                   for (const storedValue of storedValues) {
                      if (
                         !(storedValue instanceof Object) ||
@@ -190,7 +191,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         continue;
                      pendingPromises.push(
                         (async () => {
-                           if (!storedValue.isConfirmed) return;
+                           if (
+                              !storedValue.isConfirmed &&
+                              interruptingData.indexOf(storedValue.id) > -1
+                           )
+                              return;
                            const key = storedValue.id;
                            await Promise.all([
                               storage.clear(refStorage, key),
@@ -229,7 +234,6 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   const isSourceTypeObject = this.sourceType === "object";
                   if (isSourceTypeObject)
                      this._latestItemDatetime = values[0]["updated_at"];
-                  const interruptingData = this._interruptingData;
                   for (let i = 0; i < values.length; i++) {
                      const value = values[i];
                      if (
@@ -546,42 +550,58 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
    }
 
-   async deleteData(id, isAwaiting = false) {
-      // TODO (Guy): Not await logic.
-      await this.model.delete(id);
-      await this.updateSyncData();
-      await this._updateSyncAffectedDCs();
+   deleteData(id) {
       const storage = this.AB.app.resources.storage;
       const refStorage = this.refStorage();
       const lock = this._lock;
-      try {
-         await lock.acquire();
-         await Promise.all([
-            storage.clear(refStorage, id),
-            storage.set(
-               refStorage,
-               "total_count",
-               (this.__totalCount - 1).toString(),
-            ),
-         ]);
-         lock.release();
-      } catch (err) {
-         lock.release();
-         throw err;
-      }
+      return new Promise((resolve, reject) => {
+         (async () => {
+            this._addInterruptingData(id);
+            try {
+               await lock.acquire();
+               await Promise.all([
+                  storage.clear(refStorage, id),
+                  storage.set(
+                     refStorage,
+                     "total_count",
+                     (this.__totalCount - 1).toString(),
+                  ),
+               ]);
+               lock.release();
+            } catch (err) {
+               this._removeInterruptingData(id);
+               lock.release();
+               reject(err);
+               return;
+            }
 
-      // TODO (Guy):
-      try {
-         this.__dataCollection.remove(id);
-      } catch (err) {
-         const dcValues = this.getData((e) => e.id !== id);
-         this.clearAll();
-         dcValues.forEach((dcValue) => {
-            this.__dataCollection.add(dcValue);
-         });
-      }
-      this.__totalCount--;
-      return id;
+            // TODO (Guy):
+            const dcValues = this.getData((e) => e.id !== id);
+            try {
+               this.__dataCollection.remove(id);
+            } catch (err) {
+               this.clearAll();
+               dcValues.forEach((dcValue) => {
+                  this.__dataCollection.add(dcValue);
+               });
+            }
+            this.__totalCount--;
+            resolve({
+               id,
+            });
+            try {
+               await this.model.delete(id);
+               await Promise.all([
+                  this.updateSyncData(),
+                  this._updateSyncAffectedDCs(),
+               ]);
+               this._removeInterruptingData(id);
+            } catch (err) {
+               this._removeInterruptingData(id);
+               console.error(err);
+            }
+         })();
+      });
    }
 
    async reloadData() {
@@ -614,7 +634,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       }
    }
 
-   setData(id, value, isAwaiting = false) {
+   setData(id, value) {
       // if not valid for this DC
       if (!this.__filterDatasource.isValid(value))
          throw Error("Some value is not valid!");
@@ -656,44 +676,19 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                      this.__dataCollection.add(newValue)) ||
                      this.__dataCollection.updateItem(id, newValue);
                }
-               if (!isAwaiting) {
-                  resolve(newValue);
-                  try {
-                     const result = await this.model.update(id, value);
-                     await Promise.all([
-                        this.updateSyncData({
-                           data: [result],
-                        }),
-                        this._updateSyncAffectedDCs(),
-                     ]);
-                     this._removeInterruptingData(id);
-                  } catch (err) {
-                     this._removeInterruptingData(id);
-                     console.error(err);
-                  }
-                  return;
-               }
+               resolve(newValue);
                try {
-                  try {
-                     const result = await this.model.update(id, value);
-                     await Promise.all([
-                        this.updateSyncData({
-                           data: [result],
-                        }),
-                        this._updateSyncAffectedDCs(),
-                     ]);
-                     resolve({
-                        data: result,
-                        id,
-                        isConfirmed: true,
-                     });
-                     this._removeInterruptingData(id);
-                  } catch (err) {
-                     this._removeInterruptingData(id);
-                     throw err;
-                  }
+                  const result = await this.model.update(id, value);
+                  await Promise.all([
+                     this.updateSyncData({
+                        data: [result],
+                     }),
+                     this._updateSyncAffectedDCs(),
+                  ]);
+                  this._removeInterruptingData(id);
                } catch (err) {
-                  reject(err);
+                  this._removeInterruptingData(id);
+                  console.error(err);
                }
                return;
             }
@@ -735,44 +730,19 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   this.__dataCollection.add(newValue)) ||
                   this.__dataCollection.updateItem(newID, newValue);
             }
-            if (!isAwaiting) {
-               resolve(newValue);
-               try {
-                  const result = await this.model.create(newData);
-                  await Promise.all([
-                     this.updateSyncData({
-                        data: [result],
-                     }),
-                     this._updateSyncAffectedDCs(),
-                  ]);
-                  this._removeInterruptingData(newID);
-               } catch (err) {
-                  this._removeInterruptingData(newID);
-                  console.error(err);
-               }
-               return;
-            }
+            resolve(newValue);
             try {
-               try {
-                  const result = await this.model.create(newData);
-                  await Promise.all([
-                     this.updateSyncData({
-                        data: [result],
-                     }),
-                     this._updateSyncAffectedDCs(),
-                  ]);
-                  resolve({
-                     data: result,
-                     id: newID,
-                     isConfirmed: true,
-                  });
-                  this._removeInterruptingData(newID);
-               } catch (err) {
-                  this._removeInterruptingData(newID);
-                  throw err;
-               }
+               const result = await this.model.create(newData);
+               await Promise.all([
+                  this.updateSyncData({
+                     data: [result],
+                  }),
+                  this._updateSyncAffectedDCs(),
+               ]);
+               this._removeInterruptingData(newID);
             } catch (err) {
-               reject(err);
+               this._removeInterruptingData(newID);
+               console.error(err);
             }
          })();
       });
