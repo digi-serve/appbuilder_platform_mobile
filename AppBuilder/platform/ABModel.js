@@ -18,9 +18,9 @@ module.exports = class ABModel extends ABModelCore {
          const callbackQueues = this._callbackQueues;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
-               (callbackQueue) => callbackQueue.id === context.queueUUID
+               (callbackQueue) => callbackQueue.id === context.queueUUID,
             ),
-            1
+            1,
          )[0];
          const data = res.data;
          try {
@@ -76,6 +76,11 @@ module.exports = class ABModel extends ABModelCore {
 
                // if a limit was set (we are paging)
                if (result?.limit > 0) {
+                  if (result.total_count > result.limit) {
+                     console.log(
+                        `O(${this.object.label}) paging ${result.offset}/${result.total_count}`,
+                     );
+                  }
                   // if this isn't the last page
                   if (result.offset + result.data.length < result.total_count) {
                      let nextParam = structuredClone(params);
@@ -85,7 +90,7 @@ module.exports = class ABModel extends ABModelCore {
                         method,
                         nextParam,
                         responseContext,
-                        options
+                        options,
                      ).then((nextPage) => {
                         result.data = result.data.concat(nextPage.data);
                         resolve(result);
@@ -103,15 +108,15 @@ module.exports = class ABModel extends ABModelCore {
             try {
                await this.AB.app.resources.network[method](
                   params,
-                  copiedResponseContext
+                  copiedResponseContext,
                );
             } catch (err) {
                const callbackQueues = this._callbackQueues;
                callbackQueues.splice(
                   callbackQueues.findIndex(
-                     (callbackQueue) => callbackQueue.id === context.queueUUID
+                     (callbackQueue) => callbackQueue.id === context.queueUUID,
                   ),
-                  1
+                  1,
                );
                reject(err);
             }
@@ -129,7 +134,7 @@ module.exports = class ABModel extends ABModelCore {
          "post",
          this.urlParamsCreate(value),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -152,7 +157,7 @@ module.exports = class ABModel extends ABModelCore {
          "delete",
          this.urlParamsDelete(id),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -179,7 +184,7 @@ module.exports = class ABModel extends ABModelCore {
          "get",
          this.urlParamsFind(copiedCond),
          this.responseContext,
-         options
+         options,
       );
    }
 
@@ -198,7 +203,7 @@ module.exports = class ABModel extends ABModelCore {
          "put",
          this.urlParamsUpdate(id, copidData),
          this.responseContext,
-         options
+         options,
       );
    }
 };
