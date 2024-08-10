@@ -23,18 +23,15 @@
          </div>
          <div class="block-title"></div>
          <div class="card" id="sync-data" style="display: none">
-            <div class="card-header bg-color-gray text-color-white" translate="1">
-               Announcement
-            </div>
             <div class="card-content card-content-padding">
                <t>Use the menu on the left to navigate</t><br />
                <br />
-               <t>Local code built at: {{buildTimestamp}}</t>
-               {{#js_if "this.systemInfo != null"}}
-               <br />
-               <br />
-               <t>sysInfo: {{systemInfo}}</t>
-               {{/js_if}}
+            </div>
+            <div class="card-header bg-color-gray text-color-white" translate="1">
+               Bible Trivia
+            </div>
+            <div id="trivia" class="card-content card-content-padding ">
+               <!-- trivia -->
             </div>
          </div>
          <!-- if has auth token, hide this option -->
@@ -72,6 +69,14 @@
                </button>
             </div>
          </div>
+<div class="card" id="sync-data">
+   <div class="card-content card-content-padding">
+      <t>Local code built at: {{buildTimestamp}}</t>
+      {{#js_if "this.systemInfo != null"}}
+      <t>sysInfo: {{systemInfo}}</t>
+      {{/js_if}}
+   </div>
+</div>
          <div class="card">
             <div class="card-header bg-color-gray text-color-white" translate="1">
                Local code built at: {{buildTimestamp}}
@@ -453,6 +458,30 @@
                         .open();
                   dialog.alert("QR should be supported on this browser").open();
                }
+            });
+
+            // Bible Trivia to give user something to do
+            // give them initial question, and then they can tap to get more
+            const tCanvas = $("#trivia").get(0);
+            function tDataUpdate() {
+               // check if the answer is visible
+               if ($("#answer").css("display") === "none") {
+                  // show the answer
+                  $("#answer").css("display", "block");
+                  return;
+               }
+               // else, show the next question
+               let tData = app.pages.appPage.components.welcome.getTrivia();
+               // convert into html, with 'a' hidden
+               let html = `<div>${tData.q}</div></br><i class="fa fa-regular fa-hand-point-right"><div id="answer" style="display:none">${tData.a}</div></i>`;
+               // update the trivia question ui
+               tCanvas.innerHTML = html;
+            }
+            // set the trivia question ui
+            tDataUpdate()
+            // trigger on tap
+            $("#trivia").on("click", async () => {
+               tDataUpdate()
             });
          },
       },

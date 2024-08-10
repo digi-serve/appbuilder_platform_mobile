@@ -4,6 +4,9 @@
 "use strict";
 
 import Common from "./classes/Common";
+// import trivia json
+import trivia from "./trivia.json";
+
 
 class Welcome extends Common {
    /**
@@ -35,6 +38,13 @@ class Welcome extends Common {
          brandListString = `${brandListString}Brand: ${brand.brand} \n Version: ${brand.version} \n FullVersion: ${brand.fullVersion} \n Platform: ${brand.platform} \n \n`;
       });
       return `User Agent: ${this._userAgent} \n Available Memory: ${this._availableMem} \n Device Memory: ${this._deviceMemory} \n systemDumpInfo: ${brandListString}`;
+   }
+
+   getTrivia() {
+      // parse the trivia json, return a question/answer pair
+      let triviaLength = trivia.length;
+      let randomIndex = Math.floor(Math.random() * triviaLength);
+      return trivia[randomIndex];
    }
 }
 
