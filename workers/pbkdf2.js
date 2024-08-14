@@ -2,7 +2,7 @@
 
 import CryptoJS from "crypto-js";
 
-onmessage = function(e) {
+onmessage = function (e) {
    var password = e.data[0];
    var salt = e.data[1];
    var cfg = e.data[2];

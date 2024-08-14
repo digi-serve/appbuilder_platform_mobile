@@ -17,7 +17,7 @@ class Settings extends Common {
          null,
          {
             wildcard: true,
-         }
+         },
       );
       this.templates = {};
       this.appInfo = null;
@@ -69,7 +69,7 @@ class Settings extends Common {
                   success: (data /* , status, xhr */) => {
                      this.templates[name] = Template7.compile(data);
                   },
-               })
+               }),
             );
          })(path, name);
       }
@@ -85,14 +85,14 @@ class Settings extends Common {
       if (this.appInfo) {
          this.$("#update-info-content").remove();
          this.$("#update-info .card-content").prepend(
-            this.templates.updateInfo(this.appInfo)
+            this.templates.updateInfo(this.appInfo),
          );
       }
    }
 
    deleteLocalImages() {
-      return new Promise((resolve, reject) => {
-         this.page.app.resources.camera.deleteLocalImages().then((data) => {
+      return new Promise((resolve) => {
+         this.page.app.resources.camera.deleteLocalImages().then(() => {
             this.page.app.resources.camera.imageLookUp().then((data) => {
                resolve(data);
             });

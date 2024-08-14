@@ -129,9 +129,6 @@ class NetworkRest extends EventEmitter {
                if (!navigator.onLine) {
                   // add it to the queue and retry later
                   this._queue(params, jobResponse);
-                  let error = new Error(
-                     "Network error: adding to queue for later retry.",
-                  );
                   resolve({ status: "queued" });
                   return;
                }

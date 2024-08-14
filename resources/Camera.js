@@ -21,9 +21,6 @@
 
 import EventEmitter from "eventemitter2";
 
-const DEFAULT_HEIGHT = 2000;
-const DEFAULT_WIDTH = 2000;
-
 // maximum size for passage through relay seems to be about 500000 bytes
 const MAX_IMAGE_SIZE = 500000;
 
@@ -39,7 +36,7 @@ class Camera extends EventEmitter {
 
    get validImageTypes() {
       return this.app.resources.storage.validFileTypes.filter((validFileType) =>
-         validFileType.includes("image/")
+         validFileType.includes("image/"),
       );
    }
 
@@ -166,8 +163,8 @@ class Camera extends EventEmitter {
             recurseShrinkTimeout = setTimeout(() => {
                reject(
                   new Error(
-                     `Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:t} qualityValue: gain: factor:} times:${compressionTimes}`
-                  )
+                     `Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:t} qualityValue: gain: factor:} times:${compressionTimes}`,
+                  ),
                );
                recurseShrinkTimeout = null;
             }, options.timeout);
@@ -176,7 +173,7 @@ class Camera extends EventEmitter {
                file,
                {
                   convertSize: MAX_IMAGE_SIZE,
-               }
+               },
             );
             compressionTimes++;
             if (compressedFile.size > MAX_IMAGE_SIZE)
@@ -231,19 +228,14 @@ class Camera extends EventEmitter {
     *       url: <string> // only valid for current session
     *    }
     */
-   async getPhoto(
-      isCamera = false,
-      width = DEFAULT_WIDTH,
-      height = DEFAULT_HEIGHT,
-      timeout = 10000
-   ) {
+   async getPhoto(isCamera = false, timeout = 10000) {
       try {
          return await this._recurseShrink(
             await this._getPicture((isCamera && "camera") || "library"),
             null,
             {
                timeout,
-            }
+            },
          );
       } catch (err) {
          // User canceled the photo. Not a real error.

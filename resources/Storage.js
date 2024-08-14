@@ -210,10 +210,10 @@ class Storage extends EventEmitter {
          );
          const transaction = this._db.transaction(tableKey, "readwrite");
 
-         transaction.oncomplete = (event) => {
+         transaction.oncomplete = () => {
             resolve();
          };
-         transaction.onerror = (event) => {
+         transaction.onerror = () => {
             console.error("DB error during set", transaction.error);
             reject(transaction.error);
          };
@@ -231,13 +231,13 @@ class Storage extends EventEmitter {
    get(tableKey, key) {
       return new Promise((resolve, reject) => {
          const transaction = this._db.transaction(tableKey, "readonly");
-         transaction.onerror = (event) => {
+         transaction.onerror = () => {
             console.error("DB error during get", transaction.error);
             reject(transaction.error);
          };
          const store = transaction.objectStore(tableKey);
          const req = store.get(key);
-         req.onsuccess = (event) => {
+         req.onsuccess = () => {
             const result = req.result;
             const value =
                (this._config.encrypt && this._decrypt(result)) || result;
@@ -260,13 +260,13 @@ class Storage extends EventEmitter {
    count(tableKey) {
       return new Promise((resolve, reject) => {
          const transaction = this._db.transaction(tableKey, "readonly");
-         transaction.onerror = (event) => {
+         transaction.onerror = () => {
             console.error("DB error during count", transaction.error);
             reject(transaction.error);
          };
          const store = transaction.objectStore(tableKey);
          const req = store.count();
-         req.onsuccess = (event) => {
+         req.onsuccess = () => {
             resolve(req.result);
          };
       });
@@ -286,13 +286,13 @@ class Storage extends EventEmitter {
    getAll(tableKey, query) {
       return new Promise((resolve, reject) => {
          const transaction = this._db.transaction(tableKey, "readonly");
-         transaction.onerror = (event) => {
+         transaction.onerror = () => {
             console.error("DB error during get", transaction.error);
             reject(transaction.error);
          };
          const store = transaction.objectStore(tableKey);
          const req = store.getAll(query);
-         req.onsuccess = (event) => {
+         req.onsuccess = () => {
             resolve(
                req.result.map((e) => {
                   const result = this._decrypt(e);
@@ -311,13 +311,13 @@ class Storage extends EventEmitter {
       return new Promise((resolve, reject) => {
          try {
             const transaction = this._db.transaction(tableKey, "readonly");
-            transaction.onerror = (event) => {
+            transaction.onerror = () => {
                console.error("DB error during get", transaction.error);
                reject(transaction.error);
             };
             const store = transaction.objectStore(tableKey);
             const req = store.getAllKeys(query);
-            req.onsuccess = (event) => {
+            req.onsuccess = () => {
                resolve(req.result);
             };
          } catch (e) {
@@ -341,12 +341,11 @@ class Storage extends EventEmitter {
          const transaction = this._db.transaction(tableKey, "readwrite");
          transaction.onerror = (event) => {
             console.error("DB error during clear", event.error);
-            err.message += `DB Error clearing record: ${key}`;
             reject(event.error);
          };
          const store = transaction.objectStore(tableKey);
          const req = store.delete(key);
-         req.onsuccess = (event) => {
+         req.onsuccess = () => {
             resolve();
          };
       });
@@ -368,12 +367,12 @@ class Storage extends EventEmitter {
             const store = transaction.objectStore(tableKey);
             if (keyRange) {
                const req = store.delete(keyRange);
-               req.onsuccess = (event) => {
+               req.onsuccess = () => {
                   resolve();
                };
             } else {
                const req = store.clear();
-               req.onsuccess = (event) => {
+               req.onsuccess = () => {
                   resolve();
                };
             }
@@ -652,9 +651,9 @@ class Storage extends EventEmitter {
    get validStorageKeys() {
       try {
          return structuredClone(this._db.objectStoreNames);
-      } catch (e) {
+      } catch (err) {
          let vals = [];
-         for (var e in this._db.objectStoreNames) {
+         for (const e in this._db.objectStoreNames) {
             vals.push(this._db.objectStoreNames[e]);
          }
          return vals;
