@@ -107,7 +107,7 @@ class Account extends EventEmitter {
                         targetEventKey: EVENT_KEY_LOAD_USER_DATA,
                         targetEventPath: EVENT_PATH,
                      },
-                  }
+                  },
                );
             })();
          });
@@ -129,7 +129,7 @@ class Account extends EventEmitter {
    }
 
    get userData() {
-      return this._userData;
+      return structuredClone(this._userData);
    }
 }
 
