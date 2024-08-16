@@ -161,39 +161,41 @@
             </div>
          </div>
          {{/js_if}}
-         <div id="progressBar" style="min-height: 5px">
-            <div class="progressbar" style="margin-top: 3px"></div>
-            <div class="loader">
-               <div class="left-channel"></div>
-               <div class="right-channel"></div>
-               <div class="cpu">
-                  <div class="cpu-inner">
-                     <div class="cpu-bar cpu-bar1"></div>
-                     <div class="cpu-bar cpu-bar2"></div>
-                     <div class="cpu-dot"></div>
-                  </div>
-               </div>
-               <div class="left-dot"></div>
-               <div class="right-dot"></div>
+         <div style="min-height: 20px">
+            <div
+               style="
+                  position: absolute;
+                  text-align: center;
+                  width: 100%;
+                  z-index: 1;
+               "
+            >
+               <span
+                  >{{#js_if "this.progressPercentage < 100"}}Loading Data...
+                  ({{progressPercentage}}%){{else}}Loading
+                  Complete!{{/js_if}}</span
+               >
             </div>
+            <div
+               class="progressbar"
+               data-progress="{{progressPercentage}}"
+               style="min-height: 20px; width: 100%; z-index: 0"
+            ></div>
          </div>
          <div class="list" style="margin: 0">
             <ul>
                {{#if enabledApps.financial}}
                <li key="navFinancial" class="swipeout">
                   <a
-                  href="/financial/ministry/"
-                  data-cy="ministry"
-                  data-view=".view-left"
-                  class="item-link item-content emphasis 
-                  {{#if loadingFinancial}}
-                     text-color-grey disabled " data-cy="financial-disabled"
-                  {{else}}
-                     text-color-green"
-                  {{/if}}
-
+                     href="/financial/ministry/"
+                     data-cy="ministry"
+                     data-view=".view-left"
+                     class="item-link item-content emphasis {{#if loadingFinancial}}text-color-grey disabled{{else}}text-color-green{{/if}}"
+                     data-cy="financial{{#if loadingFinancial}}-disabled{{/if}}"
                   >
-                     <div class="item-inner {{#if loadingFinancial}}blink skeleton-effect-fade{{/if}}">
+                     <div
+                        class="item-inner {{#if loadingFinancial}}blink skeleton-effect-fade{{/if}}"
+                     >
                         <div class="item-title">
                            <span translate="1" class="text-color-white"
                               >ministry</span
@@ -202,24 +204,6 @@
                         </div>
                      </div>
                   </a>
-                  <!-- The following code is for the swipeout actions
-                                          These actions are not currently supported 
-                  <div class="swipeout-actions-right">
-                     <a
-                        href="/financial/ministry/donors/add/"
-                        data-cy="donor-swipe-add"
-                        data-view=".view-main"
-                        class="color-green panel-close"
-                        ><i class="fa fa-user-plus"></i
-                     ></a>
-                     <a
-                        href="/financial/ministry/donations/add/"
-                        data-cy="donation-swipe-add"
-                        data-view=".view-main"
-                        class="color-green panel-close"
-                        ><i class="fa fa-donate"></i
-                     ></a>
-                  </div>
                </li>
                {{/if}} {{/if}}
             </ul>
@@ -242,6 +226,7 @@
 <!-- framework7 component script -->
 <script>
    const KEY_UPDATING_CALLBACK = "component.nav";
+   const PERCENT_FACTOR = 100;
    const cachedState = {
       enabledApps: {
          // The reason for this variable is to hide that the website
@@ -250,15 +235,53 @@
       },
       loading: true,
       loadingInbox: true,
+
       // If we know there was a valid QR, then we can use `loadingFinancial` to
       // tell the user that the financial section is loading
       loadingFinancial: true,
       inboxBadge: 0,
+      progressPercentage: 0,
       userProfile: null,
+   };
+   const refreshPage = async (self) => {
+      const app = self.$root.app;
+      const resources = app.resources;
+      const userData = resources.account.userData;
+
+      // Get our datacollection(s) so we can set up listeners later
+      const profileComponent = app.pages.appPage.components.profile;
+      const enabledApps = cachedState.enabledApps;
+
+      // check if the user is logged in
+      if (userData?.user.username == null) {
+         // user is logged in
+         enabledApps.financial = false;
+         cachedState.loadingInbox = true;
+         cachedState.inboxBadge = 0;
+         cachedState.loading = true;
+         cachedState.loadingFinancial = true;
+         cachedState.loadingInbox = true;
+         cachedState.progressPercentage = 0;
+      } else {
+         enabledApps.financial = true;
+         cachedState.loadingInbox = true;
+         cachedState.inboxBadge = userData.inbox.length ?? 0;
+         cachedState.loadingInbox = false;
+         profileComponent.loadProfileData();
+         if ((cachedState.userProfile = profileComponent.userProfile) == null) {
+            cachedState.loading = true;
+            cachedState.loadingFinancial = true;
+         } else {
+            cachedState.loading = false;
+            if (cachedState.progressPercentage === PERCENT_FACTOR)
+               cachedState.loadingFinancial = false;
+            else cachedState.loadingFinancial = true;
+         }
+      }
+      self.$setState(cachedState);
    };
    return {
       async data() {
-         const storage = this.$root.app.resources.storage;
          return cachedState;
       },
       on: {
@@ -268,42 +291,23 @@
 
             // Get our datacollection(s) so we can set up listeners later
             const profileComponent = appPage.components.profile;
-            const financialApp = appPage.getApplicationByID("FINANCIAL");
-            const reload = async () => {
-               // check if the user is logged in
-               if (app?.resources?.account?._userData?.user?.authname) {
-                  // user is logged in
-                  cachedState.enabledApps.financial = true;
-               }
-               
-               profileComponent.loadProfileData();
-               cachedState.userProfile = profileComponent.userProfile;
-               if (cachedState.userProfile == null) {
-                  cachedState.loading = true;
-                  const enabledApps = cachedState.enabledApps;
-                  // enabledApps.financial = false;
-                  cachedState.inboxBadge = 0;
-                  cachedState.loadingInbox = true;
-               } else {
-                  cachedState.loadingFinancial = false;
-                  cachedState.loading = false;
-                  const enabledApps = cachedState.enabledApps;
-                  enabledApps.financial = true;
-                  cachedState.inboxBadge =
-                     (await app.resources.storage.get("user", "siteUserData"))
-                        ?.inbox.length ?? 0;
-                  cachedState.loadingInbox = false;
-               }
-               this.$setState(cachedState);
-            };
-            await reload();
-            appPage.setUpdatingCallback(KEY_UPDATING_CALLBACK, async () => {
-               await reload();
-            });
+            appPage.setUpdatingCallback(
+               KEY_UPDATING_CALLBACK,
+               async ({ doneAmount, length, status }) => {
+                  if (status === "init.dc" && doneAmount === length)
+                     appPage.setUpdatingCallback(KEY_UPDATING_CALLBACK, () => {
+                        refreshPage(this);
+                     });
+                  cachedState.progressPercentage = Math.floor(
+                     (doneAmount * PERCENT_FACTOR) / length,
+                  );
+                  refreshPage(this);
+               },
+            );
          },
          pageBeforeRemove() {
             this.$root.app.pages.appPage.removeUpdatingCallback(
-               KEY_UPDATING_CALLBACK
+               KEY_UPDATING_CALLBACK,
             );
          },
       },

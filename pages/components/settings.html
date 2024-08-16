@@ -445,7 +445,6 @@
                         position: "center",
                      })
                      .open();
-                  this.$root.app.pages.appPage.fetchApplicationData();
                } catch (err) {
                   this.$app.dialog
                      .alert("Something went wrong. Please try again.")
@@ -496,9 +495,7 @@
                const continueSync = self.$app.dialog.confirm(
                   "<t>This will fetch the latest data from the server without affecting any locally changed data. Continue?</t>",
                   "<t>Update Data</t>",
-                  () => {
-                     this.$root.app.pages.appPage.fetchApplicationData();
-                  }
+                  () => {}
                );
             });
 
@@ -515,8 +512,9 @@
                const continueSync = self.$app.dialog.confirm(
                   "<t>This will fetch the latest data from the server, clearing all local data. Continue?</t>",
                   `<t data-cy="confirmReset" >Reset Data</t>`,
-                  () => {
-                     this.$root.app.pages.appPage.forceApplicationReset();
+                  async () => {
+                     await this.$root.app.pages.appPage.reset(true);
+                     window.location.reload(true);
                   }
                );
             });

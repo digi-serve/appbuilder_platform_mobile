@@ -104,7 +104,7 @@ class App extends EventEmitter {
       passwordPage.on("refreshAppLogin", () => {
          // display a loading ui
          passwordPage.emit("loading");
-         appPage.forceApplicationReset(true);
+         appPage.reset(true);
       });
    }
 
