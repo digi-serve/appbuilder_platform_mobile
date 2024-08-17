@@ -29,7 +29,7 @@ var PBKDF2 = (C_algo.PBKDF2async = Base.extend({
       hasher: SHA1,
       iterations: 1,
       iterationMode: "semi",
-      semiCount: 100
+      semiCount: 100,
    }),
 
    /**
@@ -43,7 +43,7 @@ var PBKDF2 = (C_algo.PBKDF2async = Base.extend({
     *     var kdf = CryptoJS.algo.PBKDF2.create({ keySize: 8 });
     *     var kdf = CryptoJS.algo.PBKDF2.create({ keySize: 8, iterations: 1000 });
     */
-   init: function(cfg) {
+   init: function (cfg) {
       this.cfg = this.cfg.extend(cfg);
    },
 
@@ -62,7 +62,7 @@ var PBKDF2 = (C_algo.PBKDF2async = Base.extend({
     *         console.log(key);
     *     };
     */
-   compute: function(password, salt) {
+   compute: function (password, salt) {
       // Shortcut
       var cfg = this.cfg;
 
@@ -146,7 +146,7 @@ var PBKDF2 = (C_algo.PBKDF2async = Base.extend({
                            blockIndexWords[0]++;
                            setTimeout(next, 0);
                         }
-                     }
+                     },
                   );
                } else {
                   // Fully Async Iterations
@@ -177,7 +177,7 @@ var PBKDF2 = (C_algo.PBKDF2async = Base.extend({
                            blockIndexWords[0]++;
                            setTimeout(next, 0);
                         }
-                     }
+                     },
                   );
                }
             },
@@ -187,10 +187,10 @@ var PBKDF2 = (C_algo.PBKDF2async = Base.extend({
                   derivedKey.sigBytes = keySize * 4;
                   resolve(derivedKey);
                }
-            }
+            },
          );
       });
-   }
+   },
 }));
 
 /**
@@ -211,16 +211,16 @@ var PBKDF2 = (C_algo.PBKDF2async = Base.extend({
  *     var key = CryptoJS.PBKDF2(password, salt, { keySize: 8 });
  *     var key = CryptoJS.PBKDF2(password, salt, { keySize: 8, iterations: 1000 });
  */
-C.PBKDF2async = function(password, salt, cfg) {
+C.PBKDF2async = function (password, salt, cfg) {
    if (window.Worker) {
       // Synchronously calculate result in a separate thread
       return new Promise((resolve, reject) => {
          var pbkdf2Worker = new Worker("pbkdf2-worker.js");
-         pbkdf2Worker.onmessage = function(e) {
+         pbkdf2Worker.onmessage = function (e) {
             var key = C.enc.Hex.parse(e.data);
             resolve(key);
          };
-         pbkdf2Worker.onerror = function(err) {
+         pbkdf2Worker.onerror = function (err) {
             reject(err);
          };
          pbkdf2Worker.postMessage([password, salt, cfg]);

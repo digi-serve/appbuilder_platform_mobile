@@ -5,7 +5,12 @@
          <div class="navbar-bg"></div>
          <div class="navbar-inner">
             <div class="left">
-               <a href="#" class="link icon-only panel-open" data-panel="left" data-cy="leftWelcome">
+               <a
+                  href="#"
+                  class="link icon-only panel-open"
+                  data-panel="left"
+                  data-cy="leftWelcome"
+               >
                   <i class="fa fa-bars"></i>
                </a>
             </div>
@@ -15,7 +20,11 @@
          </div>
       </div>
 
-      <div class="page-content ptr-content" ptr-data-ptr-distance="55" ptr-data-ptr-mousewheel="true">
+      <div
+         class="page-content ptr-content"
+         ptr-data-ptr-distance="55"
+         ptr-data-ptr-mousewheel="true"
+      >
          <!-- Default pull to refresh preloader-->
          <div class="ptr-preloader">
             <div class="preloader"></div>
@@ -36,7 +45,10 @@
          </div>
          <!-- if has auth token, hide this option -->
          <div id="jsqr-storage-panel" class="card">
-            <div class="card-header bg-color-gray text-color-white" translate="1">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
                Scan a QR code from the secure website to begin setup
             </div>
             <div class="card-content card-content-padding">
@@ -48,22 +60,33 @@
                <div id="output" hidden>
                   <div hidden><b>Data:</b> <span id="outputData"></span></div>
                </div>
-               <button id="qr-scan-refresh" class="button button-large button-outline color-purple">
+               <button
+                  id="qr-scan-refresh"
+                  class="button button-large button-outline color-purple"
+               >
                   <i class="fa fa-qrcode"></i>
                   <t id="outputMessage">No QR code detected.</t>
                </button>
             </div>
          </div>
          <div class="card">
-            <div class="card-header bg-color-gray text-color-white" translate="1">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
                Refresh App
             </div>
             <div class="card-content card-content-padding">
-               <t>Tap below to remove all locally stored data, except the
-                  authToken.</t><br />
+               <t
+                  >Tap below to remove all locally stored data, except the
+                  authToken.</t
+               ><br />
                <br />
-               <button id="refresh-app" data-cy="reset-get-server"
-                  class="button button-large button-outline color-purple">
+               <button
+                  id="refresh-app"
+                  data-cy="reset-get-server"
+                  class="button button-large button-outline color-purple"
+               >
                   <i class="fa fa-sync"></i>
                   <t>Refresh Now</t>
                </button>
@@ -78,7 +101,10 @@
    </div>
 </div>
          <div class="card">
-            <div class="card-header bg-color-gray text-color-white" translate="1">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
                Local code built at: {{buildTimestamp}}
             </div>
          </div>
@@ -163,11 +189,11 @@
          pageBeforeIn() {
             this.$(".view-main .navbar").attr(
                "class",
-               "navbar bg-color-purple text-color-white color-theme-white"
+               "navbar bg-color-purple text-color-white color-theme-white",
             );
             this.$(".view-main .navbar-bg").attr(
                "class",
-               "navbar-bg bg-color-purple"
+               "navbar-bg bg-color-purple",
             );
          },
          async pageInit() {
@@ -195,7 +221,7 @@
                if (!navigator.onLine) {
                   dialog.alert(
                      "<t>Make sure you are connected to the Internet before trying to update your data.</t>",
-                     "<t>No Network Detected.</t>"
+                     "<t>No Network Detected.</t>",
                   );
                   return;
                }
@@ -207,12 +233,13 @@
                      busy.show("Refreshing data");
                      try {
                         // show loading ui
-                        await appPage.forceApplicationReset(true);
+                        await appPage.reset(true);
+                        window.location.reload(true);
                      } catch (error) {
                         console.error(error);
                      }
                      busy.hide();
-                  }
+                  },
                );
             });
             const username = resources.account.userData?.user.username;
@@ -261,13 +288,13 @@
                   0,
                   0,
                   canvasElement.width,
-                  canvasElement.height
+                  canvasElement.height,
                );
                const imageData = canvas.getImageData(
                   0,
                   0,
                   canvasElement.width,
-                  canvasElement.height
+                  canvasElement.height,
                );
                try {
                   const qrCode = this.$root.app.utils.jsQR(
@@ -276,7 +303,7 @@
                      imageData.height,
                      {
                         inversionAttempts: "dontInvert",
-                     }
+                     },
                   );
                   if (qrCode?.data == null) {
                      outputMessage.hidden = false;
@@ -302,22 +329,22 @@
                   drawLine(
                      qrCode.location.topLeftCorner,
                      qrCode.location.topRightCorner,
-                     "#FF3B58"
+                     "#FF3B58",
                   );
                   drawLine(
                      qrCode.location.topRightCorner,
                      qrCode.location.bottomRightCorner,
-                     "#FF3B58"
+                     "#FF3B58",
                   );
                   drawLine(
                      qrCode.location.bottomRightCorner,
                      qrCode.location.bottomLeftCorner,
-                     "#FF3B58"
+                     "#FF3B58",
                   );
                   drawLine(
                      qrCode.location.bottomLeftCorner,
                      qrCode.location.topLeftCorner,
-                     "#FF3B58"
+                     "#FF3B58",
                   );
 
                   // this is some basic validation, we should probably do more
@@ -371,7 +398,7 @@
                         })
                         .open();
 
-                     busy.show("Refreshing...")
+                     busy.show("Refreshing...");
                      setTimeout(() => {
                         busy.hide();
                         location.reload(true);
@@ -393,7 +420,8 @@
                      });
                   });
                   cachedState.buildTimestamp = app.buildTimeStamp;
-                  cachedState.systemInfo = app.pages.appPage.components.welcome.getSystemInfo();
+                  cachedState.systemInfo =
+                     app.pages.appPage.components.welcome.getSystemInfo();
                   toast
                      .create({
                         text: "<t>Finished, reloading!</t>",
@@ -442,9 +470,10 @@
                   // Ask the browser for permissions again
                   // Update the video element with the new stream
                   if (navigator.mediaDevices) {
-                     video.srcObject = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: "environment" },
-                     });
+                     video.srcObject =
+                        await navigator.mediaDevices.getUserMedia({
+                           video: { facingMode: "environment" },
+                        });
                   }
                   video.setAttribute("playsinline", true);
                   video.currentTime = 0;

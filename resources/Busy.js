@@ -30,14 +30,14 @@ class Busy extends EventEmitter {
    show(text = "Saving", timeout) {
       if (this.app.pages.appPage.f7App == null) {
          console.error(
-            "use of busy.show() before busy.setApp() is initialized."
+            "use of busy.show() before busy.setApp() is initialized.",
          );
          return;
       }
       if (this.busyInProgress) this.hide();
       this.busyInProgress = true;
       this.app.pages.appPage.f7App.dialog.preloader(
-         this.app.resources.translate.t(text)
+         this.app.resources.translate.t(text),
       );
       if (timeout == null) return;
       setTimeout(() => {
@@ -57,7 +57,7 @@ class Busy extends EventEmitter {
    hide() {
       if (this.app.pages.appPage.f7App == null) {
          console.error(
-            "use of busy.hide() before busy.setApp() is initialized."
+            "use of busy.hide() before busy.setApp() is initialized.",
          );
          return;
       }

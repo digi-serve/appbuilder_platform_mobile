@@ -14,7 +14,7 @@ class PasswordPage extends Common {
       super(
          "password-page",
          "lib/platform/pages/passwordPage.html",
-         "lib/platform/pages/passwordPage.css"
+         "lib/platform/pages/passwordPage.css",
       );
       this._pbkdf2Configs = {
          keySize: 256 / 32,
@@ -30,7 +30,7 @@ class PasswordPage extends Common {
          await app.utils.pbkdf2(
             CryptoJS.SHA256(text).toString(),
             (await app.resources.storage.get("user", "salt")) || "",
-            this._pbkdf2Configs
+            this._pbkdf2Configs,
          )
       ).toString();
    }
@@ -55,8 +55,9 @@ class PasswordPage extends Common {
       const $unlock_p1 = $unlock.find('input[name="p1"]');
       //get buildTimestamp from resources
       const buildTimestamp = await app.buildTimeStamp;
-      this.$("div.timeStamp").html(`<div class="card-header bg-color-gray text-color-white">${buildTimestamp}</div>`);
-
+      this.$("div.timeStamp").html(
+         `<div class="card-header bg-color-gray text-color-white">${buildTimestamp}</div>`,
+      );
 
       /**
        * This animation plays after the password has been confirmed. The password
@@ -87,7 +88,7 @@ class PasswordPage extends Common {
          $scanner.width($scanner.siblings("input").eq(0).outerWidth());
          $scanner.css(
             "left",
-            parseInt($unlock.find("input").css("margin-left")) - 15
+            parseInt($unlock.find("input").css("margin-left")) - 15,
          );
 
          // trigger CSS animation
@@ -146,11 +147,11 @@ class PasswordPage extends Common {
                   await Promise.all(
                      this.app.resources.storage.validStorageKeys.map(
                         (availableStorageKey) =>
-                           storage.clearAll(availableStorageKey)
-                     )
+                           storage.clearAll(availableStorageKey),
+                     ),
                   );
                   location.reload();
-               }
+               },
             );
          });
 
@@ -192,13 +193,19 @@ class PasswordPage extends Common {
       const $iOSInstruct = this.$("div.ios-instruct");
       // Detects if device is in standalone mode
       try {
-         if (/iphone|ipad|ipod/.test(userAgent) && navigator?.standalone === false)
+         if (
+            /iphone|ipad|ipod/.test(userAgent) &&
+            navigator?.standalone === false
+         )
             $iOSInstruct.show();
          else {
             $setup.show();
          }
       } catch (error) {
-         console.error("Error detecting iOS standalone mode on passwordPage:", error);
+         console.error(
+            "Error detecting iOS standalone mode on passwordPage:",
+            error,
+         );
          $setup.show();
       }
 

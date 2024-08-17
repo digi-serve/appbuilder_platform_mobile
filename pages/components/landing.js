@@ -17,7 +17,7 @@ class Landing extends Common {
          null,
          {
             wildcard: true,
-         }
+         },
       );
    }
 }

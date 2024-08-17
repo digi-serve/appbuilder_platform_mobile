@@ -30,7 +30,7 @@ class AppPage extends Common {
       // Are the AB Applications in the middle of being reset?
       // TODO (Guy): Refactor this in the future;
       this._isUpdating = false;
-      this._pendingApplicationReset = false;
+      this._pendingReset = false;
       this._updatingCallbacks = [];
       this.appView = null;
       this.components = {
@@ -64,7 +64,6 @@ class AppPage extends Common {
 
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
-
             await account.loadUserData();
             busy.hide();
          } catch (err) {
@@ -74,9 +73,15 @@ class AppPage extends Common {
                const dialog = f7App.dialog;
                switch (err.code) {
                   case "E_NOJRRTOKEN":
-                     dialog.alert("<t>Please re-scan the QR code from inside this app. iOS does not allow homescreen apps to recive data from Safari.</t>", "<t>Be ready to scan QR</t>", function () {
-                        resolve();
-                     }).open();
+                     dialog
+                        .alert(
+                           "<t>Please re-scan the QR code from inside this app. iOS does not allow homescreen apps to recive data from Safari.</t>",
+                           "<t>Be ready to scan QR</t>",
+                           function () {
+                              resolve();
+                           },
+                        )
+                        .open();
                      break;
                   case "E_BADAUTHTOKEN":
                      dialog
@@ -108,86 +113,70 @@ class AppPage extends Common {
          // TODO (Guy): Refactor later.
          // Preparing components.
          busy.show("Preparing components.");
-         const mainRoutes = [
-            // TODO (Guy): Refactor.
-            {
-               path: "/profile/",
-               componentUrl:
-                  "./lib/applications/profile/templates/profile-landing.html",
-               routes: [
-                  {
-                     path: "details/:uuid",
-                     popup: {
-                        componentUrl:
-                           "./lib/applications/profile/templates/profile-details.html",
-                     },
-                  },
-               ],
-            },
-         ];
+         const mainRoutes = [];
          const menuRoutes = [];
          try {
+            // components isn't fully iterable, so we need to use a for loop.
             const components = this.components;
-            let pendingPromises = [];
-            try {
-               // components isn't fully iterable, so we need to use a for loop.
-               for (const key in components) {
-                  if (Object.hasOwnProperty.call(components, key)) {
-                     pendingPromises.push(components[key].init(this));
-                     const routes = components[key].routes;
-                     if (routes.mainRoutes != null)
-                        mainRoutes.push(...routes.mainRoutes);
-                     if (routes.menuRoutes != null)
-                        menuRoutes.push(...routes.menuRoutes);
-                  }
+            const pendingPromises = [];
+            for (const key in components) {
+               if (Object.hasOwnProperty.call(components, key)) {
+                  pendingPromises.push(components[key].init(this));
+                  const routes = components[key].routes;
+                  if (routes.mainRoutes != null)
+                     mainRoutes.push(...routes.mainRoutes);
+                  if (routes.menuRoutes != null)
+                     menuRoutes.push(...routes.menuRoutes);
                }
-               await Promise.all(pendingPromises);
-            } catch (err) {
-               console.error("appPage.js: Error trying to init routes: ", err);
             }
-            pendingPromises = [];
-            app.applications.forEach((app) => {
-               pendingPromises.push(app.init(this));
-               const routes = app.routes;
-               if (routes.mainRoutes != null)
-                  mainRoutes.push(...routes.mainRoutes);
-               if (routes.menuRoutes != null)
-                  menuRoutes.push(...routes.menuRoutes);
-            });
+            await Promise.all(pendingPromises);
+            await Promise.all(
+               app.applications.map((app) => {
+                  const routes = app.routes;
+                  if (routes.mainRoutes != null)
+                     mainRoutes.push(...routes.mainRoutes);
+                  if (routes.menuRoutes != null)
+                     menuRoutes.push(...routes.menuRoutes);
+                  return app.init(this);
+               }),
+            );
 
             // This relies on the account object from the previous step.
             if (account.userData?.user.username == null)
                throw new Error("Not found an user.");
             (async () => {
+               const abDCs = app.abDCs;
+               const data = {
+                  doneAmount: 0,
+                  length: abDCs.length,
+                  status: "init.dc",
+               };
                await Promise.all(
-                  app.abDCs.map((dc) =>
+                  abDCs.map((dc) =>
                      (async () => {
                         console.assert(
                            dc.init != null,
                            "Missing init() method",
                         );
-                        if (dc.name === "Family Worker Information") return;
-                        await dc.init();
-                        console.assert(
-                           dc.loadData != null,
-                           "Missing loadData() method",
-                        );
-                        await dc.loadData();
+                        if (dc.name === "Family Worker Information")
+                           data.doneAmount++;
+                        else {
+                           try {
+                              await dc.init();
+                              console.assert(
+                                 dc.loadData != null,
+                                 "Missing loadData() method",
+                              );
+                              await dc.loadData();
+                           } catch (err) {
+                              console.error(err);
+                           }
+                           data.doneAmount++;
+                        }
+                        await this._updateSyncUI(data);
                      })(),
                   ),
                );
-               await Promise.all(
-                  pendingPromises.map(async (pendingPromise) => {
-                     try {
-                        await pendingPromise;
-                     } catch (err) {
-                        console.error(err);
-                     }
-                  }),
-               );
-               pendingPromises = null;
-               this.components.profile.loadProfileData();
-               await this._updateSyncUI();
                this._checkForUpdate(true);
             })();
          } catch (err) {
@@ -248,18 +237,16 @@ class AppPage extends Common {
                }),
             ),
          );
-
-         this.components.profile.loadProfileData();
          await this._updateSyncUI();
          console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
    }
 
-   async _updateSyncUI() {
+   async _updateSyncUI(data) {
       await Promise.all(
          this._updatingCallbacks.map(async (e) => {
-            const callbackResult = e.callback();
+            const callbackResult = e.callback(data);
             if (callbackResult instanceof Promise) await callbackResult;
          }),
       );
@@ -366,7 +353,6 @@ class AppPage extends Common {
       const resources = this.app.resources;
       await resources.network.importCredentials(preToken, tenantUUID);
       await resources.account.loadUserData();
-      // await this.fetchApplicationData(true);
    }
 
    getApplicationByID(id) {
@@ -376,77 +362,14 @@ class AppPage extends Common {
    }
 
    /**
-    * @method fetchApplicationData()
-    * Make sure all applications perform a remote data update before moving on.
-    *
-    * A modal dialog box will be displayed during the process.
-    *
-    * @param {boolean} [refreshPage]
-    *      Refresh the page after completion?
-    * @return {Promise}
-    */
-   async fetchApplicationData(refreshPage = false) {
-      // Show message if it takes too long
-      const warnUI = setTimeout(() => {
-         this.f7App.toast
-            .create({
-               text: `<center><t data-cy="updateWarn" >Sorry, Data update is taking a long time...</t></center>`,
-               position: "center",
-            })
-            .open();
-         // analytics.log("warn (45 secs) during fetchApplicationData()");
-      }, 45000);
-
-      // Show message if it takes too long
-      const waitToClose = setTimeout(() => {
-         this.f7App.dialog
-            .alert(
-               "<t>Data update is taking a long time, there may have been a problem. Please try again later.</t>",
-               "<t>Sorry</t>",
-            )
-            .open();
-      }, 90000);
-
-      // listen for when inits are complete
-      clearTimeout(warnUI);
-      clearTimeout(waitToClose);
-
-      if (refreshPage) this.appView.router.refreshPage();
-   }
-
-   /**
-    * @method fetchRecordData()
-    * perform a specific remote data update before moving on.
-    * a data collection
-    *
-    * @param {string} app
-    * @param {string} datacollection
-    */
-   fetchRecordData(app, datacollection) {
-      const targetDC = this.app.applications
-         .find((a) => {
-            return a.ID === app;
-         })
-         .datacollections.find((a) => {
-            return a.name === datacollection;
-            // TODO is this the right way to find the datacollection?
-         });
-      console.assert(
-         targetDC,
-         "appPage.fetchRecordData() could not find the datacollection",
-      );
-      return targetDC.reloadData();
-   }
-
-   /**
     * Reinitialize the AB Applications.
     * This is called after a new authToken is imported.
     *
     * @return {Promise}
     */
-   async forceApplicationReset(includeLocal = false) {
+   async reset(force = false) {
       try {
-         this._pendingApplicationReset = true;
+         this._pendingReset = true;
          // TODO: Implement code to clear local code and get new code from the server
          // ex: the platform code, the ABApplication code, and the ABObject code
          //
@@ -455,27 +378,18 @@ class AppPage extends Common {
 
          // Reset the cached application data
          const app = this.app;
-         await app.resources.network.init(this.app);
-         const allClears = [];
-         const allResets = [];
-
-         // tell all apps to .init() again
-         app.applications.forEach((app) => {
-            if (app.clearSystemData != null) allClears.push(app.clearSystemData());
-            allResets.push(app.reset());
-         });
-         await Promise.all(allClears);
-         await Promise.all(allResets);
+         await app.resources.network.reset(force);
+         await Promise.all(
+            app.applications.map((application) => application.reset(force)),
+         );
          this.f7App.panel.open("left");
-      } catch (err){
-         // user may be trying to refresh before data collections exist, 
+      } catch (err) {
+         // user may be trying to refresh before data collections exist,
          // they just want to reload the app
-         console.error("appPage forceapplicationreset() err: ",err)
-
+         console.error(err);
       }
       // wipe the cache and hard reload
-      this._pendingApplicationReset = false;
-      window.location.reload(true);
+      this._pendingReset = false;
    }
 }
 

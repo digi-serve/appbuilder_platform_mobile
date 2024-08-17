@@ -56,9 +56,7 @@ class Analytics extends EventEmitter {
          }
       }
       const userAgent = navigator.userAgent?.toLowerCase();
-      const isIos = () => {
-         return /iphone|ipad|ipod/.test(userAgent);
-      };
+
       // detect if in chrome
       let chromeFlag = "non-ios";
       if (/crios/.test(userAgent)) {
@@ -303,7 +301,7 @@ class Analytics extends EventEmitter {
     *          "message": {string}
     *      }
     */
-   manageManyError(err) {
+   manageManyError() {
       // TODO: Implement this
    }
 

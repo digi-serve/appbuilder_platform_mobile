@@ -43,16 +43,15 @@ class Profile extends Common {
    }
 
    loadProfileData() {
-      const username = this.page.app.resources.account.userData?.user.username;
       this._userProfile = this.dc.getData(
          (e) =>
             e.data["System Access"] ===
-            this.page.app.resources.account.userData?.user?.username,
+            this.page.app.resources.account.userData?.user.username,
       )[0]?.data;
    }
 
    get userProfile() {
-      return this._userProfile;
+      return structuredClone(this._userProfile);
    }
 }
 

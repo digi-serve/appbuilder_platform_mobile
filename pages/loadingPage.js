@@ -17,7 +17,7 @@ class LoadingPage extends Common {
       super(
          "loading-page",
          "lib/platform/pages/loadingPage.html",
-         "lib/platform/pages/loadingPage.css"
+         "lib/platform/pages/loadingPage.css",
       );
    }
 
