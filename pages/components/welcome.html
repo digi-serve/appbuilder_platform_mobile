@@ -243,6 +243,30 @@
                );
             });
             const username = resources.account.userData?.user.username;
+
+            // Bible Trivia to give user something to do
+            // give them initial question, and then they can tap to get more
+            const tCanvas = $("#trivia").get(0);
+            function tDataUpdate() {
+               // check if the answer is visible
+               if ($("#answer").css("display") === "none") {
+                  // show the answer
+                  $("#answer").css("display", "block");
+                  return;
+               }
+               // else, show the next question
+               let tData = app.pages.appPage.components.welcome.getTrivia();
+               // convert into html, with 'a' hidden
+               let html = `<div>${tData.q}</div></br><i class="fa fa-regular fa-hand-point-right"><div id="answer" style="display:none">${tData.a}</div></i>`;
+               // update the trivia question ui
+               tCanvas.innerHTML = html;
+            }
+            // set the trivia question ui
+            tDataUpdate()
+            // trigger on tap
+            $("#trivia").on("click", async () => {
+               tDataUpdate()
+            });
             if (username != null) {
                $syncData.show();
                $jsQRStoragePanel.hide();
@@ -487,30 +511,6 @@
                         .open();
                   dialog.alert("QR should be supported on this browser").open();
                }
-            });
-
-            // Bible Trivia to give user something to do
-            // give them initial question, and then they can tap to get more
-            const tCanvas = $("#trivia").get(0);
-            function tDataUpdate() {
-               // check if the answer is visible
-               if ($("#answer").css("display") === "none") {
-                  // show the answer
-                  $("#answer").css("display", "block");
-                  return;
-               }
-               // else, show the next question
-               let tData = app.pages.appPage.components.welcome.getTrivia();
-               // convert into html, with 'a' hidden
-               let html = `<div>${tData.q}</div></br><i class="fa fa-regular fa-hand-point-right"><div id="answer" style="display:none">${tData.a}</div></i>`;
-               // update the trivia question ui
-               tCanvas.innerHTML = html;
-            }
-            // set the trivia question ui
-            tDataUpdate()
-            // trigger on tap
-            $("#trivia").on("click", async () => {
-               tDataUpdate()
             });
          },
       },
