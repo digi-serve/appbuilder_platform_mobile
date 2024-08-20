@@ -144,11 +144,10 @@
                >
                   {{#js_if "this.userProfile?.Gender != null"}}
                   <div
-                     class="avatar color-{{userProfile.Gender}}"
-                     style="background: #ccc"
+                     class="avatar color-{{this.userProfile.Gender}}"
                   ></div>
                   {{else}}
-                  <div class="avatar color-blue" style="background: #ccc"></div>
+                  <div class="avatar color-blue"></div>
                   {{/js_if}}
                   <!-- prettier-ignore -->
                   <span class="username">{{print userProfile "Preferred Name"}} {{print userProfile "Surname"}}</span>

@@ -361,6 +361,13 @@ class AppPage extends Common {
       });
    }
 
+   getDatacollectionByID(id) {
+      return this.app.abDCs.find((d) => d.id == id || d.name == id);
+   }
+   dataCollection(key) {
+      return this.getDatacollectionByID(key);
+   }
+
    /**
     * Reinitialize the AB Applications.
     * This is called after a new authToken is imported.

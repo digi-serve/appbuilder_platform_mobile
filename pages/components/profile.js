@@ -55,6 +55,10 @@ class Profile extends Common {
    get userProfile() {
       return structuredClone(this._userProfile);
    }
+
+   isReady() {
+      return this.userProfile != null;
+   }
 }
 
 export default new Profile();

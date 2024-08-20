@@ -42,18 +42,18 @@
         </div>
         <div class="profile-title skeleton-text skeleton-effect-fade">James Duncan</div>
         {{else}}
-        {{#js_if "person?.Gender != null" }}
-        <div class="demo-facebook-avatar color-{{person.Gender}}">
+        {{#js_if "this.person?.data.Gender != null" }}
+        <div class="demo-facebook-avatar color-{{this.person?.data.Gender}}">
             <!-- <i class="fas fa-pencil-alt fa-2x fa-inverse edit-avatar disabled"></i> -->
-            {{initial person "Preferred Name"}}{{initial person "Surname"}}
+            {{initial person.data "Preferred Name"}}{{initial person.data "Surname"}}
         </div>
         {{else}}
         <div class="demo-facebook-avatar color-blue">
             <!-- <i class="fas fa-pencil-alt fa-2x fa-inverse edit-avatar disabled"></i> -->
-            {{initial person "Preferred Name"}}{{initial person "Surname"}}
+            {{initial person.data "Preferred Name"}}{{initial person.data "Surname"}}
         </div>
         {{/js_if}}
-        <div class="profile-title">{{print person "Preferred Name"}} {{print person "Surname"}}</div>
+        <div class="profile-title">{{print person.data "Preferred Name"}} {{print person.data "Surname"}}</div>
         {{/if}}
         <div class="profile-footer" id="profile_nav">
             <a href="#" @click="profileFooter" data-cy="slideto-0" data-slideto="0" class="active">
@@ -114,7 +114,7 @@
                                             <div class="item-inner">
                                                 <div class="item-title item-label" translate=1>Given Name</div>
                                                 <div class="item-input-wrap">
-                                                    <input type="text" name="Given Name" placeholder="Your first name" value="{{print person 'Given Name'}}" disabled=1>
+                                                    <input type="text" name="Given Name" placeholder="Your first name" value="{{print person.data 'Given Name'}}" disabled=1>
                                                     <span class="input-clear-button"></span>
                                                 </div>
                                             </div>
@@ -123,7 +123,7 @@
                             <div class="item-inner">
                                 <div class="item-title item-label" data-cy="surname" translate=1>Surname</div>
                                 <div class="item-input-wrap">
-                                    <input type="text" name="Surname" placeholder="Your last name" value="{{person.Surname}}" disabled=1>
+                                    <input type="text" name="Surname" placeholder="Your last name" value="{{person.data.Surname}}" disabled=1>
                                     <!-- <span class="input-clear-button"></span> -->
                                 </div>
                             </div>
@@ -133,7 +133,7 @@
                                 <div class="item-title item-label" translate=1>Preferred Name</div>
                                 <div class="item-input-wrap">
                                     <input type="text" name="Preferred Name" data-cy="preferredName" placeholder="Preferred name"
-                                        value="{{print person 'Preferred Name'}}" disabled=1>
+                                        value="{{print person.data 'Preferred Name'}}" disabled=1>
                                     <!-- <span class="input-clear-button"></span> -->
                                 </div>
                             </div>
@@ -203,7 +203,7 @@
                                                     <div class="item-title item-label" translate=1>Profile type</div>
                                                     <select disabled=1 data-cy="personType" name="Person Type">
                                                         <!-- disable-eslint -->
-                                                        {{listItems 'PROFILE' 'Person - Profile' 'Person Type' person '<option %selected% value="%id%">%label%</option>'}}
+                                                        {{listItems 'PROFILE' 'Person - Profile' 'Person Type' person.data '<option %selected% value="%id%">%label%</option>'}}
                                     </select>
                                     </div>
                                     </li>
@@ -211,7 +211,7 @@
                                         <div class="item-inner">
                                             <div class="item-title item-label" translate=1>Birth Date</div>
                                             <div class="item-input-wrap">
-                                                    <input type="date" name='Birth Date' value="{{date person 'Birth Date'}}" placeholder="Please choose..." class="input-with-value" disabled=1>
+                                                    <input type="date" name='Birth Date' value="{{date person.data 'Birth Date'}}" placeholder="Please choose..." class="input-with-value" disabled=1>
                                                     <!-- <span class="input-clear-button"></span> -->
                                     <!-- <span class="input-clear-button"></span> -->
                                     </div>
@@ -222,7 +222,7 @@
                                             <div class="item-title item-label" translate=1>Gender</div>
                                             <select disabled=1 data-cy="gender" name="Gender">
                                                 <!-- disable-eslint -->
-                                                    {{listItems 'PROFILE' 'Person - Profile' 'Gender' person '<option %selected% value="%id%">%label%</option>'}}
+                                                    {{listItems 'PROFILE' 'Person - Profile' 'Gender' person.data '<option %selected% value="%id%">%label%</option>'}}
                                                 </select>
                                     </div>
                                     </li>
@@ -231,14 +231,14 @@
                                             <div class="item-title item-label" translate=1>Marital Status</div>
                                             <select disabled=1 data-cy="maritalStatus" name="Marital Status">
                                                 <!-- disable-eslint -->
-                                                    {{listItems 'PROFILE' 'Person - Profile' 'Marital Status' person '<option %selected% value="%id%">%label%</option>'}}
+                                                    {{listItems 'PROFILE' 'Person - Profile' 'Marital Status' person.data '<option %selected% value="%id%">%label%</option>'}}
                                                 </select>
                                     </div>
                                     </li>
                                     <li class="item-content disabled item-input item-input-with-value">
                                         <div class="item-inner">
                                             <label class="item-checkbox item-content">
-                                                {{#js_if "isPointOfContact != null"}}
+                                                {{#js_if "this.isPointOfContact != null"}}
                                                 <input type="checkbox" data-cy="fpoc" name="Family Point of Contact" value="1" checked="checked" disabled=1>
                                                 {{else}}
                                                 <input type="checkbox" data-cy="fpoc" name="Family Point of Contact" value="1" disabled=1>
@@ -268,24 +268,24 @@
                 {{#if loading}}
                 {{else}}
                 {{#each emails}}
-                <button @click="deleteItem" data-cy="deleteEmail" data-uuid="{{uuid}}" data-object="Email"
+                <button @click="deleteItem" data-cy="deleteEmail" data-uuid="{{data.uuid}}" data-object="Email"
                     data-collection="familyEmailDC" class="deleteButton hidden button button-round text-color-white bg-color-red"><i
                         class="fa fa-times"></i></button>
                 <form class="emailForm list inset" style="margin-top: 0px; margin-bottom: 15px;">
                     <ul>
-                        <li class="item-content disabled item-input item-input-with-value" email_id='{{uuid}}'>
+                        <li class="item-content disabled item-input item-input-with-value" email_id='{{data.uuid}}'>
                             <div class="item-inner emailForm">
                                 <div class="item-title item-label">
                                     <label class="item-checkbox">
-                                        <input type="hidden" name="uuid" value="{{uuid}}" />
-                                        <input type="checkbox" data-cy="emailSecure" ame="Secure" value="1" {{#js_if "this['Secure']" }}checked="checked"
+                                        <input type="hidden" name="uuid" value="{{data.uuid}}" />
+                                        <input type="checkbox" data-cy="emailSecure" ame="Secure" value="1" {{#js_if "this.data['Secure']" }}checked="checked"
                                             {{/js_if}} disabled=1>
                                         <i class="icon icon-checkbox"></i>
                                         <t>Secure</t>
                                         </label>
                                         </div>
-                                        <div class="item-input-wrap" data-cy="emailInput{{uuid}}">
-                                            <input type="email" placeholder="Enter email address" name="Email" value="{{Email}}">
+                                        <div class="item-input-wrap" data-cy="emailInput{{data.uuid}}">
+                                            <input type="email" placeholder="Enter email address" name="Email" value="{{data.Email}}">
                                             <span class="input-clear-button"></span>
                                         </div>
                                         </div>
@@ -319,10 +319,10 @@
                 {{#if loading}}
                 {{else}}
                 {{#each socialMedia}}
-                <button @click="deleteItem" data-uuid="{{uuid}}" data-object="Social Media" data-collection="socialMediaDC"
+                <button @click="deleteItem" data-uuid="{{data.uuid}}" data-object="Social Media" data-collection="socialMediaDC"
                     class="deleteButton hidden button button-round text-color-white bg-color-red"><i class="fa fa-times"></i></button>
                 <form class="socialMediaForm list inset" style="margin-top: 15px;">
-                    <input type="hidden" value="{{uuid}}" name="uuid">
+                    <input type="hidden" value="{{data.uuid}}" name="uuid">
                     <ul>
                         <li class="item-content disabled item-input item-input-with-value">
                             <div class="item-inner">
@@ -330,7 +330,7 @@
                                 <div class="item-input-wrap input-dropdown-wrap">
                                     <select disabled=1 name="Platform">
                                         <!-- disable-eslint -->
-                                        {{listItems 'PROFILE' 'Social Media' 'Platform' this '<option %selected% value="%id%">%label%</option>'}}
+                                        {{listItems 'PROFILE' 'Social Media' 'Platform' this.data '<option %selected% value="%id%">%label%</option>'}}
                                         </select>
                                         </div>
                                         </div>
@@ -339,7 +339,7 @@
                                             <div class="item-inner">
                                                 <div class="item-title item-label" translate=1>Handle</div>
                                                 <div class="item-input-wrap">
-                                                    <input type="text" placeholder="" name="Handle" value="{{print this 'Handle'}}">
+                                                    <input type="text" placeholder="" name="Handle" value="{{print this.data 'Handle'}}">
                                                     <span class="input-clear-button"></span>
                                                 </div>
                                             </div>
@@ -384,29 +384,29 @@
                 {{#if loading}}
                 {{else}}
                 {{#each assignments}}
-                <div id={{print this 'uuid' }} class="list inset" style="margin-top: 15px;">
+                <div id={{print this.data 'uuid' }} class="list inset" style="margin-top: 15px;">
                     <ul>
                         <li class="item-content">
                             <div class="item-inner">
                                 <div translate=1>City Name</div>
-                                {{print CityTeam__relation 'City Name'}}
+                                {{print this.data.CityTeam__relation 'City Name'}}
                             </div>
                         </li>
                         <li class="item-content">
                             <div class="item-inner">
                                 <div translate=1>Position</div>
-                                {{translate 'PROFILE' Role195__relation 'Label'}}
+                                {{translate 'PROFILE' data.Role195__relation 'Label'}}
                             </div>
                         </li>
                         {{#js_if "this['Ministry Team']"}}
                         <li class="item-content">
                             <div class="item-inner">
                                 <div translate=1>Project Team</div>
-                                {{print MinistryTeam__relation 'Name'}}
+                                {{print data.MinistryTeam__relation 'Name'}}
                             </div>
                         </li>
                         {{/js_if}}
-                        {{#js_if "this['Is Primary Assignment']"}}
+                        {{#js_if "this.data['Is Primary Assignment']"}}
                         <li class="item-content">
                             <div class="item-inner">
                                 <div translate=1>Primary Assignment</div>
@@ -459,423 +459,447 @@
 </style>
 <!-- framework7 component script -->
 <script>
-                    let profileApp; 
-                    let emails;
-                    let personID;
-                    let familyID;
-                    let workerID;
-                    let swiper;
-                    let emailIDs = [];
-                            // var assignmentIDs = [];
-                    let app;
+   let profileApp;
+   let emails;
+   let personID;
+   let familyID;
+   let workerID;
+   let swiper;
+   let emailIDs = [];
+   // var assignmentIDs = [];
+   let app;
 
-return {
-    data() {
-        return {
-                person: null,
-                isPointOfContact: null,
-                assignments: null,
-                socialMedia: null,
-                emails: null,
-                loading: true
-            }
-    },
-    on: {
-        popupOpen() {
-            profileApp = this.$root.app.pages.appPage.components.profileComponent;
+   return {
+      data() {
+         return {
+            person: null,
+            isPointOfContact: null,
+            assignments: null,
+            socialMedia: null,
+            emails: null,
+            loading: true,
+         };
+      },
+      on: {
+         popupOpen() {
+            let self = this;
+            app = this.$app;
+            profileApp = this.$root.app.pages.appPage.components.profile;
             personID = this.$route.params["uuid"];
 
             // we need to check app status on pageInit in case you are loading
             // a page that was previously unloaded and has data stored in your local database
             // var workerInfoDC = profileApp.dataCollection("Family Worker Information");
             // 21e13cd7-26a7-41fc-8abd-fbe8e5616d3a
-            const profileComponent = this.$root.app.pages.appPage.components.profileComponent;
-            const familyMemberDC = profileComponent.dataCollection("Family Members");
-            const assignmentsDC = profileComponent.dataCollection("Assignments - mobile");
-            const cityDC = profileComponent.dataCollection("City");
-            const familyEmailsDC = profileComponent.dataCollection("Email - mobile");
-            const socialMediaDC = profileComponent.dataCollection("Social Media - mobile");
-            const userPersonDC = profileComponent.dataCollection("User Person");
+            const appPage = this.$root.app.pages.appPage;
+            const familyMemberDC = appPage.dataCollection("Family Members");
+            const assignmentsDC = appPage.dataCollection(
+               "Assignments - mobile",
+            );
+            const cityDC = appPage.dataCollection("City");
+            const familyEmailsDC = appPage.dataCollection("Email - mobile");
+            const socialMediaDC = appPage.dataCollection(
+               "Social Media - mobile",
+            );
+            const userPersonDC = appPage.dataCollection("User Person");
 
             var familyEmailsListenerFN = (event, value) => {
-            var emails = familyEmailsDC
-                .getAllRecords()
-                .filter((r) => {
-                    if (r.Person == personID) return true;
-                });
-            self.$setState({
-                emails: emails
-            }, function () {
-                if (this.$("#edit-page").is(":visible")) {
-                    disableFields();
-                } else {
-                    enableFields();
-                }
-                swiper.update();
-            });
+               var emails = familyEmailsDC.getAllRecords().filter((r) => {
+                  if (r.data.Person == personID) return true;
+               });
+               self.$setState(
+                  {
+                     emails: emails,
+                  },
+                  function () {
+                     if (this.$("#edit-page").is(":visible")) {
+                        disableFields();
+                     } else {
+                        enableFields();
+                     }
+                     swiper.update();
+                  },
+               );
             };
             familyEmailsDC.onAny(familyEmailsListenerFN);
 
             var socialMediaListenerFN = (event, value) => {
-            var socialMedia = socialMediaDC
-                .getAllRecords()
-                .filter((r) => {
-                    if (r.Person == personID) return true;
-                });
-            console.log("social media:", socialMedia);
-            self.$setState({
-                socialMedia: socialMedia
-            }, function () {
-                if (this.$("#edit-page").is(":visible")) {
-                    disableFields();
-                } else {
-                    enableFields();
-                }
-                swiper.update();
-            });
+               var socialMedia = socialMediaDC.getAllRecords().filter((r) => {
+                  if (r.data.Person == personID) return true;
+               });
+               console.log("social media:", socialMedia);
+               self.$setState(
+                  {
+                     socialMedia: socialMedia,
+                  },
+                  function () {
+                     if (this.$("#edit-page").is(":visible")) {
+                        disableFields();
+                     } else {
+                        enableFields();
+                     }
+                     swiper.update();
+                  },
+               );
             };
 
             socialMediaDC.onAny(socialMediaListenerFN);
             // we need to check app status on pageInit in case you are loading
             // a page that was previously unloaded and has data stored in your local database
             if (profileApp.isReady()) {
-                // console.log("🚀 @achoobert ~ file: profile-details.html:769 ~ profileApp ready:", profileApp);
-                profileAppReady();
+               // console.log("🚀 @achoobert ~ file: profile-details.html:769 ~ profileApp ready:", profileApp);
+               profileAppReady();
             } else {
-                profileApp.on("status", function (value) {
-                    if (value == "ready") profileAppReady();
-            });
+               profileApp.on("status", function (value) {
+                  if (value == "ready") profileAppReady();
+               });
             }
 
             function profileAppReady() {
-            var familyMember = familyMemberDC
-                .getAllRecords()
-                .find((r) => {
-                    return r?.uuid == personID;
-                });
-            console.log("person: ", familyMember);
-            familyID = familyMember.Family;
+               var familyMember = familyMemberDC.getAllRecords().find((r) => {
+                  return r?.id == personID;
+               });
+               console.log("person: ", familyMember);
+               familyID = familyMember.Family;
 
-            var emails = familyEmailsDC
-                .getAllRecords()
-                .filter((r) => {
-                    if (r.Person == personID) return true;
-                });
-                console.assert(emails.length > 0, "No emails found for personID: ", personID);
-                console.log("emails: ", emails);
+               var emails = familyEmailsDC.getAllRecords().filter((r) => {
+                  if (r.data.Person == personID) return true;
+               });
+               console.assert(
+                  emails.length > 0,
+                  "No emails found for personID: ",
+                  personID,
+               );
+               console.log("emails: ", emails);
 
-            var socialMedia = socialMediaDC
-                .getAllRecords()
-                .filter((r) => {
-                    if (r.Person == personID) return true;
-                });
-            console.log("social media:", socialMedia);
+               var socialMedia = socialMediaDC.getAllRecords().filter((r) => {
+                  if (r.data.Person == personID) return true;
+               });
+               console.log("social media:", socialMedia);
 
-            var cityList = cityDC
-                .getAllRecords();
-            console.log(cityList);
-            Template7.global.city = cityList;
+               var cityList = cityDC.getAllRecords().map((c) => c.data);
+               console.log(cityList);
+               // Template7.global.city = cityList;
 
-            var assignments = assignmentsDC
-                .getAllRecords()
-                .filter((r) => {
-                    if (
-                        r.personTeam__relation?.uuid == personID && // filter out ended assignments
-                        (r["Assignment End"] == null ||
-                            moment().diff(r["Assignment End"], "days") < 0)
-                    ) {
-                        console.log(
-                            "date diff: ",
-                            moment().diff(r["Assignment End"], "days")
-                        );
-                        return true;
-                    } else {
-                        return false;
-                    }
-                });
-                // console.log("assignments: ", assignments);
-                //     assignments.forEach(assignment => {
-                //     assignmentIDs.push(assignment?.uuid)
-                // })
+               var assignments = assignmentsDC.getAllRecords().filter((r) => {
+                  r = r.data || r;
+                  if (
+                     r.personTeam__relation?.uuid == personID && // filter out ended assignments
+                     (r["Assignment End"] == null ||
+                        moment().diff(r["Assignment End"], "days") < 0)
+                  ) {
+                     console.log(
+                        "date diff: ",
+                        moment().diff(r["Assignment End"], "days"),
+                     );
+                     return true;
+                  } else {
+                     return false;
+                  }
+               });
+               // console.log("assignments: ", assignments);
+               //     assignments.forEach(assignment => {
+               //     assignmentIDs.push(assignment?.uuid)
+               // })
 
-                self?.$app?.off("ptrRefresh");
-                self?.$app?.on("ptrRefresh", () => {
-                    // 5 second timer then done
-                    self.$root.appPage.fetchRecordData("PROFILE", "User Person");
-                    self.$root.appPage.fetchRecordData("PROFILE", "Family Members");
-                    // self.$root.appPage.fetchRecordData("PROFILE", "Assignments - mobile");
-                    // self.$root.appPage.fetchRecordData("PROFILE", "City");
-                    // self.$root.appPage.fetchRecordData("PROFILE", "Email - mobile");
-                    // self.$root.appPage.fetchRecordData("PROFILE", "Social Media - mobile");
-                    self?.$app?.ptr.done()
-                });
+               self?.$app?.off("ptrRefresh");
+               self?.$app?.on("ptrRefresh", () => {
+                  // 5 second timer then done
+                  self.$root.appPage.fetchRecordData("PROFILE", "User Person");
+                  self.$root.appPage.fetchRecordData(
+                     "PROFILE",
+                     "Family Members",
+                  );
+                  // self.$root.appPage.fetchRecordData("PROFILE", "Assignments - mobile");
+                  // self.$root.appPage.fetchRecordData("PROFILE", "City");
+                  // self.$root.appPage.fetchRecordData("PROFILE", "Email - mobile");
+                  // self.$root.appPage.fetchRecordData("PROFILE", "Social Media - mobile");
+                  self?.$app?.ptr.done();
+               });
 
-            self.$setState(
-                {
-                    person: familyMember,
-                    isPointOfContact: familyMember.PrimaryContact__relation
+               self.$setState(
+                  {
+                     person: familyMember,
+                     isPointOfContact: familyMember.PrimaryContact__relation
                         ? true
                         : false,
-                    assignments: assignments,
-                    socialMedia: socialMedia,
-                    emails: emails,
-                    loading: false
-                },
-                function () {
-                    console.log("DOM and state updated");
-                    self.$("textarea").each((index, item) => {
+                     assignments: assignments,
+                     socialMedia: socialMedia,
+                     emails: emails,
+                     loading: false,
+                     cityList
+                  },
+                  function () {
+                     console.log("DOM and state updated");
+                     self.$("textarea").each((index, item) => {
                         app.input.resizeTextarea(item);
-                    });
-                    swiper.update();
-                }
-            );
+                     });
+                     swiper.update();
+                  },
+               );
             }
 
-        var obj = this;
+            var obj = this;
             var boolTest = function (input) {
-            // true if  or "1" or 1 or ["1"]
-                if (input === undefined) {
-                // TODO this fires on prod
-                console.dir("is undefined")
-                return false
-            }
-            return (input[0] === true || input[0] === "on" || input[0] === "" || input[0] === "1" || input[0] === ["1"])
-            // false if [] or "0" or undefined
-        }
+               // true if  or "1" or 1 or ["1"]
+               if (input === undefined) {
+                  // TODO this fires on prod
+                  console.dir("is undefined");
+                  return false;
+               }
+               return (
+                  input[0] === true ||
+                  input[0] === "on" ||
+                  input[0] === "" ||
+                  input[0] === "1" ||
+                  input[0] === ["1"]
+               );
+               // false if [] or "0" or undefined
+            };
 
-        function enableFields() {
-            var inputs = obj.$("#user-profile .disabled");
-            for (var i = 0; i < inputs.length; i++) {
-                inputs[i].classList.remove("disabled");
-                inputs[i].classList.add("enabled");
-            }
-            var formInputs = obj.$("#user-profile [disabled]");
-            for (var i = 0; i < formInputs.length; i++) {
-                formInputs[i].removeAttribute('disabled');
-            }
+            function enableFields() {
+               var inputs = obj.$("#user-profile .disabled");
+               for (var i = 0; i < inputs.length; i++) {
+                  inputs[i].classList.remove("disabled");
+                  inputs[i].classList.add("enabled");
+               }
+               var formInputs = obj.$("#user-profile [disabled]");
+               for (var i = 0; i < formInputs.length; i++) {
+                  formInputs[i].removeAttribute("disabled");
+               }
 
-            var addNewButtons = obj.$("#user-profile .hidden");
-            for (var i = 0; i < addNewButtons.length; i++) {
-                addNewButtons[i].classList.remove("hidden");
-                addNewButtons[i].classList.add("addNewButtons");
+               var addNewButtons = obj.$("#user-profile .hidden");
+               for (var i = 0; i < addNewButtons.length; i++) {
+                  addNewButtons[i].classList.remove("hidden");
+                  addNewButtons[i].classList.add("addNewButtons");
+               }
+               addEmailButton();
+               addSocialMediaButton();
             }
-            addEmailButton();
-            addSocialMediaButton();
-        }
 
             this.$("#edit-page").on("click", function () {
-            enableFields();
-            this.style.display = "none";
-            obj.$("#save-page")[0].style.display = "";
-            swiper.update();
-        });
+               enableFields();
+               this.style.display = "none";
+               obj.$("#save-page")[0].style.display = "";
+               swiper.update();
+            });
 
-        function disableFields() {
-            var inputs = obj.$("#user-profile .enabled");
-            for (var i = 0; i < inputs.length; i++) {
-                inputs[i].classList.remove("enabled");
-                inputs[i].classList.add("disabled");
-                inputs[i].disabled = false;
+            function disableFields() {
+               var inputs = obj.$("#user-profile .enabled");
+               for (var i = 0; i < inputs.length; i++) {
+                  inputs[i].classList.remove("enabled");
+                  inputs[i].classList.add("disabled");
+                  inputs[i].disabled = false;
+               }
             }
-        }
 
             this.$("#save-page").on("click", function () {
-            // SUBMIT button was clicked
-            var userInput = app.form.convertToData("#profile-form")
+               // SUBMIT button was clicked
+               var userInput = app.form.convertToData("#profile-form");
 
-            Promise.resolve()
-                .then(() => {
-                    // Validate
-                    // TODO this is copy-pasted, may break?
-                    var $form = $("#profile-form");
-                    var validateMsg = $form.find(".item-input-invalid");
-                    if (validateMsg.length > 0) {
+               Promise.resolve()
+                  .then(() => {
+                     // Validate
+                     // TODO this is copy-pasted, may break?
+                     var $form = $("#profile-form");
+                     var validateMsg = $form.find(".item-input-invalid");
+                     if (validateMsg.length > 0) {
                         throw new Error("Please correct your entries.");
-                    }
-                })
-                .then(() => {
-                    // freeze the page while it loads?
-                    // this.$root.busy.show();
-                    // person
-                    var personUpdatedValues = {
-                        'Preferred Name': userInput['Preferred Name'],
-                        Surname: userInput['Surname'],
+                     }
+                  })
+                  .then(() => {
+                     // freeze the page while it loads?
+                     // this.$root.busy.show();
+                     // person
+                     var personUpdatedValues = {
+                        "Preferred Name": userInput["Preferred Name"],
+                        Surname: userInput["Surname"],
                         // 'Family Point of Contact': boolTest(userInput['Family Point of Contact'])
-                    };
+                     };
 
-                    //d10ba98c-9e6f-48c5-962f-19c39a5b6e92
-                    profileApp
+                     //d10ba98c-9e6f-48c5-962f-19c39a5b6e92
+                     profileApp
                         .object("Person")
                         .model()
                         .update(personID, personUpdatedValues)
                         .then(() => {
-                            app.toast
-                        .create({
-                            icon: '<i class="fa-2x fas fa-star"></i>',
-                            text: "<t>Person Updated</t>",
-                            position: "center"
-                        })
-                        .open();
+                           app.toast
+                              .create({
+                                 icon: '<i class="fa-2x fas fa-star"></i>',
+                                 text: "<t>Person Updated</t>",
+                                 position: "center",
+                              })
+                              .open();
                         });
-                    var emailOperations = [];
-                    $(".emailForm").each((index, form) => {
-                        var emailVals = $(form).serializeArray().reduce(function (obj, item) {
-                            obj[item.name] = item.value;
-                            return obj;
-                        }, {});
-                        if (boolTest(emailVals.Secure)) { //
-                            emailVals.Secure = 1;
+                     var emailOperations = [];
+                     $(".emailForm").each((index, form) => {
+                        var emailVals = $(form)
+                           .serializeArray()
+                           .reduce(function (obj, item) {
+                              obj[item.name] = item.value;
+                              return obj;
+                           }, {});
+                        if (boolTest(emailVals.Secure)) {
+                           //
+                           emailVals.Secure = 1;
                         } else {
-                            emailVals.Secure = 0;
+                           emailVals.Secure = 0;
                         }
                         emailOperations.push(
-                            profileApp
-                                .object("Email")
-                                .model()
-                                .update(emailVals?.uuid, emailVals)
+                           profileApp
+                              .object("Email")
+                              .model()
+                              .update(emailVals?.uuid, emailVals),
                         );
-                    });
+                     });
 
-                    Promise.all(emailOperations).then((data) => {
+                     Promise.all(emailOperations).then((data) => {
                         app.toast
-                            .create({
-                                icon: '<i class="fa-2x fas fa-star"></i>',
-                                text: "<t>Email Updated</t>",
-                                position: "center"
-                            })
-                            .open();
-                    });
+                           .create({
+                              icon: '<i class="fa-2x fas fa-star"></i>',
+                              text: "<t>Email Updated</t>",
+                              position: "center",
+                           })
+                           .open();
+                     });
 
-                    // Social Media
-                    var socialMediaOperations = [];
-                    $(".socialMediaForm").each((index, form) => {
-                        var socialMediaVals = $(form).serializeArray().reduce(function (obj, item) {
-                            obj[item.name] = item.value;
-                            return obj;
-                        }, {});
+                     // Social Media
+                     var socialMediaOperations = [];
+                     $(".socialMediaForm").each((index, form) => {
+                        var socialMediaVals = $(form)
+                           .serializeArray()
+                           .reduce(function (obj, item) {
+                              obj[item.name] = item.value;
+                              return obj;
+                           }, {});
                         socialMediaOperations.push(
-                            profileApp
-                                .object("Social Media")
-                                .model()
-                                .update(socialMediaVals?.uuid, socialMediaVals)
+                           profileApp
+                              .object("Social Media")
+                              .model()
+                              .update(socialMediaVals?.uuid, socialMediaVals),
                         );
-                    });
+                     });
 
-                    Promise.all(socialMediaOperations).then((data) => {
+                     Promise.all(socialMediaOperations).then((data) => {
                         app.toast
-                            .create({
-                                icon: '<i class="fa-2x fas fa-star"></i>',
-                                text: "<t>Social Media Updated</t>",
-                                position: "center"
-                            })
-                            .open();
-                    });
-                });
-            // end save
-            // set classes back to disabled
-            disableFields();
+                           .create({
+                              icon: '<i class="fa-2x fas fa-star"></i>',
+                              text: "<t>Social Media Updated</t>",
+                              position: "center",
+                           })
+                           .open();
+                     });
+                  });
+               // end save
+               // set classes back to disabled
+               disableFields();
 
-            var addNewButtons = obj.$("#user-profile .addNewButtons");
-            for (var i = 0; i < addNewButtons.length; i++) {
-                addNewButtons[i].classList.remove("addNewButtons");
-                addNewButtons[i].classList.add("hidden");
-            }
+               var addNewButtons = obj.$("#user-profile .addNewButtons");
+               for (var i = 0; i < addNewButtons.length; i++) {
+                  addNewButtons[i].classList.remove("addNewButtons");
+                  addNewButtons[i].classList.add("hidden");
+               }
 
-            this.style.display = "none";
-            obj.$("#edit-page")[0].style.display = "";
-            swiper.update();
+               this.style.display = "none";
+               obj.$("#edit-page")[0].style.display = "";
+               swiper.update();
             });
-        function addEmailButton() {
-            this.$("#addEmail").unbind("click");
-            this.$("#addEmail").on("click", () => {
-                // Create a form with an input field and a save button
-                // inline css to make sure user can see the input field via outline or border
-                // TODO autofocus and open keyboard if on mobile
-                // html form validation for email
-                const emailForm = `<form id="emailForm" class="popupForm"><div>
+            function addEmailButton() {
+               this.$("#addEmail").unbind("click");
+               this.$("#addEmail").on("click", () => {
+                  // Create a form with an input field and a save button
+                  // inline css to make sure user can see the input field via outline or border
+                  // TODO autofocus and open keyboard if on mobile
+                  // html form validation for email
+                  const emailForm = `<form id="emailForm" class="popupForm"><div>
                         <input class="item-input item-input-with-value" placeholder="example@proton.net" type="text" id="email" name="email" required>
                         <span class="input-clear-button"></span></div>
                     </form>`;
 
-                const uuid = profileApp.page.app.utils.uuidv4();
-                // Display the form using a dialogue popup
-                let dialog = app.dialog.create({
-                    backdrop: true,
-                    closeByBackdropClick: false,
-                    title: "<t>Enter the new email</t>",
-                    text: emailForm,                    
-                    buttons: [
+                  const uuid = profileApp.page.app.utils.uuidv4();
+                  // Display the form using a dialogue popup
+                  let dialog = app.dialog.create({
+                     backdrop: true,
+                     closeByBackdropClick: false,
+                     title: "<t>Enter the new email</t>",
+                     text: emailForm,
+                     buttons: [
                         {
-                            text: "<t data-cy='save' >Save</t>",
-                            close: false,
-                            onClick: (dialog, ev) => {
-                                // do form validation here
-                                const email = app.$("#email").val();
-                                if (email && valid) {
-                                    Promise.resolve()
-                                        .then(() => {
-                                            // self.$root.busy.show();
-                                            var values = {
-                                                uuid,
-                                                Person: personID,
-                                                Email: email  // Add the email to the values object 
-                                            };
-                                            var allOperations = [];
-                                            allOperations.push(
-                                                profileApp
-                                                    .object("Email")
-                                                    .model()
-                                                    .create(values)
-                                            );
-                                            self.$root.app.resources.busy.hide();
-                                            return Promise.all(allOperations);
-                                        })
-                                        .then(() => {
-
-                                            // Additional handling after adding the email
-                                        self.$app.toast
-                                            .create({
-                                                icon: "<i data-cy='addedToast' class='fa-2x fas fa-star'></i>",
-                                                text: 'Added',
-                                                position: "center"
-                                            })
-                                            .open();
-                                        swiper.update();
+                           text: "<t data-cy='save' >Save</t>",
+                           close: false,
+                           onClick: (dialog, ev) => {
+                              // do form validation here
+                              const email = app.$("#email").val();
+                              if (email && valid) {
+                                 Promise.resolve()
+                                    .then(() => {
+                                       // self.$root.busy.show();
+                                       var values = {
+                                          uuid,
+                                          Person: personID,
+                                          Email: email, // Add the email to the values object
+                                       };
+                                       var allOperations = [];
+                                       allOperations.push(
+                                          profileApp
+                                             .object("Email")
+                                             .model()
+                                             .create(values),
+                                       );
+                                       self.$root.app.resources.busy.hide();
+                                       return Promise.all(allOperations);
+                                    })
+                                    .then(() => {
+                                       // Additional handling after adding the email
+                                       self.$app.toast
+                                          .create({
+                                             icon: "<i data-cy='addedToast' class='fa-2x fas fa-star'></i>",
+                                             text: "Added",
+                                             position: "center",
+                                          })
+                                          .open();
+                                       swiper.update();
                                     })
                                     .catch((err) => {
-                                        self.$root.app.resources.busy.hide();
-                                        app.dialog.alert(err.message || err, "<t>Error</t>");
+                                       self.$root.app.resources.busy.hide();
+                                       app.dialog.alert(
+                                          err.message || err,
+                                          "<t>Error</t>",
+                                       );
                                     });
-                                } else {
-                                    // TODO: show error message
-                                    app.toast
-                                        .create({
-                                            icon: "<i class='fa-2x fas fa-exclamation-triangle'></i>",
-                                            text: 'Please enter a valid email address',
-                                            position: "center",
-                                            closeTimeout: 500,
-                                        })
-                                        .open();
-                                }
-                            }
+                              } else {
+                                 // TODO: show error message
+                                 app.toast
+                                    .create({
+                                       icon: "<i class='fa-2x fas fa-exclamation-triangle'></i>",
+                                       text: "Please enter a valid email address",
+                                       position: "center",
+                                       closeTimeout: 500,
+                                    })
+                                    .open();
+                              }
+                           },
                         },
                         {
-                            text: "<t data-cy='cancel' >Cancel</t>",
-                            close: true
-                        }
-                    ]
-                });
-                dialog.open();
-            });
-        }
-        function addSocialMediaButton() {
-            this.$("#addSocialMedia").unbind("click");
-            this.$("#addSocialMedia").on("click", () => {
-                // Create a form with input fields for social media details
-                const listPlatforms = profileApp.listItems('Social Media', 'Platform').map((platform) => {
-                    return `<option value="${platform.id}">${platform.label}</option>`;
-                }).join('');
-                const socialMediaForm = `<form id="socialMediaForm" ><div class="popupForm">
+                           text: "<t data-cy='cancel' >Cancel</t>",
+                           close: true,
+                        },
+                     ],
+                  });
+                  dialog.open();
+               });
+            }
+            function addSocialMediaButton() {
+               this.$("#addSocialMedia").unbind("click");
+               this.$("#addSocialMedia").on("click", () => {
+                  // Create a form with input fields for social media details
+                  const listPlatforms = profileApp
+                     .listItems("Social Media", "Platform")
+                     .map((platform) => {
+                        return `<option value="${platform.id}">${platform.label}</option>`;
+                     })
+                     .join("");
+                  const socialMediaForm = `<form id="socialMediaForm" ><div class="popupForm">
                         <input class="item-input item-input-with-value" placeholder="@myName" type="text"  data-cy='handle' id="label" name="label" required>
                         <span class="input-clear-button"></span>
                         </div>
@@ -886,181 +910,189 @@ return {
                         </div>
                     </form>
                     `;
-                const uuid = profileApp.page.app.utils.uuidv4();
+                  const uuid = profileApp.page.app.utils.uuidv4();
 
-                // Display the form using a dialogue popup
-                let dialog = app.dialog.create({
-                    backdrop: true,
-                    closeByBackdropClick: false,
-                    title: "<t>Enter social media details</t>",
-                    text: socialMediaForm, // Replace with the actual form HTML
-                    buttons: [
+                  // Display the form using a dialogue popup
+                  let dialog = app.dialog.create({
+                     backdrop: true,
+                     closeByBackdropClick: false,
+                     title: "<t>Enter social media details</t>",
+                     text: socialMediaForm, // Replace with the actual form HTML
+                     buttons: [
                         {
-                            text: "<t data-cy='save' >Save</t>",
-                            onClick: (dialog, ev) => {
-                                const Handle = app.$("#label").val();
-                                const Platform = app.$("#PlatformPopup").val();
-                                if (Handle) {
-                                    Promise.resolve()
-                                        .then(() => {
-                                            // self.$root.busy.show();
-                                            var values = {
-                                                uuid,
-                                                Person: personID,
-                                                Handle,  // Add the email to the values object
-                                                Platform
-                                            };
-                                            var allOperations = [];
-                                            allOperations.push(
-                                                profileApp
-                                                    .object("Social Media")
-                                                    .model()
-                                                    .create(values)
-                                            );
-                                            self.$root.app.resources.busy.hide();
-                                            return Promise.all(allOperations);
-                                        })
-                                        .then(() => {
-                                            // Additional handling after adding the email
-                                            self.$app.toast
-                                                .create({
-                                                    icon: '<i  data-cy="addedToast" class="fa-2x fas fa-star"></i>',
-                                                    text: 'Added',
-                                                    position: "center",
-                                                    closeTimeout: 700,
-                                                })
-                                                .open();
-                                            swiper.update();
-                                        })
-                                        .catch((err) => {
-                                            self.$root.app.resources.busy.hide();
-                                            app.dialog.alert(err.message || err, "<t>Error</t>");
-                                        });
-                                }
-                            }
+                           text: "<t data-cy='save' >Save</t>",
+                           onClick: (dialog, ev) => {
+                              const Handle = app.$("#label").val();
+                              const Platform = app.$("#PlatformPopup").val();
+                              if (Handle) {
+                                 Promise.resolve()
+                                    .then(() => {
+                                       // self.$root.busy.show();
+                                       var values = {
+                                          uuid,
+                                          Person: personID,
+                                          Handle, // Add the email to the values object
+                                          Platform,
+                                       };
+                                       var allOperations = [];
+                                       allOperations.push(
+                                          profileApp
+                                             .object("Social Media")
+                                             .model()
+                                             .create(values),
+                                       );
+                                       self.$root.app.resources.busy.hide();
+                                       return Promise.all(allOperations);
+                                    })
+                                    .then(() => {
+                                       // Additional handling after adding the email
+                                       self.$app.toast
+                                          .create({
+                                             icon: '<i  data-cy="addedToast" class="fa-2x fas fa-star"></i>',
+                                             text: "Added",
+                                             position: "center",
+                                             closeTimeout: 700,
+                                          })
+                                          .open();
+                                       swiper.update();
+                                    })
+                                    .catch((err) => {
+                                       self.$root.app.resources.busy.hide();
+                                       app.dialog.alert(
+                                          err.message || err,
+                                          "<t>Error</t>",
+                                       );
+                                    });
+                              }
+                           },
                         },
                         {
-                            text: "<t data-cy='cancel' >Cancel</t>",
-                            close: true
-                        }
-                    ]
-                });
-                dialog.open();
-            });
-            };
-
+                           text: "<t data-cy='cancel' >Cancel</t>",
+                           close: true,
+                        },
+                     ],
+                  });
+                  dialog.open();
+               });
+            }
 
             swiper = app.swiper.create("#profile-swiper-container", {
-            spaceBetween: 10,
-            autoHeight: true,
-            pagination: {
-                el: ".swiper-pagination",
-                clickable: true
-            },
-            preventClicksPropagation: true,
-            on: {
-                paginationUpdate: function (page) {
-                    var customNav = this.$("#profile_nav")[0];
+               spaceBetween: 10,
+               autoHeight: true,
+               pagination: {
+                  el: ".swiper-pagination",
+                  clickable: true,
+               },
+               preventClicksPropagation: true,
+               on: {
+                  paginationUpdate: function (page) {
+                     var customNav = this.$("#profile_nav")[0];
 
-                    if (customNav) {
+                     if (customNav) {
                         for (var i = 0; i < customNav.children.length; i++) {
-                            if (i == page.activeIndex) {
-                                customNav.children[i].classList.add("active");
-                            } else {
-                                customNav.children[i].classList.remove("active");
-                            }
+                           if (i == page.activeIndex) {
+                              customNav.children[i].classList.add("active");
+                           } else {
+                              customNav.children[i].classList.remove("active");
+                           }
                         }
-                    }
+                     }
 
-                    var swiperScroll = document.getElementById("user-profile");
-                    if (swiperScroll) {
+                     var swiperScroll = document.getElementById("user-profile");
+                     if (swiperScroll) {
                         if (
-                            swiperScroll.scrollTop >
-                            document.getElementById("profile_nav").offsetTop - 44
+                           swiperScroll.scrollTop >
+                           document.getElementById("profile_nav").offsetTop - 44
                         ) {
-                            swiperScroll.scrollTop =
-                                document.getElementById("profile_nav").offsetTop -
-                                44;
+                           swiperScroll.scrollTop =
+                              document.getElementById("profile_nav").offsetTop -
+                              44;
                         }
-                    }
-                    // we want to track view to each tab
-                    var pageNumber = parseInt(page.activeIndex) + 1;
-                    root.analytics.pageView(
-                        "/popup/view-profile/" +
-                        userPersonDC.getData()[0]?.uuid +
-                        "/tab-" +
-                        pageNumber +
-                        "/"
-                    );
-                    this.update();
-                }
-            }
+                     }
+                     // we want to track view to each tab
+                     // var pageNumber = parseInt(page.activeIndex) + 1;
+                     // root.analytics.pageView(
+                     //    "/popup/view-profile/" +
+                     //       userPersonDC.getData()[0]?.uuid +
+                     //       "/tab-" +
+                     //       pageNumber +
+                     //       "/",
+                     // );
+                     this.update();
+                  },
+               },
             });
             if (app.view.current.router.currentRoute.hasOwnProperty("query")) {
-                if (
-                    app.view.current.router.currentRoute.query.hasOwnProperty(
-                        "swiperIndex"
-                    )
-                ) {
-                    swiper.slideTo(
-                        app.view.current.router.currentRoute.query.swiperIndex,
-                        0
-                    );
-                } else if (
-                    app.view.current.router.currentRoute.query.hasOwnProperty("new")
-                ) {
-                    this.$("#edit-page").click();
-                }
+               if (
+                  app.view.current.router.currentRoute.query.hasOwnProperty(
+                     "swiperIndex",
+                  )
+               ) {
+                  swiper.slideTo(
+                     app.view.current.router.currentRoute.query.swiperIndex,
+                     0,
+                  );
+               } else if (
+                  app.view.current.router.currentRoute.query.hasOwnProperty(
+                     "new",
+                  )
+               ) {
+                  this.$("#edit-page").click();
+               }
             }
-        },
-        popupClose: function () {
+         },
+         popupClose: function () {
             const appPage = this.$root.app.pages.appPage;
             var profileApp = this.$root.app.pages.appPage.components.profile;
-            var familyEmailsDC = appPage.getDatacollectionByID("Email - mobile");
-            var socialMediaDC = appPage.getDatacollectionByID("Social Media - mobile");
+            var familyEmailsDC =
+               appPage.getDatacollectionByID("Email - mobile");
+            var socialMediaDC = appPage.getDatacollectionByID(
+               "Social Media - mobile",
+            );
 
             familyEmailsDC.offAny();
             socialMediaDC.offAny();
-            swiper.destroy();
-        }
-    },
-    methods: {
-        swiperNext: function (event) {
+            swiper?.destroy();
+         },
+      },
+      methods: {
+         swiperNext: function (event) {
             swiper.slideNext();
-        },
-        swiperBack: function (event) {
+         },
+         swiperBack: function (event) {
             swiper.slidePrev();
-        },
-        profileFooter: function (event) {
+         },
+         profileFooter: function (event) {
             var slideTo = $(event.currentTarget).data("slideto");
             $(".profile-footer a").removeClass("active-state");
             if (swiper) {
-                swiper.slideTo(slideTo);
+               swiper.slideTo(slideTo);
+            } else {
+               console.warn("methods.profileFooter()...");
+               console.warn(
+                  "    swiper.slideTo() was called before swiper was initialized",
+               );
             }
-            else {
-                console.warn("methods.profileFooter()...");
-                console.warn("    swiper.slideTo() was called before swiper was initialized");
-            }
-        },
-        deleteItem: function (event) {
+         },
+         deleteItem: function (event) {
             var uuid = $(event.currentTarget).data("uuid");
             var object = $(event.currentTarget).data("object");
             var collection = $(event.currentTarget).data("collection");
 
             profileApp
-            .object(object)
-                .model()
-                .delete(uuid)
-                .then(() => {
-                    app.toast
-                        .create({
-                            icon: '<i class="fa-2x fas fa-trash"></i>',
-                            text: "<t>Item Deleted</t>",
-                            position: "center"
-                        })
-                        .open();
-                })
-        }
-    }
-};
+               .object(object)
+               .model()
+               .delete(uuid)
+               .then(() => {
+                  app.toast
+                     .create({
+                        icon: '<i class="fa-2x fas fa-trash"></i>',
+                        text: "<t>Item Deleted</t>",
+                        position: "center",
+                     })
+                     .open();
+               });
+         },
+      },
+   };
 </script>

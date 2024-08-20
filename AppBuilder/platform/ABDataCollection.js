@@ -439,6 +439,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this._lock = new AB.app.utils.Lock();
    }
 
+   getAllRecords() {
+      return this.getData();
+   }
+
    async loadData(backupDCData) {
       const lock = this._lock;
       const storage = this.AB.app.resources.storage;
