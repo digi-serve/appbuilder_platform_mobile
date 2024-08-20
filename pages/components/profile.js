@@ -45,7 +45,9 @@ class Profile extends Common {
    loadProfileData() {
       this._userProfile = this.dc.getData(
          (e) =>
-            e.data["System Access"] ===
+            // Sentry Error: SDC-1NP, SDC-1NN
+            // in some case: e.data is undefined
+            e.data?.["System Access"] ===
             this.page.app.resources.account.userData?.user.username,
       )[0]?.data;
    }

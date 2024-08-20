@@ -598,6 +598,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             resolve({ id });
             try {
                await this.model.delete(id);
+               this.emit("updated");
                await Promise.all([
                   this.updateSyncData(),
                   this._updateSyncAffectedDCs(),
