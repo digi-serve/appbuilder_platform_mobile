@@ -186,7 +186,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   for (const storedValue of storedValues) {
                      if (
                         !(storedValue instanceof Object) ||
-                        values.find((e) => e.id === storedValue.id) != null
+                        values.findIndex((e) => e.id === storedValue.id) > -1
                      )
                         continue;
 
@@ -245,15 +245,11 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         this._latestItemDatetime = value["updated_at"];
                      if (interruptingData.indexOf(value.id) < 0)
                         pendingPromises.push(
-                           storage.set(
-                              refStorage,
-                              value.id,
-                              (values[i] = {
-                                 data: value,
-                                 id: value.id,
-                                 isConfirmed: true,
-                              }),
-                           ),
+                           storage.set(refStorage, value.id, {
+                              data: value,
+                              id: value.id,
+                              isConfirmed: true,
+                           }),
                         );
 
                      // Wait for 100 promises each time.
@@ -279,7 +275,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          lock.release();
          throw err;
       }
-      await this.processIncomingData(dcData);
+      await this.processIncomingData(await this._getDCData());
       await pendingLoadData;
    }
 
@@ -443,6 +439,10 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this._lock = new AB.app.utils.Lock();
    }
 
+   getAllRecords() {
+      return this.getData();
+   }
+
    async loadData(backupDCData) {
       const lock = this._lock;
       const storage = this.AB.app.resources.storage;
@@ -602,6 +602,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             resolve({ id });
             try {
                await this.model.delete(id);
+               this.emit("updated");
                await Promise.all([
                   this.updateSyncData(),
                   this._updateSyncAffectedDCs(),

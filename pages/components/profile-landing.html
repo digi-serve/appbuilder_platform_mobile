@@ -25,7 +25,7 @@
                 </strong></div>
             {{else}}
             <div class="block-title"><strong>
-                    <t>Welcome</t>, {{print user 'Preferred Name'}}
+                    <t>Welcome</t>, {{print user.data 'Preferred Name'}}
                 </strong></div>
             {{/if}}
             <div class="block">
@@ -64,15 +64,15 @@
                     {{/each}}
                     {{else}}
                     {{#each familyMembers}}
-                    <li key="{{uuid}}" class="swipeout">
+                    <li key="{{id}}" class="swipeout">
                         <div class="demo-facebook-card swipeout-content">
                             <div class="card-header">
-                                <a href="/profile/details/{{uuid}}" data-cy="profile-details-item{{@index}}"
+                                <a href="/profile/details/{{id}}" data-cy="profile-details-item{{@index}}"
                                     class="no-fastclick">
-                                    <div class="demo-facebook-avatar color-{{Gender||"blue"}}">
-                                        {{initial this "Preferred Name"}}{{initial this "Surname"}}
+                                    <div class="demo-facebook-avatar color-{{data.Gender||"blue"}}">
+                                        {{initial this.data "Preferred Name"}}{{initial this.data "Surname"}}
                                     </div>
-                                    <div class="demo-facebook-name">{{print this "Preferred Name"}} {{Surname}}</div>
+                                    <div class="demo-facebook-name">{{print this.data "Preferred Name"}} {{data.Surname}}</div>
                                 </a>
                                 <div class="demo-facebook-ellipsis" data-cy="profile-details-item{{@index}}-swipeout"
                                     @click="toggleFooter"><i class="fas fa-ellipsis-h fa-lg"></i></div>
@@ -80,10 +80,10 @@
                         </div>
                         <div class="swipeout-actions-right">
                             <a data-cy="profile-details-item{{@index}}-tab2"
-                                href="/profile/details/{{uuid}}?swiperIndex=1" class="open-more-actions color-blue"><i
+                                href="/profile/details/{{id}}?swiperIndex=1" class="open-more-actions color-blue"><i
                                     class="fas fa-address-card fa-lg no-fastclick"></i></a>
                             <a data-cy="profile-details-item{{@index}}-tab4"
-                                href="/profile/details/{{uuid}}?swiperIndex=4" class="open-more-actions color-blue"><i
+                                href="/profile/details/{{id}}?swiperIndex=4" class="open-more-actions color-blue"><i
                                     class="fas fa-users-cog fa-lg no-fastclick"></i></a>
                         </div>
                     </li>
@@ -129,6 +129,7 @@
                 const self = this;
                 // Get our datacollection(s) so we can set up listeners later
                 const appPage = this.$root.app.pages.appPage;
+                app = this.$app;
                 profileApp = appPage.components.profile;
                 userPersonDC = appPage.getDatacollectionByID("User Person");
                 familyMembersDC = appPage.getDatacollectionByID("Family Members");
