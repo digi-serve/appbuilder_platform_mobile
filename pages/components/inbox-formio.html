@@ -3,7 +3,7 @@
    <div class="popup">
       <div class="view">
          <div class="page" data-name="formio">
-            <div class="navbar">
+            <div class="navbar" style="position: relative">
                <div class="navbar-bg bg-color-blue"></div>
                <div class="navbar-inner sliding">
                   <div class="title text-color-white">Inbox Items</div>
@@ -17,27 +17,29 @@
                   <p class="segmented segmented-raised swipe-pagination"></p>
                </div>
             </div>
-            <!-- Slider container -->
-            <div class="swiper-container">
-               <!-- Slides wrapper -->
-               <div class="swiper-wrapper">
-                  <!-- Slides -->
-                  {{#each items}}
-                  <div
-                     class="swiper-slide"
-                     data-task-uuid="{{uuid}}"
-                     data-cy="{{uuid}}"
-                  >
-                     <iframe
-                        class="iframes"
-                        data-cy="iframe-{{@index}}"
-                        id="formio-form-iframe-{{@index}}"
-                        data-current-index="{{@index}}"
-                        style="width: 100%; border: none"
-                        height="600px"
-                     ></iframe>
+            <div>
+               <!-- Slider container -->
+               <div class="swiper-container">
+                  <!-- Slides wrapper -->
+                  <div class="swiper-wrapper">
+                     <!-- Slides -->
+                     {{#each items}}
+                     <div
+                        class="swiper-slide"
+                        data-task-uuid="{{uuid}}"
+                        data-cy="{{uuid}}"
+                     >
+                        <iframe
+                           class="iframes"
+                           data-cy="iframe-{{@index}}"
+                           id="formio-form-iframe-{{@index}}"
+                           data-current-index="{{@index}}"
+                           style="width: 100%; border: none"
+                           height="600px"
+                        ></iframe>
+                     </div>
+                     {{/each}}
                   </div>
-                  {{/each}}
                </div>
             </div>
          </div>
@@ -87,7 +89,7 @@
          cachedState.items = getFormsForDefinition(
             (await this.$root.app.resources.storage.get("user", "siteUserData"))
                .inbox,
-            this.$route.params.id
+            this.$route.params.id,
          );
          return cachedState;
       },
@@ -99,15 +101,15 @@
             const inboxComponent = appPage.components.inbox;
             const financialApp = appPage.getApplicationByID("FINANCIAL"); // we are including this because it has a good process for fetching images
             const activeIframes = [];
+            const $app = this.$app;
             const b = () => {
                //Set curIndex default 0
                initSlideFrame(0);
             };
-            const $app = this.$app;
             const initSlideFrame = (curIndex) => {
                if (activeIframes.indexOf(curIndex) === -1) {
                   const f = document.getElementById(
-                     `formio-form-iframe-${curIndex}`
+                     `formio-form-iframe-${curIndex}`,
                   );
                   if (f == null || typeof window.seamless === undefined)
                      return setTimeout(b, 100);
@@ -132,10 +134,10 @@
                                  await inboxComponent.requestProcessInbox(
                                     $(".swiper-slide-active")[0].dataset
                                        .taskUuid,
-                                    event.event
+                                    event.event,
                                  );
                               cachedState.items = cachedState.items.filter(
-                                 (item) => item.uuid != result.taskUUID
+                                 (item) => item.uuid != result.taskUUID,
                               );
                               $app.toast
                                  .create({
@@ -146,7 +148,7 @@
                                  .open();
                               const swiper =
                                  document.querySelector(
-                                    ".swiper-container"
+                                    ".swiper-container",
                                  ).swiper;
                               swiper.removeSlide(swiper.realIndex);
                               busy.hide();
@@ -183,7 +185,7 @@
                         f.contentWindow.document.location.protocol +
                            "//" +
                            f.contentWindow.document.location.host +
-                           "/sdc-app/www/lib/applications/inbox/templates/formio.html"
+                           "/sdc-app/www/lib/applications/inbox/templates/formio.html",
                      );
                      activeIframes.push(index);
                   };
@@ -221,24 +223,24 @@
                      realIndexChange: () => {
                         Array.from(
                            document.getElementsByClassName(
-                              "swiper-slide-visible"
-                           )
+                              "swiper-slide-visible",
+                           ),
                         ).forEach((slide) => {
                            initSlideFrame(
                               slide.querySelectorAll("iframe")[0].dataset
-                                 .currentIndex
+                                 .currentIndex,
                            );
                         });
                      },
                      update: () => {
                         Array.from(
                            document.getElementsByClassName(
-                              "swiper-slide-visible"
-                           )
+                              "swiper-slide-visible",
+                           ),
                         ).forEach((slide) => {
                            initSlideFrame(
                               slide.querySelectorAll("iframe")[0].dataset
-                                 .currentIndex
+                                 .currentIndex,
                            );
                         });
                      },
