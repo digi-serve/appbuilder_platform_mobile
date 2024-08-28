@@ -60,12 +60,16 @@
                <div id="output" hidden>
                   <div hidden><b>Data:</b> <span id="outputData"></span></div>
                </div>
+               <i class="fa fa-qrcode"></i>
+               <t id="outputMessage">No QR code detected.</t>
                <button
                   id="qr-scan-refresh"
-                  class="button button-large button-outline color-purple"
+                  class="button-fat button-outline color-purple"
                >
-                  <i class="fa fa-qrcode"></i>
-                  <t id="outputMessage">No QR code detected.</t>
+                  <span class="fa-stack fa-2x">
+                     <i class="fa fa-camera fa-stack-1x"></i>
+                     <i class="fa fa-sync fa-spin fa-stack-2x" style="color:gray"></i>
+                  </span>
                </button>
             </div>
          </div>
@@ -154,6 +158,16 @@
       }
 
       #noQRFound {
+         text-align: center;
+      }
+      #button-fat {
+         max-width: 30% !important;
+         min-height: 60px !important;
+         position: relative !important;
+         padding: 2cap; /* Adjust as necessary */
+         border: 2px solid var(--f7-color-purple);
+         color: var(--f7-color-purple);
+         font-size: 24px; /* Adjust icon size as necessary */
          text-align: center;
       }
    </style>
