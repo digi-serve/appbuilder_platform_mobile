@@ -180,7 +180,7 @@
     * This page is only active when the user navigates to it.
     */
    const DELAY_REFRESH = 3000;
-   const IMPORT_CREDENTIALS_TIMEOUT = 30000;
+   const IMPORT_CREDENTIALS_TIMEOUT = 350000;
    const cachedState = {
       buildTimestamp: new Date().toLocaleDateString("en-US", {
          year: "numeric",
@@ -473,6 +473,17 @@
                } catch (error) {
                   console.error(error);
                   outputMessage.hidden = false;
+                  // lets try looking for NetworkRest._request()
+                  if (error.message.includes("NetworkRest._request()")) {
+                     // create a toast suggesting the user click the fa-sync button in appbuilder
+                     dialog
+                        .toast.create({
+                           icon: "<i class='fa-2x fas fa-sync'></i>",
+                           title: "<t>Network Error</t>",
+                           text: "<t>This may be caused by an old QR code, try reloading it in AppBuilder</t>",
+                        })
+                        .open();
+                  }
                   outputMessage.textContent = error.message;
                   outputData.parentElement.hidden = true;
                   video.pause();
@@ -523,7 +534,7 @@
                      dialog
                         .alert("We are not able to scan a QR in this browser")
                         .open();
-                  dialog.alert("QR should be supported on this browser").open();
+                  dialog.alert("QR should be supported on this browser, did you allow camera access? Try reloading the page").open();
                }
             });
          },
