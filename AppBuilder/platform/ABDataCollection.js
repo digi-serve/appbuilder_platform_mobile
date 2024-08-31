@@ -212,10 +212,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                            // TODO (Guy): Sometimes this gets an error. To reproduce, add data continuously until you get an error. Then, delete the data in AppBuilder and wait for the response.
                            // TODO (Guy): This is temporary fix.
                            const dcValues = this.getData((e) => e.id !== key);
+                           const dataStatus = this._dataStatus;
                            try {
                               this.__dataCollection.remove(key);
                            } catch (err) {
                               this.clearAll();
+                              if (
+                                 dataStatus === this.dataStatusFlag.initialized
+                              )
+                                 this._dataStatus = dataStatus;
                               dcValues.forEach((dcValue) => {
                                  this.__dataCollection.add(dcValue);
                               });
@@ -590,10 +595,13 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
             // TODO (Guy):
             const dcValues = this.getData((e) => e.id !== id);
+            const dataStatus = this._dataStatus;
             try {
                this.__dataCollection.remove(id);
             } catch (err) {
                this.clearAll();
+               if (dataStatus === this.dataStatusFlag.initialized)
+                  this._dataStatus = dataStatus;
                dcValues.forEach((dcValue) => {
                   this.__dataCollection.add(dcValue);
                });
@@ -678,12 +686,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                // TODO (Guy):
                // 2) update the DC with the new value
                const dcValues = this.getData();
+               const dataStatus = this._dataStatus;
                try {
                   (!this.__dataCollection.exists(id) &&
                      this.__dataCollection.add(newValue)) ||
                      this.__dataCollection.updateItem(id, newValue);
                } catch (err) {
                   this.clearAll();
+                  if (dataStatus === this.dataStatusFlag.initialized)
+                     this._dataStatus = dataStatus;
                   dcValues.forEach((dcValue) => {
                      this.__dataCollection.add(dcValue);
                   });
@@ -742,12 +753,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             // TODO (Guy): This is temporary fix.
             // 2) update our DataCollection with newValue
             const dcValues = this.getData();
+            const dataStatus = this._dataStatus;
             try {
                (!this.__dataCollection.exists(newID) &&
                   this.__dataCollection.add(newValue)) ||
                   this.__dataCollection.updateItem(newID, newValue);
             } catch (err) {
                this.clearAll();
+               if (dataStatus === this.dataStatusFlag.initialized)
+                  this._dataStatus = dataStatus;
                dcValues.forEach((dcValue) => {
                   this.__dataCollection.add(dcValue);
                });
@@ -832,12 +846,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                         // TODO (Guy):
                         // add it to DC / or update it
                         const dcValues = this.getData();
+                        const dataStatus = this._dataStatus;
                         try {
                            (!this.__dataCollection.exists(key) &&
                               this.__dataCollection.add(value)) ||
                               this.__dataCollection.updateItem(key, value);
                         } catch (err) {
                            this.clearAll();
+                           if (dataStatus === this.dataStatusFlag.initialized)
+                              this._dataStatus = dataStatus;
                            dcValues.forEach((dcValue) => {
                               this.__dataCollection.add(dcValue);
                            });
@@ -853,12 +870,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
                      // TODO (Guy):
                      const dcValues = this.getData();
+                     const dataStatus = this._dataStatus;
                      try {
                         (!this.__dataCollection.exists(key) &&
                            this.__dataCollection.add(value)) ||
                            this.__dataCollection.updateItem(key, value);
                      } catch (err) {
                         this.clearAll();
+                        if (dataStatus === this.dataStatusFlag.initialized)
+                           this._dataStatus = dataStatus;
                         dcValues.forEach((dcValue) => {
                            this.__dataCollection.add(dcValue);
                         });
