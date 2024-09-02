@@ -15,6 +15,7 @@
                         <t>Profile</t>
                     </div>
 
+        <!--
         <div class="right">
             <a href="#" class="link" id="edit-page" translate=1>
                 Edit
@@ -23,6 +24,7 @@
                 Save
             </a>
         </div>
+        -->
 
     </div>
     </div>
@@ -468,6 +470,7 @@
    let emailIDs = [];
    // var assignmentIDs = [];
    let app;
+   let AB;
 
    return {
       data() {
@@ -502,6 +505,8 @@
                "Social Media - mobile",
             );
             const userPersonDC = appPage.dataCollection("User Person");
+
+            AB = familyMemberDC.AB;
 
             var familyEmailsListenerFN = (event, value) => {
                var emails = familyEmailsDC.getAllRecords().filter((r) => {
@@ -627,7 +632,7 @@
                      socialMedia: socialMedia,
                      emails: emails,
                      loading: false,
-                     cityList
+                     cityList,
                   },
                   function () {
                      console.log("DOM and state updated");
@@ -718,8 +723,8 @@
                      };
 
                      //d10ba98c-9e6f-48c5-962f-19c39a5b6e92
-                     profileApp
-                        .object("Person")
+                     debugger;
+                     AB.objectByID("Person")
                         .model()
                         .update(personID, personUpdatedValues)
                         .then(() => {
@@ -746,8 +751,8 @@
                            emailVals.Secure = 0;
                         }
                         emailOperations.push(
-                           profileApp
-                              .object("Email")
+                           AB
+                              .objectByID("Email")
                               .model()
                               .update(emailVals?.uuid, emailVals),
                         );
@@ -773,8 +778,7 @@
                               return obj;
                            }, {});
                         socialMediaOperations.push(
-                           profileApp
-                              .object("Social Media")
+                           AB.objectByID("Social Media")
                               .model()
                               .update(socialMediaVals?.uuid, socialMediaVals),
                         );
@@ -830,7 +834,9 @@
                            onClick: (dialog, ev) => {
                               // do form validation here
                               const email = app.$("#email").val();
-                              if (email && valid) {
+                              // Sentry Error SDC-1NW
+                              // where is valid set?
+                              if (email /* && valid */) {
                                  Promise.resolve()
                                     .then(() => {
                                        // self.$root.busy.show();
@@ -841,8 +847,7 @@
                                        };
                                        var allOperations = [];
                                        allOperations.push(
-                                          profileApp
-                                             .object("Email")
+                                          AB.objectByID("Email")
                                              .model()
                                              .create(values),
                                        );
@@ -936,8 +941,7 @@
                                        };
                                        var allOperations = [];
                                        allOperations.push(
-                                          profileApp
-                                             .object("Social Media")
+                                          AB.objectByID("Social Media")
                                              .model()
                                              .create(values),
                                        );
@@ -1079,8 +1083,7 @@
             var object = $(event.currentTarget).data("object");
             var collection = $(event.currentTarget).data("collection");
 
-            profileApp
-               .object(object)
+            AB.objectByID(object)
                .model()
                .delete(uuid)
                .then(() => {
