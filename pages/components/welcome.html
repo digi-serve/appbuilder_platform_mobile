@@ -46,6 +46,7 @@
          <!-- if has auth token, hide this option -->
          <div id="jsqr-storage-panel" class="card">
             <div
+               id="videoHeader"
                class="card-header bg-color-gray text-color-white"
                translate="1"
             >
@@ -180,7 +181,7 @@
     * This page is only active when the user navigates to it.
     */
    const DELAY_REFRESH = 3000;
-   const IMPORT_CREDENTIALS_TIMEOUT = 350000;
+      const IMPORT_CREDENTIALS_TIMEOUT = 30000;
    const cachedState = {
       buildTimestamp: new Date().toLocaleDateString("en-US", {
          year: "numeric",
@@ -297,6 +298,7 @@
             const loadingMessage = $("#loadingMessage").get(0);
             const outputContainer = $("#output").get(0);
             const outputMessage = $("#outputMessage").get(0);
+            const videoHeader = $("#videoHeader").get(0);
             const outputData = $("#outputData").get(0);
             const drawLine = (begin, end, color) => {
                canvas.beginPath();
@@ -411,10 +413,12 @@
                   // the login token should be set by now
                   pendingLoadData = setTimeout(() => {
                      // give the user an option to refresh
-                     dialog
+                     busy.hide()
+                     $app.dialog
                         .create({
-                           title: "<t>Importing credentials is taking too long.</t>",
-                           text: "<t>Would you like to reload the app, or try scanning the code again?</t>",
+                           title: "<t>Importing credentials is taking a long time</t>",
+                           text: "<t>Would you like to reload the app, try scanning a new code, or keep waiting?</t>",
+                           verticalButtons: true,
                            buttons: [
                               {
                                  text: "<t>Try Again</t>",
@@ -432,15 +436,17 @@
                                     location.reload(true);
                                  },
                               },
+                              {
+                                 text: "<t>Wait</t>",
+                                 onClick: () => {
+                                    // give the user the option to reload if it continues to not load
+                                    pendingLoadData
+                                    dialog.close();
+                                 },
+                              },
                            ],
                         })
                         .open();
-
-                     busy.show("Refreshing...");
-                     setTimeout(() => {
-                        busy.hide();
-                        location.reload(true);
-                     }, DELAY_REFRESH);
                   }, IMPORT_CREDENTIALS_TIMEOUT);
                   await appPage.updateAccount(jrrMatch, tenantMatch);
                   toast
@@ -476,15 +482,18 @@
                   // lets try looking for NetworkRest._request()
                   if (error.message.includes("NetworkRest._request()")) {
                      // create a toast suggesting the user click the fa-sync button in appbuilder
-                     dialog
-                        .toast.create({
+                     busy.hide()
+                     const toast = $app.toast;
+                     toast.create({
                            icon: "<i class='fa-2x fas fa-sync'></i>",
-                           title: "<t>Network Error</t>",
-                           text: "<t>This may be caused by an old QR code, try reloading it in AppBuilder</t>",
+                        text: "<t>Network Error: You may have an old QR code, try reloading it in AppBuilder</t>",
                         })
                         .open();
+                     videoHeader.textContent = "Network Error. Old QR code? Try reloading it in AppBuilder"
+                  } else {
+                     outputMessage.textContent = error.message;
+
                   }
-                  outputMessage.textContent = error.message;
                   outputData.parentElement.hidden = true;
                   video.pause();
                   video.currentTime = 0;
