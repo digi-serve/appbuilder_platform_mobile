@@ -48,7 +48,7 @@
    return {
       on: {
          pageBeforeIn() {
-            if (this.$root.app.resources.account.userData?.user.username == null) {
+            if (this.$root.app.resources.account.userData?.user == null) {
                this.$router.navigate(ROUTE_WELCOM);
                return;
             }

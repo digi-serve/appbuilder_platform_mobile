@@ -48,7 +48,7 @@ class Profile extends Common {
             // Sentry Error: SDC-1NP, SDC-1NN
             // in some case: e.data is undefined
             e.data?.["System Access"] ===
-            this.page.app.resources.account.userData?.user.username,
+            this.page.app.resources.account.userData?.user,
       )[0]?.data;
    }
 

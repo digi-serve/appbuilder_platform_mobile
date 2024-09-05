@@ -36,10 +36,13 @@
                <t>Use the menu on the left to navigate</t><br />
                <br />
             </div>
-            <div class="card-header bg-color-gray text-color-white" translate="1">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
                Bible Trivia
             </div>
-            <div id="trivia" class="card-content card-content-padding ">
+            <div id="trivia" class="card-content card-content-padding">
                <!-- trivia -->
             </div>
          </div>
@@ -68,7 +71,10 @@
                >
                   <span class="fa-stack fa-2x">
                      <i class="fa fa-camera fa-stack-1x"></i>
-                     <i class="fa fa-sync fa-spin fa-stack-2x" style="color:gray"></i>
+                     <i
+                        class="fa fa-sync fa-spin fa-stack-2x"
+                        style="color: gray"
+                     ></i>
                   </span>
                </button>
             </div>
@@ -96,14 +102,14 @@
                </button>
             </div>
          </div>
-<div class="card" id="sync-data">
-   <div class="card-content card-content-padding">
-      <t>Local code built at: {{buildTimestamp}}</t>
-      {{#js_if "this.systemInfo != null"}}
-      <t>sysInfo: {{systemInfo}}</t>
-      {{/js_if}}
-   </div>
-</div>
+         <div class="card" id="sync-data">
+            <div class="card-content card-content-padding">
+               <t>Local code built at: {{buildTimestamp}}</t>
+               {{#js_if "this.systemInfo != null"}}
+               <t>sysInfo: {{systemInfo}}</t>
+               {{/js_if}}
+            </div>
+         </div>
          <div class="card">
             <div
                class="card-header bg-color-gray text-color-white"
@@ -248,7 +254,7 @@
                      try {
                         // show loading ui
                         await appPage.reset(true);
-                        window.location.reload(true);
+                        location.reload(true);
                      } catch (error) {
                         console.error(error);
                      }
@@ -256,7 +262,7 @@
                   },
                );
             });
-            const username = resources.account.userData?.user.username;
+            const username = resources.account.userData?.user;
 
             // Bible Trivia to give user something to do
             // give them initial question, and then they can tap to get more
@@ -276,10 +282,10 @@
                tCanvas.innerHTML = html;
             }
             // set the trivia question ui
-            tDataUpdate()
+            tDataUpdate();
             // trigger on tap
             $("#trivia").on("click", async () => {
-               tDataUpdate()
+               tDataUpdate();
             });
             if (username != null) {
                $syncData.show();
@@ -450,13 +456,6 @@
                      })
                      .open();
                   busy.hide();
-
-                  // we have to reload the app and re-login after syncing the credentials
-                  await new Promise((resolve, reject) => {
-                     appPage.emit("ready", () => {
-                        resolve();
-                     });
-                  });
                   cachedState.buildTimestamp = app.buildTimeStamp;
                   cachedState.systemInfo =
                      app.pages.appPage.components.welcome.getSystemInfo();
@@ -466,10 +465,9 @@
                         position: "center",
                      })
                      .open();
-                  this.$setState(cachedState);
                   clearTimeout(pendingLoadData);
                   pendingLoadData = null;
-                  window.location.reload(true);
+                  location.reload(true);
                } catch (error) {
                   console.error(error);
                   outputMessage.hidden = false;

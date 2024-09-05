@@ -87,8 +87,7 @@
    return {
       async data() {
          cachedState.items = getFormsForDefinition(
-            (await this.$root.app.resources.storage.get("user", "siteUserData"))
-               .inbox,
+            this.$root.app.pages.appPage.components.inbox.inboxData.inbox,
             this.$route.params.id,
          );
          return cachedState;
@@ -137,7 +136,7 @@
                                     event.event,
                                  );
                               cachedState.items = cachedState.items.filter(
-                                 (item) => item.uuid != result.taskUUID,
+                                 (item) => item.uuid !== result.taskUUID,
                               );
                               $app.toast
                                  .create({

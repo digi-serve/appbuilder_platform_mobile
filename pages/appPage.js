@@ -47,16 +47,17 @@ class AppPage extends Common {
       this.on("ready", async (callback) => {
          const app = this.app;
          const resources = app.resources;
-         const account = resources.account;
          const busy = resources.busy;
          const network = resources.network;
          const f7App = this.f7App;
+         const dialog = f7App.dialog;
+         let isAuth = false;
          busy.show("Checking an account.");
          try {
             // Load authToken
             // Import pre-token from the URL. Generate new authToken.
             // Parse J.R.R. Token and tenant from URL;
-            const hash = String(document.location.hash);
+            const hash = String(location.hash);
             await network.importCredentials(
                hash.match(/JRR=(\w+)/)?.[1],
                hash.match(/tenant=(\w+)/)?.[1],
@@ -64,13 +65,12 @@ class AppPage extends Common {
 
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
-            await account.loadUserData();
+            isAuth = true;
             busy.hide();
          } catch (err) {
             console.error(err);
             busy.hide();
             await new Promise((resolve) => {
-               const dialog = f7App.dialog;
                switch (err.code) {
                   case "E_NOJRRTOKEN":
                      dialog
@@ -95,22 +95,16 @@ class AppPage extends Common {
                         .open();
                      break;
                   default:
-                     // Some other problem with the server
                      dialog
-                        .alert(
-                           "<t>There is an unexpected problem with the server at this time.</t>",
-                           "<t>Error</t>",
-                           () => {
-                              resolve();
-                           },
-                        )
+                        .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                           resolve();
+                        })
                         .open();
                      break;
                }
             });
          }
 
-         // TODO (Guy): Refactor later.
          // Preparing components.
          busy.show("Preparing components.");
          const mainRoutes = [];
@@ -140,54 +134,69 @@ class AppPage extends Common {
                   return app.init(this);
                }),
             );
-
-            // This relies on the account object from the previous step.
-            if (account.userData?.user.username == null)
-               throw new Error("Not found an user.");
-            (async () => {
-               const abDCs = app.abDCs;
-               const data = {
-                  doneAmount: 0,
-                  length: abDCs.length,
-                  status: "init.dc",
-               };
-               await Promise.all(
-                  abDCs.map((dc) =>
-                     (async () => {
-                        console.assert(
-                           dc.init != null,
-                           "Missing init() method",
-                        );
-                        if (dc.name === "Family Worker Information")
-                           data.doneAmount++;
-                        else {
-                           try {
-                              await dc.init();
-                              console.assert(
-                                 dc.loadData != null,
-                                 "Missing loadData() method",
-                              );
-                              await dc.loadData();
-                           } catch (err) {
-                              console.error(err);
+            if (isAuth) {
+               // This relies on the account object from the previous step.
+               const account = resources.account;
+               const inboxComponent = components.inbox;
+               await account.loadUserData();
+               if (account.userData?.user != null)
+                  await inboxComponent.loadInboxData();
+               else {
+                  await account.loadUserData(true);
+                  if (account.userData?.user != null)
+                     await inboxComponent.loadInboxData(true);
+                  else throw new Error("Not found an user.");
+               }
+               (async () => {
+                  const abDCs = app.abDCs;
+                  const data = {
+                     doneAmount: 0,
+                     length: abDCs.length,
+                     status: "init.dc",
+                  };
+                  await Promise.all(
+                     abDCs.map((dc) =>
+                        (async () => {
+                           console.assert(
+                              dc.init != null,
+                              "Missing init() method",
+                           );
+                           if (dc.name !== "Family Worker Information") {
+                              try {
+                                 await dc.init();
+                                 console.assert(
+                                    dc.loadData != null,
+                                    "Missing loadData() method",
+                                 );
+                                 await dc.loadData();
+                              } catch (err) {
+                                 console.error(err);
+                              }
                            }
                            data.doneAmount++;
-                        }
-                        await this._updateSyncUI(data);
-                     })(),
-                  ),
-               );
-               this._checkForUpdate(true);
-            })();
+                           await this.updateSyncUI(["component.nav"], data);
+                        })(),
+                     ),
+                  );
+                  this._checkForUpdate(true);
+               })();
+            }
          } catch (err) {
             console.error(err);
+            busy.hide();
+            await new Promise((resolve) => {
+               dialog
+                  .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                     resolve();
+                  })
+                  .open();
+            });
          }
-         busy.hide();
+         busy.show("Starting up main Framework7 routing");
          try {
             // Start up main Framework7 routing.
             // Requires app data to already be initialized.
             // on bootup, try to flush any network Queues
-            busy.show("Starting up main Framework7 routing");
             await network.queueFlush();
 
             // Begin Framework7 router
@@ -201,12 +210,21 @@ class AppPage extends Common {
                url: "/nav/",
                routes: menuRoutes,
             });
+            if (callback != null) {
+               const callbackResult = callback();
+               if (callbackResult instanceof Promise) await callbackResult;
+            }
             busy.hide();
-            if (callback == null) return;
-            const callbackResult = callback();
-            if (callbackResult instanceof Promise) await callbackResult;
          } catch (err) {
             console.error(err);
+            busy.hide();
+            await new Promise((resolve) => {
+               dialog
+                  .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                     resolve();
+                  })
+                  .open();
+            });
          }
       });
    }
@@ -225,6 +243,13 @@ class AppPage extends Common {
                      console.error(err);
                   }
                })(),
+               (async () => {
+                  try {
+                     await this.components.inbox.loadInboxData(true);
+                  } catch (err) {
+                     console.error(err);
+                  }
+               })(),
             ].concat(
                app.abDCs.map(async (abDC) => {
                   // TODO (Guy): Force ignoring "Family Worker Information" (Get rid if this dc is fixed)
@@ -237,19 +262,10 @@ class AppPage extends Common {
                }),
             ),
          );
-         await this._updateSyncUI();
+         await this.updateSyncUI();
          console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
-   }
-
-   async _updateSyncUI(data) {
-      await Promise.all(
-         this._updatingCallbacks.map(async (e) => {
-            const callbackResult = e.callback(data);
-            if (callbackResult instanceof Promise) await callbackResult;
-         }),
-      );
    }
 
    async init(app) {
@@ -352,7 +368,19 @@ class AppPage extends Common {
       // importCredentials then refresh the page
       const resources = this.app.resources;
       await resources.network.importCredentials(preToken, tenantUUID);
-      await resources.account.loadUserData();
+   }
+
+   async updateSyncUI(keys, data) {
+      const updatingCallbacks = this._updatingCallbacks;
+      await Promise.all(
+         (
+            (keys == null && updatingCallbacks) ||
+            updatingCallbacks.filter((e) => keys.includes(e.key))
+         ).map(async (e) => {
+            const callbackResult = e.callback(data);
+            if (callbackResult instanceof Promise) await callbackResult;
+         }),
+      );
    }
 
    getApplicationByID(id) {
@@ -364,6 +392,7 @@ class AppPage extends Common {
    getDatacollectionByID(id) {
       return this.app.abDCs.find((d) => d.id == id || d.name == id);
    }
+
    dataCollection(key) {
       return this.getDatacollectionByID(key);
    }
