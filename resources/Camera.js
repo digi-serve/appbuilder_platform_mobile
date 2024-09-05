@@ -163,8 +163,8 @@ class Camera extends EventEmitter {
             recurseShrinkTimeout = setTimeout(() => {
                reject(
                   new Error(
-                     `Timeout compressing image. Try a smaller one? type: ${file.type} size: ${file.size} timeout:t} qualityValue: gain: factor:} times:${compressionTimes}`,
-                  ),
+                     "压缩失败。请尝试分散内容拍多张照片，避免使用有纹理的背景、不清晰的文字或阴影。请压缩图片到5M以下再上传。"
+                  )
                );
                recurseShrinkTimeout = null;
             }, options.timeout);
