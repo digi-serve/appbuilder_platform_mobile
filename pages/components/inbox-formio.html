@@ -96,11 +96,13 @@
          popupClosed(popup) {},
          popupOpened(popup) {
             const app = this.$root.app;
+            const analytics = app.resources.analytics;
             const appPage = app.pages.appPage;
             const inboxComponent = appPage.components.inbox;
             const financialApp = appPage.getApplicationByID("FINANCIAL"); // we are including this because it has a good process for fetching images
             const activeIframes = [];
             const $app = this.$app;
+            const dialog = $app.dialog;
             const b = () => {
                //Set curIndex default 0
                initSlideFrame(0);
@@ -155,13 +157,19 @@
                               $app.popup.close();
                            } catch (err) {
                               console.error(err);
-                              $app.toast
-                                 .create({
-                                    text: "<t>Processing error!</t>",
-                                    position: "center",
-                                 })
-                                 .open();
+                              analytics.logError(err);
                               busy.hide();
+                              await new Promise((resolve) => {
+                                 dialog
+                                    .alert(
+                                       `<t>${err.message}</t>`,
+                                       "<t>Error</t>",
+                                       () => {
+                                          resolve();
+                                       },
+                                    )
+                                    .open();
+                              });
                            }
                         })();
                      }

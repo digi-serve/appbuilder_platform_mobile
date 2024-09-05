@@ -32,7 +32,7 @@ class Inbox extends Common {
       this._callbackQueues = [];
       this._inboxData = null;
       this._lock = null;
-      this.on(EVENT_KEY_LOAD_INBOX_DATA, (context, res) => {
+      this.on(EVENT_KEY_LOAD_INBOX_DATA, async (context, res) => {
          const callbackQueues = this._callbackQueues;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
@@ -45,13 +45,24 @@ class Inbox extends Common {
          const isError = res.status === "error";
          const data = res.data;
          if (callbackQueue == null) {
-            (isError && console.error(data)) || this.loadInboxData(true, data);
+            const page = this.page;
+            if (isError) {
+               console.error(data);
+               page.app.resources.analytics.logError(new Error(data.message));
+               await new Promise((resolve) => {
+                  page.f7App.dialog
+                     .alert(`<t>${data.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
+            } else await this.loadInboxData(true, data);
             return;
          }
          const callback = callbackQueue.callback;
          (isError && callback(data)) || callback(null, data);
       });
-      this.on(EVENT_KEY_REQUEST_PROCESS_INBOX, (context, res) => {
+      this.on(EVENT_KEY_REQUEST_PROCESS_INBOX, async (context, res) => {
          const callbackQueues = this._callbackQueues;
          const callbackQueue = callbackQueues.splice(
             callbackQueues.findIndex(
@@ -61,15 +72,29 @@ class Inbox extends Common {
          )[0];
 
          // This is in case we reload and still receive a job response from MCC.
+         const isError = res.status === "error";
+         const data = res.data;
          if (callbackQueue == null) {
-            (res.status === "error" && console.error(res.data)) ||
-               this.requestProcessInbox(null, null, {
-                  taskUUID: context.queueUUID,
+            const page = this.page;
+            if (isError) {
+               console.error(data);
+               page.app.resources.analytics.logError(new Error(data.message));
+               await new Promise((resolve) => {
+                  page.f7App.dialog
+                     .alert(`<t>${data.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
                });
+            }
+            (isError && console.error(data)) ||
+               (await this.requestProcessInbox(null, null, {
+                  taskUUID: context.queueUUID,
+               }));
             return;
          }
-         (res.status === "error" && callbackQueue.callback(res.data)) ||
-            callbackQueue.callback(null, res.data);
+         (isError && callbackQueue.callback(data)) ||
+            callbackQueue.callback(null, data);
       });
    }
 
@@ -221,9 +246,11 @@ class Inbox extends Common {
             throw err;
          }
       }
+      const analytics = resources.analytics;
       const network = resources.network;
       return await new Promise((resolve, reject) => {
          (async () => {
+            const dialog = page.f7App.dialog;
             try {
                const inboxData = this._inboxData;
                const inboxItem = inboxData.inbox.find((e) => e.id === taskUUID);
@@ -243,10 +270,23 @@ class Inbox extends Common {
                   id: taskUUID,
                   callback: async (err) => {
                      if (err != null) {
-                        console.error(new Error(err.message));
                         inboxItem.status = "pending";
                         await storage.set("inbox", taskUUID, inboxItem);
                         page.updateSyncUI(updatingCallbackKeys);
+                        err = new Error(err.message);
+                        console.error(err);
+                        analytics.logError(err);
+                        await new Promise((resolve) => {
+                           dialog
+                              .alert(
+                                 `<t>${err.message}</t>`,
+                                 "<t>Error</t>",
+                                 () => {
+                                    resolve();
+                                 },
+                              )
+                              .open();
+                        });
                         return;
                      }
                      try {
@@ -281,6 +321,14 @@ class Inbox extends Common {
                );
             } catch (err) {
                console.error(err);
+               analytics.logError(err);
+               await new Promise((resolve) => {
+                  dialog
+                     .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
             }
          })();
       });

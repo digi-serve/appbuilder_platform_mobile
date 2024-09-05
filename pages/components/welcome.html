@@ -187,7 +187,7 @@
     * This page is only active when the user navigates to it.
     */
    const DELAY_REFRESH = 3000;
-      const IMPORT_CREDENTIALS_TIMEOUT = 30000;
+   const IMPORT_CREDENTIALS_TIMEOUT = 30000;
    const cachedState = {
       buildTimestamp: new Date().toLocaleDateString("en-US", {
          year: "numeric",
@@ -235,6 +235,7 @@
 
             // Sync with server
             const resources = app.resources;
+            const analytics = resources.analytics;
             const busy = resources.busy;
             const appPage = app.pages.appPage;
             const dialog = $app.dialog;
@@ -258,6 +259,18 @@
                         location.reload(true);
                      } catch (error) {
                         console.error(error);
+                        analytics.logError(err);
+                        await new Promise((resolve) => {
+                           dialog
+                              .alert(
+                                 `<t>${err.message}</t>`,
+                                 "<t>Error</t>",
+                                 () => {
+                                    resolve();
+                                 },
+                              )
+                              .open();
+                        });
                      }
                      busy.hide();
                   },
@@ -419,7 +432,7 @@
                   // the login token should be set by now
                   pendingLoadData = setTimeout(() => {
                      // give the user an option to refresh
-                     busy.hide()
+                     busy.hide();
                      $app.dialog
                         .create({
                            title: "<t>Importing credentials is taking a long time</t>",
@@ -446,7 +459,7 @@
                                  text: "<t>Wait</t>",
                                  onClick: () => {
                                     // give the user the option to reload if it continues to not load
-                                    pendingLoadData
+                                    pendingLoadData;
                                     dialog.close();
                                  },
                               },
@@ -480,17 +493,18 @@
                   // lets try looking for NetworkRest._request()
                   if (error.message.includes("NetworkRest._request()")) {
                      // create a toast suggesting the user click the fa-sync button in appbuilder
-                     busy.hide()
+                     busy.hide();
                      const toast = $app.toast;
-                     toast.create({
+                     toast
+                        .create({
                            icon: "<i class='fa-2x fas fa-sync'></i>",
-                        text: "<t>Network Error: You may have an old QR code, try reloading it in AppBuilder</t>",
+                           text: "<t>Network Error: You may have an old QR code, try reloading it in AppBuilder</t>",
                         })
                         .open();
-                     videoHeader.textContent = "Network Error. Old QR code? Try reloading it in AppBuilder"
+                     videoHeader.textContent =
+                        "Network Error. Old QR code? Try reloading it in AppBuilder";
                   } else {
                      outputMessage.textContent = error.message;
-
                   }
                   outputData.parentElement.hidden = true;
                   video.pause();
@@ -511,6 +525,14 @@
                requestAnimationFrame(tick);
             } catch (error) {
                console.error(error);
+               analytics.logError(err);
+               await new Promise((resolve) => {
+                  dialog
+                     .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
                video.pause();
                video.currentTime = 0;
                (video.srcObject?.getTracks() ?? []).forEach((track) => {
@@ -537,11 +559,27 @@
                   requestAnimationFrame(tick);
                } catch (error) {
                   console.error(error);
+                  analytics.logError(err);
+                  await new Promise((resolve) => {
+                     dialog
+                        .alert(
+                           `<t>${err.message}</t>`,
+                           "<t>Error</t>",
+                           () => {
+                              resolve();
+                           },
+                        )
+                        .open();
+                  });
                   if (navigator.mediaDevices?.getUserMedia == null)
                      dialog
                         .alert("We are not able to scan a QR in this browser")
                         .open();
-                  dialog.alert("QR should be supported on this browser, did you allow camera access? Try reloading the page").open();
+                  dialog
+                     .alert(
+                        "QR should be supported on this browser, did you allow camera access? Try reloading the page",
+                     )
+                     .open();
                }
             });
          },

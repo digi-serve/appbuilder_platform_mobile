@@ -47,6 +47,7 @@ class AppPage extends Common {
       this.on("ready", async (callback) => {
          const app = this.app;
          const resources = app.resources;
+         const analytics = resources.analytics;
          const busy = resources.busy;
          const network = resources.network;
          const f7App = this.f7App;
@@ -69,6 +70,7 @@ class AppPage extends Common {
             busy.hide();
          } catch (err) {
             console.error(err);
+            analytics.logError(err);
             busy.hide();
             await new Promise((resolve) => {
                switch (err.code) {
@@ -154,23 +156,18 @@ class AppPage extends Common {
                      length: abDCs.length,
                      status: "init.dc",
                   };
+                  const dcErrors = [];
                   await Promise.all(
                      abDCs.map((dc) =>
                         (async () => {
-                           console.assert(
-                              dc.init != null,
-                              "Missing init() method",
-                           );
                            if (dc.name !== "Family Worker Information") {
                               try {
                                  await dc.init();
-                                 console.assert(
-                                    dc.loadData != null,
-                                    "Missing loadData() method",
-                                 );
                                  await dc.loadData();
                               } catch (err) {
                                  console.error(err);
+                                 analytics.logError(err);
+                                 dcErrors.push(err);
                               }
                            }
                            data.doneAmount++;
@@ -178,11 +175,24 @@ class AppPage extends Common {
                         })(),
                      ),
                   );
+                  for (const dcError of dcErrors)
+                     await new Promise((resolve) => {
+                        dialog
+                           .alert(
+                              `<t>${dcError.message}</t>`,
+                              "<t>Error</t>",
+                              () => {
+                                 resolve();
+                              },
+                           )
+                           .open();
+                     });
                   this._checkForUpdate(true);
                })();
             }
          } catch (err) {
             console.error(err);
+            analytics.logError(err);
             busy.hide();
             await new Promise((resolve) => {
                dialog
@@ -233,14 +243,29 @@ class AppPage extends Common {
       if (isUpdating !== this._isUpdating) this._isUpdating = isUpdating;
       if (!this._isUpdating) return;
       const app = this.app;
+      const resources = app.resources;
+      const analytics = resources.analytics;
+      const dialog = this.f7App.dialog;
       setTimeout(async () => {
          await Promise.all(
             [
                (async () => {
                   try {
-                     await app.resources.account.loadUserData(true);
+                     await resources.account.loadUserData(true);
                   } catch (err) {
                      console.error(err);
+                     analytics.logError(err);
+                     await new Promise((resolve) => {
+                        dialog
+                           .alert(
+                              `<t>${err.message}</t>`,
+                              "<t>Error</t>",
+                              () => {
+                                 resolve();
+                              },
+                           )
+                           .open();
+                     });
                   }
                })(),
                (async () => {
@@ -248,6 +273,18 @@ class AppPage extends Common {
                      await this.components.inbox.loadInboxData(true);
                   } catch (err) {
                      console.error(err);
+                     analytics.logError(err);
+                     await new Promise((resolve) => {
+                        dialog
+                           .alert(
+                              `<t>${err.message}</t>`,
+                              "<t>Error</t>",
+                              () => {
+                                 resolve();
+                              },
+                           )
+                           .open();
+                     });
                   }
                })(),
             ].concat(
@@ -258,11 +295,35 @@ class AppPage extends Common {
                      await abDC.updateSyncData();
                   } catch (err) {
                      console.error(err);
+                     analytics.logError(err);
+                     await new Promise((resolve) => {
+                        dialog
+                           .alert(
+                              `<t>${err.message}</t>`,
+                              "<t>Error</t>",
+                              () => {
+                                 resolve();
+                              },
+                           )
+                           .open();
+                     });
                   }
                }),
             ),
          );
-         await this.updateSyncUI();
+         try {
+            await this.updateSyncUI();
+         } catch (err) {
+            console.error(err);
+            analytics.logError(err);
+            await new Promise((resolve) => {
+               dialog
+                  .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                     resolve();
+                  })
+                  .open();
+            });
+         }
          console.log("Check for update!!!!!!!!!!!!!!!!!!!!");
          this._checkForUpdate(this._isUpdating);
       }, TIME_DATA_UPDATE);
@@ -419,13 +480,16 @@ class AppPage extends Common {
             app.applications.map((application) => application.reset(force)),
          );
          this.f7App.panel.open("left");
+         this._pendingReset = false;
       } catch (err) {
-         // user may be trying to refresh before data collections exist,
-         // they just want to reload the app
-         console.error(err);
+         // wipe the cache and hard reload
+         this._pendingReset = false;
+         throw err;
       }
-      // wipe the cache and hard reload
-      this._pendingReset = false;
+   }
+
+   get isUpdating() {
+      return this._isUpdating;
    }
 }
 

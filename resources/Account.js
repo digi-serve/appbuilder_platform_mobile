@@ -21,7 +21,7 @@ class Account extends EventEmitter {
       };
       this._userData = null;
       this.app = null;
-      this.on(EVENT_KEY_LOAD_USER_DATA, (context, res) => {
+      this.on(EVENT_KEY_LOAD_USER_DATA, async (context, res) => {
          const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
          const callback = pendingNetworkCallbacks[EVENT_KEY_LOAD_USER_DATA];
 
@@ -29,8 +29,18 @@ class Account extends EventEmitter {
          const isError = res.status === "error";
          const data = res.data;
          if (callback == null) {
-            (isError && console.error(data)) ||
-               this[EVENT_KEY_LOAD_USER_DATA](true, data);
+            const app = this.app;
+            if (isError) {
+               console.error(data);
+               app.resources.analytics.logError(new Error(data.message));
+               await new Promise((resolve) => {
+                  app.pages.appPage.f7App.dialog
+                     .alert(`<t>${data.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
+            } else await this.loadUserData(true, data);
             return;
          }
          (isError && callback(data)) || callback(null, data);
