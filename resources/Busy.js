@@ -28,24 +28,19 @@ class Busy extends EventEmitter {
    }
 
    show(text = "Saving", timeout) {
-      if (this.app.pages.appPage.f7App == null) {
-         console.error(
-            "use of busy.show() before busy.setApp() is initialized.",
-         );
-         return;
-      }
       if (this.busyInProgress) this.hide();
       this.busyInProgress = true;
-      this.app.pages.appPage.f7App.dialog.preloader(
-         this.app.resources.translate.t(text),
-      );
+      const app = this.app;
+      const f7App = app.pages.appPage.f7App;
+      const dialog = f7App.dialog;
+      dialog.preloader(app.resources.translate.t(text));
       if (timeout == null) return;
       setTimeout(() => {
          // Force kill the preloader
-         this.app.pages.appPage.f7App.dialog.close();
+         dialog.close();
 
          // tell user we are still working in the background
-         this.app.pages.appPage.f7App.toast
+         f7App.toast
             .create({
                text: `<center><t data-cy="wip" >working in the background...</t></center>`,
                position: "center",
@@ -55,13 +50,6 @@ class Busy extends EventEmitter {
    }
 
    hide() {
-      if (this.app.pages.appPage.f7App == null) {
-         console.error(
-            "use of busy.hide() before busy.setApp() is initialized.",
-         );
-         return;
-      }
-
       if (this.busyInProgress) this.busyInProgress = false;
       this.app.pages.appPage.f7App.dialog.close();
    }

@@ -14,6 +14,9 @@ module.exports = class ABModel extends ABModelCore {
       super(object);
       this._callbackQueues = [];
       const modelEvent = new EventEmitter();
+      const app = this.object.AB.app;
+      const page = app.pages.appPage;
+      const analytics = app.resources.analytics;
       modelEvent.on(EVENT_KEY_DATA_CALLBACK, async (context, res, instance) => {
          const callbackQueues = this._callbackQueues;
          const callbackQueue = callbackQueues.splice(
@@ -44,6 +47,14 @@ module.exports = class ABModel extends ABModelCore {
             callbackResult instanceof Promise && (await callbackResult);
          } catch (err) {
             console.error(err);
+            analytics.logError(err);
+            await new Promise((resolve) => {
+               page.f7App.dialog
+                  .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                     resolve();
+                  })
+                  .open();
+            });
          }
       });
       this._modelEvent = modelEvent;

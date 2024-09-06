@@ -58,6 +58,15 @@ class Storage extends EventEmitter {
             });
          } catch (err) {
             console.error(err);
+            const app = this.app;
+            app.resources.analytics.logError(err);
+            await new Promise((resolve) => {
+               app.pages.appPage.f7App.dialog
+                  .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                     resolve();
+                  })
+                  .open();
+            });
          }
          const queues = this._queues;
          const queueIndex = queues.indexOf(queueUUID);
@@ -86,6 +95,15 @@ class Storage extends EventEmitter {
             });
          } catch (err) {
             console.error(err);
+            const app = this.app;
+            app.resources.analytics.logError(err.message);
+            await new Promise((resolve) => {
+               app.pages.appPage.f7App.dialog
+                  .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                     resolve();
+                  })
+                  .open();
+            });
          }
          const queues = this._queues;
          const queueIndex = queues.indexOf(queueUUID);
@@ -384,7 +402,7 @@ class Storage extends EventEmitter {
             }
             console.error(e);
             console.warn("tableKey:" + tableKey);
-            reject();
+            reject(e);
          }
       });
    }
@@ -507,7 +525,9 @@ class Storage extends EventEmitter {
                   lock.release();
                   return;
                }
-               const network = this.app.resources.network;
+               const app = this.app;
+               const resources = app.resources;
+               const network = resources.network;
                const queues = this._queues;
                try {
                   if (queues.indexOf(key) > -1) {
@@ -550,6 +570,14 @@ class Storage extends EventEmitter {
                   );
                } catch (err) {
                   console.error(err);
+                  resources.analytics.logError(err);
+                  await new Promise((resolve) => {
+                     app.pages.appPage.f7App.dialog
+                        .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                           resolve();
+                        })
+                        .open();
+                  });
                }
             })();
          }));
@@ -572,7 +600,8 @@ class Storage extends EventEmitter {
          backupData ||
          (await new Promise((resolve, reject) => {
             const app = this.app;
-            const network = app.resources.network;
+            const resources = app.resources;
+            const network = resources.network;
             (async () => {
                const file = data.file;
                let fileBase64 = null;
@@ -621,6 +650,14 @@ class Storage extends EventEmitter {
                   );
                } catch (err) {
                   console.error(err);
+                  resources.analytics.logError(err);
+                  await new Promise((resolve) => {
+                     app.pages.appPage.f7App.dialog
+                        .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                           resolve();
+                        })
+                        .open();
+                  });
                }
             })();
          }));

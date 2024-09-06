@@ -1102,11 +1102,12 @@ class NetworkRelay extends NetworkRest {
 
    get validRoutes() {
       return {
-         config: "/config",
+         data: "/app_builder/model/:objID/:id",
          fileBase64Download: "/file/:uuid/base64?mobile=true",
          fileBase64Upload: "/file/upload/base64/:objID/:fieldID",
-         data: "/app_builder/model/:objID/:id",
+         inbox: "/config/inbox",
          processInbox: "/process/inbox/:taskUUID",
+         user: "/mobile/whoami",
       };
    }
 }

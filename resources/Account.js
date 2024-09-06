@@ -21,19 +21,30 @@ class Account extends EventEmitter {
       };
       this._userData = null;
       this.app = null;
-      this.on(EVENT_KEY_LOAD_USER_DATA, (context, res) => {
+      this.on(EVENT_KEY_LOAD_USER_DATA, async (context, res) => {
          const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
-         const loadUserData = pendingNetworkCallbacks.loadUserData;
+         const callback = pendingNetworkCallbacks[EVENT_KEY_LOAD_USER_DATA];
 
          // This is in case we reload and still receive a job response from MCC.
          const isError = res.status === "error";
          const data = res.data;
-         if (loadUserData == null) {
-            (isError && console.error(data)) || this.loadUserData(true, data);
+         if (callback == null) {
+            const app = this.app;
+            if (isError) {
+               console.error(data);
+               app.resources.analytics.logError(new Error(data.message));
+               await new Promise((resolve) => {
+                  app.pages.appPage.f7App.dialog
+                     .alert(`<t>${data.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
+            } else await this.loadUserData(true, data);
             return;
          }
-         (isError && loadUserData(data)) || loadUserData(null, data);
-         pendingNetworkCallbacks.loadUserData = null;
+         (isError && callback(data)) || callback(null, data);
+         pendingNetworkCallbacks[EVENT_KEY_LOAD_USER_DATA] = null;
       });
    }
 
@@ -51,14 +62,28 @@ class Account extends EventEmitter {
    }
 
    async loadUserData(sync = false, backupUserData) {
-      const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
+      const lock = this._lock;
+      const resources = this.app.resources;
+      const storage = resources.storage;
+      if (!sync)
+         if (this._userData == null) {
+            try {
+               await lock.acquire();
+               this._userData = await storage.get("user", "siteUserData");
+               lock.release();
+               return;
+            } catch (err) {
+               lock.release();
+               throw err;
+            }
+         }
 
       // If this method has already been called, just wait for a response.
+      const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
       if (pendingNetworkCallbacks.loadUserData != null) {
          await new Promise((resolve) => {
             const waitForLoadingUserData = () => {
-               const loadUserData = pendingNetworkCallbacks.loadUserData;
-               if (loadUserData == null) {
+               if (pendingNetworkCallbacks.loadUserData == null) {
                   resolve();
                   return;
                }
@@ -70,28 +95,10 @@ class Account extends EventEmitter {
          });
          return;
       }
-      const lock = this._lock;
-      try {
-         await lock.acquire();
-         const resources = this.app.resources;
-         const storage = resources.storage;
-         if (backupUserData != null) {
-            await storage.set("user", "siteUserData", backupUserData);
-            lock.release();
-            return;
-         }
-         if (
-            !sync &&
-            (this._userData ||
-               (this._userData = await storage.get("user", "siteUserData")) !=
-                  null)
-         ) {
-            lock.release();
-            return;
-         }
-         lock.release();
-         const network = resources.network;
-         const userData = await new Promise((resolve, reject) => {
+      const network = resources.network;
+      const userData =
+         backupUserData ||
+         (await new Promise((resolve, reject) => {
             (async () => {
                pendingNetworkCallbacks.loadUserData = (err, result) => {
                   if (err != null) {
@@ -101,7 +108,7 @@ class Account extends EventEmitter {
                   resolve(result);
                };
                await network.get(
-                  { url: network.validRoutes.config },
+                  { url: network.validRoutes.user },
                   {
                      context: {
                         targetEventKey: EVENT_KEY_LOAD_USER_DATA,
@@ -110,18 +117,12 @@ class Account extends EventEmitter {
                   },
                );
             })();
-         });
+         }));
+      try {
          await lock.acquire();
-         if (userData == null) {
-            await storage.set("user", "siteUserData", null);
-            lock.release();
-            const err = new Error("Not found username");
-            err.code = "E_BADAUTHTOKEN";
-            throw err;
-         }
-         await storage.set("user", "siteUserData", userData);
-         lock.release();
+         await storage.set("user", "siteUserData", userData || null);
          this._userData = userData;
+         lock.release();
       } catch (err) {
          lock.release();
          throw err;

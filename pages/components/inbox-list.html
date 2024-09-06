@@ -122,7 +122,7 @@
                   });
 
                process.tasks = items.filter(
-                  (item) => item.definition === process.id
+                  (item) => item.definition === process.id,
                );
                if (process.tasks.length > 0) {
                   appHasTasks = true;
@@ -136,13 +136,22 @@
       });
       return meta;
    };
+   const refreshPage = (self) => {
+      const { inbox, inboxMeta } = self.$root.app.pages.appPage.components.inbox
+         .inboxData || {
+         inbox: [],
+         inboxMeta: [],
+      };
+      cachedState.items = formatInbox(inbox, inboxMeta);
+      self.$setState(cachedState);
+   };
    return {
       async data() {
-         const { inbox, inboxMeta } =
-            (await this.$root.app.resources.storage.get(
-               "user",
-               "siteUserData"
-            )) || {};
+         const { inbox, inboxMeta } = this.$root.app.pages.appPage.components
+            .inbox.inboxData || {
+            inbox: [],
+            inboxMeta: [],
+         };
          cachedState.items = formatInbox(inbox, inboxMeta);
          return cachedState;
       },
@@ -150,27 +159,19 @@
          async pageBeforeIn() {
             this.$(".view-main .navbar").attr(
                "class",
-               "navbar bg-color-blue text-color-white color-theme-white"
+               "navbar bg-color-blue text-color-white color-theme-white",
             );
             this.$(".view-main .navbar-bg").attr(
                "class",
-               "navbar-bg bg-color-blue"
+               "navbar-bg bg-color-blue",
             );
          },
          async pageInit() {
             const $app = this.$app;
             const app = this.$root.app;
             $app.off("ptrRefresh");
-            const reloadItemList = async () => {
-               const { inbox, inboxMeta } = await app.resources.storage.get(
-                  "user",
-                  "siteUserData"
-               );
-               cachedState.items = formatInbox(inbox, inboxMeta);
-               this.$setState(cachedState);
-            };
             $app.on("ptrRefresh", async (dom, done) => {
-               await reloadItemList();
+               refreshPage(this);
 
                // Give the user a toast message to let them know the data request happened
                $app.toast
@@ -182,16 +183,13 @@
                   .open();
                done();
             });
-            app.pages.appPage.setUpdatingCallback(
-               KEY_UPDATING_CALLBACK,
-               async () => {
-                  await reloadItemList();
-               }
-            );
+            app.pages.appPage.setUpdatingCallback(KEY_UPDATING_CALLBACK, () => {
+               refreshPage(this);
+            });
          },
          pageBeforeRemove() {
             this.$root.app.pages.appPage.removeUpdatingCallback(
-               KEY_UPDATING_CALLBACK
+               KEY_UPDATING_CALLBACK,
             );
          },
       },

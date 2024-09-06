@@ -143,9 +143,7 @@
                   style="display: block"
                >
                   {{#js_if "this.userProfile?.Gender != null"}}
-                  <div
-                     class="avatar color-{{this.userProfile.Gender}}"
-                  ></div>
+                  <div class="avatar color-{{this.userProfile.Gender}}"></div>
                   {{else}}
                   <div class="avatar color-blue"></div>
                   {{/js_if}}
@@ -244,15 +242,14 @@
    };
    const refreshPage = async (self) => {
       const app = self.$root.app;
-      const resources = app.resources;
-      const userData = resources.account.userData;
 
       // Get our datacollection(s) so we can set up listeners later
-      const profileComponent = app.pages.appPage.components.profile;
+      const components = app.pages.appPage.components;
+      const profileComponent = components.profile;
       const enabledApps = cachedState.enabledApps;
 
       // check if the user is logged in
-      if (userData?.user.username == null) {
+      if (app.resources.account.userData?.user == null) {
          // user is logged in
          enabledApps.financial = false;
          cachedState.loadingInbox = true;
@@ -264,7 +261,7 @@
       } else {
          enabledApps.financial = true;
          cachedState.loadingInbox = true;
-         cachedState.inboxBadge = userData.inbox.length ?? 0;
+         cachedState.inboxBadge = components.inbox.inboxData?.inbox.length ?? 0;
          cachedState.loadingInbox = false;
          profileComponent.loadProfileData();
          if ((cachedState.userProfile = profileComponent.userProfile) == null) {

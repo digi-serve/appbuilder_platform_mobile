@@ -30,6 +30,9 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
       this._latestItemDatetime = null;
       this._lock = null;
       this._model = null;
+      const app = this.AB.app;
+      const page = (this._page = app.pages.appPage);
+      const analytics = (this._analytics = app.resources.analytics);
       this.on(
          EVENT_KEY_BACKUP_CALL,
          async (backupMethod, newBackupMethodArgs) => {
@@ -38,6 +41,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                result instanceof Promise && (await result);
             } catch (err) {
                console.error(err);
+               analytics.logError(err);
+               await new Promise((resolve) => {
+                  page.f7App.dialog
+                     .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
             }
          },
       );
@@ -619,6 +630,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             } catch (err) {
                this._removeInterruptingData(id);
                console.error(err);
+               this._analytics.logError(err);
+               await new Promise((resolve) => {
+                  this._page.f7App.dialog
+                     .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
             }
          })();
       });
@@ -719,6 +738,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                } catch (err) {
                   this._removeInterruptingData(id);
                   console.error(err);
+                  this._analytics.logError(err);
+                  await new Promise((resolve) => {
+                     this._page.f7App.dialog
+                        .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                           resolve();
+                        })
+                        .open();
+                  });
                }
                this.emit("updated");
                return;
@@ -782,6 +809,14 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
             } catch (err) {
                this._removeInterruptingData(newID);
                console.error(err);
+               this._analytics.logError(err);
+               await new Promise((resolve) => {
+                  this._page.f7App.dialog
+                     .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
+                        resolve();
+                     })
+                     .open();
+               });
             }
             this.emit("updated");
          })();

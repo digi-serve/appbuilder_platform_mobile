@@ -163,8 +163,8 @@ class Camera extends EventEmitter {
             recurseShrinkTimeout = setTimeout(() => {
                reject(
                   new Error(
-                     "压缩失败。请尝试分散内容拍多张照片，避免使用有纹理的背景、不清晰的文字或阴影。请压缩图片到5M以下再上传。"
-                  )
+                     "压缩失败。请尝试分散内容拍多张照片，避免使用有纹理的背景、不清晰的文字或阴影。请压缩图片到5M以下再上传。",
+                  ),
                );
                recurseShrinkTimeout = null;
             }, options.timeout);
@@ -229,20 +229,13 @@ class Camera extends EventEmitter {
     *    }
     */
    async getPhoto(isCamera = false, timeout = 10000) {
-      try {
-         return await this._recurseShrink(
-            await this._getPicture((isCamera && "camera") || "library"),
-            null,
-            {
-               timeout,
-            },
-         );
-      } catch (err) {
-         // User canceled the photo. Not a real error.
-         if (err.message !== "Canceled")
-            console.error("CameraPWA:getCameraPhoto():Error", err);
-         throw err;
-      }
+      return await this._recurseShrink(
+         await this._getPicture((isCamera && "camera") || "library"),
+         null,
+         {
+            timeout,
+         },
+      );
    }
 }
 
