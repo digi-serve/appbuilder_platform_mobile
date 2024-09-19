@@ -137,6 +137,36 @@
                </div>
             </div>
          </div>
+
+         <div class="card" id="setPowerUser">
+            <div
+               class="card-header bg-color-gray text-color-white"
+               translate="1"
+            >
+            Power User Mode
+            </div>
+            <div class="card-content card-content-padding">
+               <t
+                  >Toggle on to make your app load very slow, but allow you to browse extra options. This will require an app restart to work.</t
+               ><br />
+               <br />
+               <label class="checkbox color-purple" style="line-height: 23px"
+                  ><input id="updateOnLoginCheckbox" type="checkbox" /><i
+                     class="icon-checkbox"
+                     style="float: left; margin-right: 10px"
+                  ></i>
+                  <t>Update data each time I log into the app.</t>
+               </label>
+               <br />
+               <br />
+               <button
+                  class="button button-large button-outline color-purple"
+               >
+                  <i class="fa fa-sync"></i>
+                  <t>Update reloads app</t>
+               </button>
+            </div>
+         </div>
          {{#if hasAuthToken}}
          <div class="card" id="sync-data">
             <div
@@ -364,6 +394,7 @@
       data() {
          return {
             hasAuthToken: Boolean(this.$root.app.resources.account.authToken),
+            isPowerUser: Boolean(this.$root.app.resources.account.isPowerUser),
             totalStorage: 0,
             iconOptions: [],
             appName: localStorage.getItem("name") ?? "conneXted",

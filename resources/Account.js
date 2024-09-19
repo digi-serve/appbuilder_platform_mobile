@@ -20,6 +20,8 @@ class Account extends EventEmitter {
          loadUserData: null,
       };
       this._userData = null;
+      this.userType = "basic";
+      this.powerUser = false;
       this.app = null;
       this.on(EVENT_KEY_LOAD_USER_DATA, async (context, res) => {
          const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
@@ -131,6 +133,34 @@ class Account extends EventEmitter {
 
    get userData() {
       return structuredClone(this._userData);
+   }
+   get isPowerUser() {
+      return this._userData["powerUser"] || this.powerUser || false;
+   }
+   async setPowerUser(userWantsALotOfData) {
+      const lock = this._lock;
+      const resources = this.app.resources;
+      const storage = resources.storage;
+      if (this._userData == null) {
+         try {
+            await lock.acquire();
+            this._userData = await storage.get("user", "siteUserData");
+            lock.release();
+            return;
+         } catch (err) {
+            lock.release();
+            throw err;
+         }
+      }
+      try {
+         this._userData["powerUser"] = userWantsALotOfData;
+         await lock.acquire();
+         await storage.set("user", "siteUserData", this._userData || null);
+         lock.release();
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
    }
 }
 
