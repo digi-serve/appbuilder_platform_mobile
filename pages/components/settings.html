@@ -149,22 +149,14 @@
                <t
                   >Toggle on to make your app load very slow, but allow you to browse extra options. This will require an app restart to work.</t
                ><br />
-               <br />
-               <label class="checkbox color-purple" style="line-height: 23px"
-                  ><input id="updateOnLoginCheckbox" type="checkbox" /><i
-                     class="icon-checkbox"
-                     style="float: left; margin-right: 10px"
-                  ></i>
-                  <t>Update data each time I log into the app.</t>
+               <!-- Toggle element -->
+               <label class="toggle">
+                  <!-- Toggle input -->
+                  <input type="checkbox" id="updatePowerUserMode" />
+                  <!-- Toggle icon -->
+                  <span class="toggle-icon"></span>
                </label>
                <br />
-               <br />
-               <button
-                  class="button button-large button-outline color-purple"
-               >
-                  <i class="fa fa-sync"></i>
-                  <t>Update reloads app</t>
-               </button>
             </div>
          </div>
          {{#if hasAuthToken}}
@@ -469,6 +461,9 @@
                         .open();
                   });
                }
+            });
+            $("#updatePowerUserMode").on("click", async () => {
+                  resources.account.setPowerUser(true);
             });
 
             // Input a JRR token manually.

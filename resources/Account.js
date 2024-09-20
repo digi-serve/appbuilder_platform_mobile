@@ -72,6 +72,7 @@ class Account extends EventEmitter {
             try {
                await lock.acquire();
                this._userData = await storage.get("user", "siteUserData");
+               this.powerUser = await storage.get("user", "powerUser");
                lock.release();
                return;
             } catch (err) {
@@ -123,6 +124,7 @@ class Account extends EventEmitter {
       try {
          await lock.acquire();
          await storage.set("user", "siteUserData", userData || null);
+         await storage.set("user", "powerUser", this.powerUser || false);
          this._userData = userData;
          lock.release();
       } catch (err) {
@@ -135,27 +137,16 @@ class Account extends EventEmitter {
       return structuredClone(this._userData);
    }
    get isPowerUser() {
-      return this._userData["powerUser"] || this.powerUser || false;
+      return this.powerUser || false;
    }
    async setPowerUser(userWantsALotOfData) {
       const lock = this._lock;
       const resources = this.app.resources;
       const storage = resources.storage;
-      if (this._userData == null) {
-         try {
-            await lock.acquire();
-            this._userData = await storage.get("user", "siteUserData");
-            lock.release();
-            return;
-         } catch (err) {
-            lock.release();
-            throw err;
-         }
-      }
+      this.powerUser = userWantsALotOfData || false;
       try {
-         this._userData["powerUser"] = userWantsALotOfData;
          await lock.acquire();
-         await storage.set("user", "siteUserData", this._userData || null);
+         await storage.set("user", "powerUser", userWantsALotOfData || false);
          lock.release();
       } catch (err) {
          lock.release();

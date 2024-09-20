@@ -176,7 +176,7 @@ class AppPage extends Common {
                   await Promise.all(
                      abDCs.map((dc) =>
                         (async () => {
-                           if (!this.excludeDataCollections.contains(dc.name)) {
+                           if (!this.excludeDataCollections.includes(dc.name)) {
                               try {
                                  await dc.init();
                                  await dc.loadData();
@@ -306,7 +306,7 @@ class AppPage extends Common {
             ].concat(
                app.abDCs.map(async (abDC) => {
                   // Don't load excluded DCs
-                  if (this.excludeDataCollections.contains(abDC.name)) return;
+                  if (this.excludeDataCollections.includes(abDC.name)) return;
                   try {
                      await abDC.updateSyncData();
                   } catch (err) {
