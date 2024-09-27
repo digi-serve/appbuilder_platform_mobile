@@ -99,6 +99,7 @@ class Account extends EventEmitter {
          return;
       }
       const network = resources.network;
+      const powerUser = this.powerUser || false;
       const userData =
          backupUserData ||
          (await new Promise((resolve, reject) => {
@@ -124,7 +125,7 @@ class Account extends EventEmitter {
       try {
          await lock.acquire();
          await storage.set("user", "siteUserData", userData || null);
-         await storage.set("user", "powerUser", this.powerUser.toString() || false);
+         await storage.set("user", "powerUser", `${powerUser}`);
          this._userData = userData;
          lock.release();
       } catch (err) {
@@ -137,16 +138,15 @@ class Account extends EventEmitter {
       return structuredClone(this._userData);
    }
    get isPowerUser() {
-      return this.powerUser || false;
+      return (this.powerUser === true ) || false;
    }
    async setPowerUser(userWantsALotOfData) {
       const lock = this._lock;
       const resources = this.app.resources;
       const storage = resources.storage;
-      userWantsALotOfData = userWantsALotOfData.toString();
       try {
          await lock.acquire();
-         await storage.set("user", "powerUser", userWantsALotOfData);
+         await storage.set("user", "powerUser", `${userWantsALotOfData}`);
          lock.release();
       } catch (err) {
          lock.release();
