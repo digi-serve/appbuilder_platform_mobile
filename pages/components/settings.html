@@ -147,15 +147,19 @@
             </div>
             <div class="card-content card-content-padding">
                <t
-                  >Toggle on to make your app load very slow, but allow you to browse extra options. This will require an app restart to work.</t
+                  >Toggle on to make your app load Extra options. This will require an app restart to work.</t
                ><br />
                <!-- Toggle element -->
-               <label class="toggle">
-                  <!-- Toggle input -->
-                  <input type="checkbox" id="updatePowerUserMode" />
-                  <!-- Toggle icon -->
-                  <span class="toggle-icon"></span>
-               </label>
+               <div id="updatePowerUserMode">
+                  <label class="toggle">
+                     <!-- Toggle input -->
+                     <input name="toggle" type="checkbox" />
+                     <!-- Toggle icon -->
+                     <span class="toggle-icon">
+                        <i class="fas fa-tachometer-slow"></i>
+                     </span>
+                     </label>
+               </div>
                <br />
             </div>
          </div>
@@ -462,8 +466,15 @@
                   });
                }
             });
-            $("#updatePowerUserMode").on("click", async () => {
-                  resources.account.setPowerUser(true);
+            $("#updatePowerUserMode input[name='toggle']").on("change", async function () {
+               try {
+                  const isChecked = $(this).is(":checked");
+                  // Set power user mode based on toggle state
+                  await resources.account.setPowerUser(isChecked);
+               } catch (err) {
+                  console.error(err);
+                  dialog.alert(err.message, 'Error');
+               }
             });
 
             // Input a JRR token manually.
@@ -577,9 +588,13 @@
                );
             });
 
+            const isPowerUser = await resources.account.isPowerUser; // get the value dynamically
             if (account.userData?.user != null) {
                $("#sync-data").show();
-            }
+
+               const $toggleInput = $("#updatePowerUserMode input[name='toggle']");
+               $toggleInput.prop("checked", isPowerUser);
+            };
             $("#updateOnLoginCheckbox").prop("checked", appPage.isUpdating);
             $("#updateOnLoginCheckbox").change(() => {
                if ($(this).is(":checked"))

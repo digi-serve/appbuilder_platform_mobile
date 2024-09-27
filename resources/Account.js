@@ -124,7 +124,7 @@ class Account extends EventEmitter {
       try {
          await lock.acquire();
          await storage.set("user", "siteUserData", userData || null);
-         await storage.set("user", "powerUser", this.powerUser || false);
+         await storage.set("user", "powerUser", this.powerUser.toString() || false);
          this._userData = userData;
          lock.release();
       } catch (err) {
@@ -143,10 +143,10 @@ class Account extends EventEmitter {
       const lock = this._lock;
       const resources = this.app.resources;
       const storage = resources.storage;
-      this.powerUser = userWantsALotOfData || false;
+      userWantsALotOfData = userWantsALotOfData.toString();
       try {
          await lock.acquire();
-         await storage.set("user", "powerUser", userWantsALotOfData || false);
+         await storage.set("user", "powerUser", userWantsALotOfData);
          lock.release();
       } catch (err) {
          lock.release();
