@@ -43,6 +43,8 @@ class AppPage extends Common {
          welcome,
       };
       this.excludeDataCollections = ["Family Worker Information",
+                     "powerUserReports",
+                     "powerUserItems",
                      "powerUserRCs",
                      "powerUserPRJs",];
       this.f7App = null;
