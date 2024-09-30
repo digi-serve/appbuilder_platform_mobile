@@ -160,11 +160,16 @@ class AppPage extends Common {
                      "Family Worker Information",
                      "My Team RCs",
                      "Project",
+                     // TODO update the UI to not use these anymore
+                     // "Report Items Tab",
+                     // "Expense Report - Mobile",
                   ];
                } else {
                   // default user
                   this.excludeDataCollections = [
                      "Family Worker Information",
+                     "powerUserReports",
+                     "powerUserItems",
                      "powerUserRCs",
                      "powerUserPRJs",
                   ];
