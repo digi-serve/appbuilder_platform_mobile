@@ -42,7 +42,9 @@ class AppPage extends Common {
          settings,
          welcome,
       };
-      this.excludeDataCollections = ["Family Worker Information"];
+      this.excludeDataCollections = ["Family Worker Information",
+                     "powerUserRCs",
+                     "powerUserPRJs",];
       this.f7App = null;
       this.menuView = null;
       this.on("ready", async (callback) => {
