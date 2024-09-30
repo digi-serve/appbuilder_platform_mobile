@@ -494,7 +494,7 @@
                $("#btnEnableRemoteLogging").trigger("click");
             });
 
-            $("#restart-app").on("click", () => {});
+            $("#restart-app").on("click", () => { });
             if (settingsComponent.isUpdateReady) $("#update-ready").show();
             settingsComponent.renderPackageInfo();
             let syncing;
@@ -512,7 +512,7 @@
                const continueSync = dialog.confirm(
                   "<t>This will fetch the latest data from the server without affecting any locally changed data. Continue?</t>",
                   "<t>Update Data</t>",
-                  () => {},
+                  () => { },
                );
             });
 
@@ -551,9 +551,10 @@
                );
             });
 
+            const isPowerUser = await resources.account.isPowerUser; // get the value dynamically
             if (account.userData?.user != null) {
                $("#sync-data").show();
-            }
+            };
             $("#updateOnLoginCheckbox").prop("checked", appPage.isUpdating);
             $("#updateOnLoginCheckbox").change(() => {
                if ($(this).is(":checked"))

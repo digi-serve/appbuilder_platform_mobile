@@ -20,6 +20,8 @@ class Account extends EventEmitter {
          loadUserData: null,
       };
       this._userData = null;
+      this.userType = "basic";
+      this.powerUser = false;
       this.app = null;
       this.on(EVENT_KEY_LOAD_USER_DATA, async (context, res) => {
          const pendingNetworkCallbacks = this._pendingNetworkCallbacks;
@@ -70,6 +72,7 @@ class Account extends EventEmitter {
             try {
                await lock.acquire();
                this._userData = await storage.get("user", "siteUserData");
+               this.powerUser = await storage.get("user", "powerUser");
                lock.release();
                return;
             } catch (err) {
@@ -96,6 +99,7 @@ class Account extends EventEmitter {
          return;
       }
       const network = resources.network;
+      const powerUser = this.powerUser || false;
       const userData =
          backupUserData ||
          (await new Promise((resolve, reject) => {
@@ -121,6 +125,7 @@ class Account extends EventEmitter {
       try {
          await lock.acquire();
          await storage.set("user", "siteUserData", userData || null);
+         await storage.set("user", "powerUser", `${powerUser}`);
          this._userData = userData;
          lock.release();
       } catch (err) {
@@ -131,6 +136,22 @@ class Account extends EventEmitter {
 
    get userData() {
       return structuredClone(this._userData);
+   }
+   get isPowerUser() {
+      return (this.powerUser === true ) || false;
+   }
+   async setPowerUser(userWantsALotOfData) {
+      const lock = this._lock;
+      const resources = this.app.resources;
+      const storage = resources.storage;
+      try {
+         await lock.acquire();
+         await storage.set("user", "powerUser", `${userWantsALotOfData}`);
+         lock.release();
+      } catch (err) {
+         lock.release();
+         throw err;
+      }
    }
 }
 

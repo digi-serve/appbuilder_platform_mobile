@@ -42,6 +42,11 @@ class AppPage extends Common {
          settings,
          welcome,
       };
+      this.excludeDataCollections = ["Family Worker Information",
+                     "powerUserReports",
+                     "powerUserItems",
+                     "powerUserRCs",
+                     "powerUserPRJs",];
       this.f7App = null;
       this.menuView = null;
       this.on("ready", async (callback) => {
@@ -149,6 +154,26 @@ class AppPage extends Common {
                      await inboxComponent.loadInboxData(true);
                   else throw new Error("Not found an user.");
                }
+               const isPowerUser = account.isPowerUser;
+               if (isPowerUser) {
+                  this.excludeDataCollections = [
+                     "Family Worker Information",
+                     "My Team RCs",
+                     "Project",
+                     // TODO update the UI to not use these anymore
+                     // "Report Items Tab",
+                     // "Expense Report - Mobile",
+                  ];
+               } else {
+                  // default user
+                  this.excludeDataCollections = [
+                     "Family Worker Information",
+                     "powerUserReports",
+                     "powerUserItems",
+                     "powerUserRCs",
+                     "powerUserPRJs",
+                  ];
+               }
                (async () => {
                   const abDCs = app.abDCs;
                   const data = {
@@ -160,7 +185,7 @@ class AppPage extends Common {
                   await Promise.all(
                      abDCs.map((dc) =>
                         (async () => {
-                           if (dc.name !== "Family Worker Information") {
+                           if (!this.excludeDataCollections.includes(dc.name)) {
                               try {
                                  await dc.init();
                                  await dc.loadData();
@@ -289,8 +314,8 @@ class AppPage extends Common {
                })(),
             ].concat(
                app.abDCs.map(async (abDC) => {
-                  // TODO (Guy): Force ignoring "Family Worker Information" (Get rid if this dc is fixed)
-                  if (abDC.name === "Family Worker Information") return;
+                  // Don't load excluded DCs
+                  if (this.excludeDataCollections.includes(abDC.name)) return;
                   try {
                      await abDC.updateSyncData();
                   } catch (err) {

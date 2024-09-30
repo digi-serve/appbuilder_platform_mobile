@@ -80,6 +80,19 @@
                </button>
             </div>
          </div>
+         <div class="card" id="setPowerUser">
+            <div class="card-header bg-color-yellow text-color-black" translate="1">
+               <b>Power User Mode</b>
+               <div id="updatePowerUserMode">
+                  <label class="toggle">
+                     <input name="toggle" type="checkbox" />
+                     <span class="toggle-icon">
+                     </span>
+                  </label>
+               </div>
+               <br />
+            </div>
+         </div>
          <div class="card">
             <div
                class="card-header bg-color-gray text-color-white"
@@ -197,11 +210,13 @@
          minute: "2-digit",
       }),
       systemInfo: null,
+      isPowerUser: false,
    };
    return {
       async data() {
          const app = this.$root.app;
          cachedState.buildTimestamp = app.buildTimeStamp;
+         cachedState.isPowerUser = this.$root.app.resources.account.isPowerUser;
          cachedState.systemInfo =
             app.pages.appPage.components.welcome.getSystemInfo();
          return cachedState;
@@ -278,6 +293,26 @@
             });
             const username = resources.account.userData?.user;
 
+            cachedState.isPowerUser = await resources.account.isPowerUser; // get the value dynamically
+            const $toggleInput = $("#updatePowerUserMode input[name='toggle']");
+            // Set the value of the toggle (checked/unchecked)
+            $toggleInput.prop("checked", cachedState.isPowerUser);
+            $toggleInput.on("change", async function () {
+               try {
+                  $("#updatePowerUserMode").addClass("disabled");
+                  const isChecked = $(this).is(":checked");
+                  // Set power user mode based on toggle state
+                  await resources.account.setPowerUser(isChecked);
+
+                  cachedState.isPowerUser = isChecked;
+                  // Optionally display a confirmation dialog or notification
+                  dialog.alert(`Power User Mode is now ${isChecked ? 'enabled. Loading will be slower.' : 'disabled.'} `, 'Power User Mode');
+               } catch (err) {
+                  analytics.logError(err);
+                  dialog.alert(err.message, 'Error');
+               }
+            });
+
             // Bible Trivia to give user something to do
             // give them initial question, and then they can tap to get more
             const tCanvas = $("#trivia").get(0);
@@ -304,6 +339,8 @@
             if (username != null) {
                $syncData.show();
                $jsQRStoragePanel.hide();
+               // show the toggle, but disable it
+               $("#updatePowerUserMode").addClass("disabled");
                return;
             } else {
                $syncData.hide();
