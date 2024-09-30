@@ -246,7 +246,7 @@
             this.$update();
             const $syncData = $("#sync-data");
             const $jsQRStoragePanel = $("#jsqr-storage-panel");
-            const $setPowerUser = $("#setPowerUser");
+            const $updatePowerUserMode = $("#updatePowerUserMode");
             const app = this.$root.app;
 
             // Sync with server
@@ -294,23 +294,24 @@
             });
             const username = resources.account.userData?.user;
 
-            $("#updatePowerUserMode input[name='toggle']").on("change", async function () {
+            cachedState.isPowerUser = await resources.account.isPowerUser; // get the value dynamically
+            const $toggleInput = $("#updatePowerUserMode input[name='toggle']");
+            // Set the value of the toggle (checked/unchecked)
+            $toggleInput.prop("checked", cachedState.isPowerUser);
+            $toggleInput.on("change", async function () {
                try {
                   const isChecked = $(this).is(":checked");
                   // Set power user mode based on toggle state
                   await resources.account.setPowerUser(isChecked);
 
+                  cachedState.isPowerUser = isChecked;
                   // Optionally display a confirmation dialog or notification
-                  dialog.alert(`Power User Mode is now ${isChecked ? 'enabled' : 'disabled'}. Restart required.`, 'Power User Mode');
+                  dialog.alert(`Power User Mode is now ${isChecked ? 'enabled. Loading will be slower.' : 'disabled.'} `, 'Power User Mode');
                } catch (err) {
                   console.error(err);
                   dialog.alert(err.message, 'Error');
                }
             });
-            const isPowerUser = await resources.account.isPowerUser; // get the value dynamically
-            const $toggleInput = $("#updatePowerUserMode input[name='toggle']");
-            // Set the value of the toggle (checked/unchecked)
-            $toggleInput.prop("checked", isPowerUser);
 
             // Bible Trivia to give user something to do
             // give them initial question, and then they can tap to get more
@@ -338,7 +339,8 @@
             if (username != null) {
                $syncData.show();
                $jsQRStoragePanel.hide();
-               $setPowerUser.hide();
+               // show the toggle, but disable it
+               $updatePowerUserMode.addClass("disabled");
                return;
             } else {
                $syncData.hide();
