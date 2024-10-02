@@ -163,6 +163,9 @@ class AppPage extends Common {
                      // TODO update the UI to not use these anymore
                      // "Report Items Tab",
                      // "Expense Report - Mobile",
+                     // TODO enable these after adjusting the UI to use them
+                     // "powerUserReports",
+                     // "powerUserItems",
                   ];
                } else {
                   // default user
