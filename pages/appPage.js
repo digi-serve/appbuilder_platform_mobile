@@ -274,6 +274,7 @@ class AppPage extends Common {
       const resources = app.resources;
       const analytics = resources.analytics;
       const dialog = this.f7App.dialog;
+      const excludeDataCollections = this.excludeDataCollections;
       setTimeout(async () => {
          await Promise.all(
             [
@@ -318,7 +319,7 @@ class AppPage extends Common {
             ].concat(
                app.abDCs.map(async (abDC) => {
                   // Don't load excluded DCs
-                  if (this.excludeDataCollections.includes(abDC.name)) return;
+                  if (excludeDataCollections.includes(abDC.name)) return;
                   try {
                      await abDC.updateSyncData();
                   } catch (err) {

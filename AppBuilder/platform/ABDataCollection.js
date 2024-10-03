@@ -825,6 +825,15 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
 
    async updateSyncData(backupDcData) {
       const lock = this._lock;
+      if (!lock) {
+         this._analytics.logError(
+            "Attempt to update/sync dataCollection, it may not be initialized: ",
+            this,
+         );
+         return;
+         // ? Instead of throwing error, should a table be initialized?
+         // this._lock = new AB.app.utils.Lock();
+      }
       const storage = this.AB.app.resources.storage;
       const refStorage = this.refStorage();
       let status = 0;
@@ -833,7 +842,7 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          status = await storage.get(refStorage, "status");
          lock.release();
       } catch (err) {
-         lock.release();
+         lock?.release();
          throw err;
       }
       switch (status) {
