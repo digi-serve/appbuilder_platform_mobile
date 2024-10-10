@@ -361,6 +361,26 @@ class AppPage extends Common {
    async init(app) {
       await super.init(app);
 
+      document.addEventListener("backbutton", onBackKeyDown, false);
+      window.addEventListener("beforeunload", onBackKeyDown, false);
+      function onBackKeyDown(e) {
+            e.preventDefault();
+
+            app.toast
+               .create({
+               text: 'Do you want to exit?',
+               closeButton: true,
+               closeButtonText: 'Exit',
+                  closeButtonColor: 'lime',
+               on: {
+                  closeButtonClick: function () {
+                  navigator.app.exitApp();
+                     e.preventDefault();
+                  },
+               }
+            }).open();
+      }
+
       // Framework7 is the UI library
       this.f7App ||
          (this.f7App = new Framework7({
