@@ -290,14 +290,26 @@
             appPage.setUpdatingCallback(
                KEY_UPDATING_CALLBACK,
                async ({ doneAmount, length, status }) => {
-                  if (status === "init.dc" && doneAmount === length)
+                  const WAIT_PROGRESS = 95;
+                  const FULL_PROGRESS = 100;
+                  const DONE_STATUS = "init.dc";
+
+                  // Calculate progress percentage
+                  cachedState.progressPercentage = Math.floor((doneAmount * PERCENT_FACTOR) / length);
+
+                  if (status === DONE_STATUS && doneAmount === length) {
+                  // Set callback when initializing and fully done
                      appPage.setUpdatingCallback(KEY_UPDATING_CALLBACK, () => {
+                        cachedState.progressPercentage = FULL_PROGRESS;
                         refreshPage(this);
                      });
-                  cachedState.progressPercentage = Math.floor(
-                     (doneAmount * PERCENT_FACTOR) / length,
-                  );
-                  refreshPage(this);
+                  } else {
+                     // Limit progress percentage to max load level until 'init.dc'
+                     if (cachedState.progressPercentage >= WAIT_PROGRESS) {
+                        cachedState.progressPercentage = WAIT_PROGRESS;
+                     }
+                     refreshPage(this);
+                  }
                },
             );
          },
