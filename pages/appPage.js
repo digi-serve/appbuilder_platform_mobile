@@ -367,7 +367,7 @@ class AppPage extends Common {
             e.preventDefault();
 
             app.toast
-               .create({
+               ?.create({
                text: 'Do you want to exit?',
                closeButton: true,
                closeButtonText: 'Exit',
