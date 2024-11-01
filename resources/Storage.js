@@ -413,8 +413,10 @@ class Storage extends EventEmitter {
     */
    async compressFile(file) {
       return new Promise((resolve, reject) => {
-         new compressAccurately(file, 1).then((compressedFile) => {
-            //The res in the promise is a compressed Blob type (which can be treated as a File type) file;
+         new compressAccurately(file, {
+            size: 100, // The compressed image size is 100kb
+            accuracy: 0.1, // The accuracy of image compression size,range 0.8-0.99,default 0.95; this means if the picture size is set to 1000Kb and the accuracy is 0.9, the image with the compression result of 900Kb-1100Kb is considered acceptable
+         }).then((compressedFile) => {
             if (compressedFile instanceof Blob) {
                // Convert Blob to File if needed
                const compressedFileFromBlob = new File(

@@ -16,6 +16,7 @@ import account from "./resources/Account.js";
 import analytics from "./resources/Analytics.js";
 import busy from "./resources/Busy.js";
 import camera from "./resources/Camera.js";
+import inactiveTracker from "./resources/InactiveTracker.js"; //'user-inactivity-tracker';
 import network from "./resources/Network.js";
 import storage from "./resources/Storage.js";
 import translate from "./resources/Translate.js";
@@ -45,6 +46,7 @@ class App extends EventEmitter {
          analytics,
          busy,
          camera,
+         inactiveTracker,
          network,
          storage,
          translate,
@@ -77,7 +79,15 @@ class App extends EventEmitter {
       for (const key in pages) pendingPromises.push(pages[key].init(this));
       await Promise.all(pendingPromises);
 
-      // Force garbade collector.
+      // handle inactivity by closing app
+      let handleInactivity = () => {
+         window.location.reload(true);
+      };
+      // start inactivity tracker
+      resources.inactiveTracker.setCallback(handleInactivity);
+      const tracker = resources.inactiveTracker.startTracking();
+
+      // Force garbage collector.
       pendingPromises = null;
       const appPage = pages.appPage;
       const passwordPage = pages.passwordPage;
