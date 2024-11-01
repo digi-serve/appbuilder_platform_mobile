@@ -116,6 +116,7 @@ class AppPage extends Common {
          busy.show("Preparing components.");
          const mainRoutes = [];
          const menuRoutes = [];
+         let resolveInit = null;
          try {
             // components isn't fully iterable, so we need to use a for loop.
             const components = this.components;
@@ -185,6 +186,9 @@ class AppPage extends Common {
                      status: "init.dc",
                   };
                   const dcErrors = [];
+                  await new Promise((resolve) => {
+                     resolveInit = resolve;
+                  });
                   await Promise.all(
                      abDCs.map((dc) =>
                         (async () => {
@@ -264,6 +268,7 @@ class AppPage extends Common {
                   .open();
             });
          }
+         resolveInit != null && resolveInit();
       });
    }
 

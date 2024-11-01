@@ -28,7 +28,7 @@
                         class="swiper-slide"
                         data-task-uuid="{{uuid}}"
                         data-cy="{{uuid}}"
-                        style="height: 500px; overflow: auto;"
+                        style="height: 500px; overflow: auto"
                      >
                         <iframe
                            class="iframes"
@@ -50,60 +50,74 @@
 
 <!-- framework7 component script -->
 <script>
+   const TIME_WAIT = 1000;
+   const URL_MISSING_IMAGE = "img/missing_image.png";
    const children = [];
    const cachedState = {
       items: [],
-   };
-
-   /**
-    * Create the form components for inbox items matching
-    * the given process id
-    * @param {object[]} inboxItems all of the user's inbox item
-    * @param {string} definition id of the process definition
-    * @returns
-    **/
-   const getFormsForDefinition = (inboxItems = [], definition) => {
-      const itemForms = [];
-      inboxItems
-         .filter((item) => item.definition === definition)
-         .forEach((item) => {
-            itemForms.push({
-               uuid: item.uuid,
-               // form: JSON.stringify({
-               //    type: "json",
-               //    formio: true,
-               //    components: item.ui.components,
-               //    values: item.data,
-               // }),
-               form: {
-                  type: "json",
-                  formio: true,
-                  components: item.ui.components,
-                  values: item.data,
-               },
-            });
-         });
-      return itemForms;
+      files: [],
    };
    return {
       async data() {
-         cachedState.items = getFormsForDefinition(
-            this.$root.app.pages.appPage.components.inbox.inboxData.inbox,
-            this.$route.params.id,
+         const app = this.$root.app;
+
+         /**
+          * Create the form components for inbox items matching
+          * the given process id
+          **/
+         cachedState.items = await Promise.all(
+            app.pages.appPage.components.inbox.inboxData.inbox
+               .filter((item) => item.definition === this.$route.params.id)
+               .map((item) => ({
+                  uuid: item.uuid,
+                  // form: JSON.stringify({
+                  //    type: "json",
+                  //    formio: true,
+                  //    components: item.ui.components,
+                  //    values: item.data,
+                  // }),
+                  form: {
+                     type: "json",
+                     formio: true,
+                     components: item.ui.components,
+                     values: item.data,
+                  },
+               }))
          );
          return cachedState;
       },
       on: {
-         popupClosed(popup) {},
+         popupClosed(popup) {
+            const files = cachedState.files;
+            while (files.length > 0) URL.revokeObjectURL(files.pop().url);
+         },
          popupOpened(popup) {
             const app = this.$root.app;
             const analytics = app.resources.analytics;
+            const storage = app.resources.storage;
             const appPage = app.pages.appPage;
             const inboxComponent = appPage.components.inbox;
             const financialApp = appPage.getApplicationByID("FINANCIAL"); // we are including this because it has a good process for fetching images
             const activeIframes = [];
             const $app = this.$app;
             const dialog = $app.dialog;
+            const files = cachedState.files;
+            const commands = {
+               clickImage: (uuid) => {
+                  if (uuid == null) return;
+                  const file = files.find((file) => file.uuid === uuid);
+                  if (file == null) return;
+                  $app.photoBrowser
+                     .create({
+                        photos: [file],
+                        theme: "dark",
+                        type: "standalone",
+                        routableModals: false,
+                        toolbar: false,
+                     })
+                     .open();
+               },
+            };
             const b = () => {
                //Set curIndex default 0
                initSlideFrame(0);
@@ -111,7 +125,7 @@
             const initSlideFrame = (curIndex) => {
                if (activeIframes.indexOf(curIndex) === -1) {
                   const f = document.getElementById(
-                     `formio-form-iframe-${curIndex}`,
+                     `formio-form-iframe-${curIndex}`
                   );
                   if (f == null || typeof window.seamless === undefined)
                      return setTimeout(b, 100);
@@ -121,62 +135,140 @@
 
                   // add this to list of iframes we are using
                   children[curIndex] = child;
-                  child.receive((d, e) => {
+                  child.receive(async (d, e) => {
                      const event = d.task || null;
-                     if (event == null) return false;
-                     if (
-                        d.task.type === "button" &&
-                        d.task.action === "event"
-                     ) {
-                        (async () => {
-                           const busy = app.resources.busy;
-                           busy.show("Processing...");
-                           try {
-                              const result =
-                                 await inboxComponent.requestProcessInbox(
-                                    $(".swiper-slide-active")[0].dataset
-                                       .taskUuid,
-                                    event.event,
+                     if (event == null) return;
+                     const eventType = event.type;
+                     switch (eventType) {
+                        case "button":
+                           if (event.action === "event")
+                              (async () => {
+                                 const busy = app.resources.busy;
+                                 busy.show("Processing...");
+                                 try {
+                                    const result =
+                                       await inboxComponent.requestProcessInbox(
+                                          $(".swiper-slide-active")[0].dataset
+                                             .taskUuid,
+                                          event.event
+                                       );
+                                    cachedState.items =
+                                       cachedState.items.filter(
+                                          (item) =>
+                                             item.uuid !== result.taskUUID
+                                       );
+                                    $app.toast
+                                       .create({
+                                          icon: '<i class="fa-2x fas fa-star"></i>',
+                                          text: "<t>Item Saved</t>",
+                                          position: "center",
+                                       })
+                                       .open();
+                                    const swiper =
+                                       document.querySelector(
+                                          ".swiper-container"
+                                       ).swiper;
+                                    swiper.removeSlide(swiper.realIndex);
+                                    busy.hide();
+                                    if (swiper.slides.length !== 0) return;
+                                    $app.popup.close();
+                                 } catch (err) {
+                                    console.error(err);
+                                    analytics.logError(err);
+                                    busy.hide();
+                                    await new Promise((resolve) => {
+                                       dialog
+                                          .alert(
+                                             `<t>${err.message}</t>`,
+                                             "<t>Error</t>",
+                                             () => {
+                                                resolve();
+                                             }
+                                          )
+                                          .open();
+                                    });
+                                 }
+                              })();
+                           break;
+                        case "image":
+                           const imageUUID = event.image.image;
+                           const createFileUrl = async () => {
+                              try {
+                                 const imageFileObj =
+                                    await storage.downloadFile(imageUUID);
+                                 if (!imageFileObj.isConfirmed) {
+                                    setTimeout(async () => {
+                                       await createFileUrl();
+                                    }, TIME_WAIT);
+                                    return;
+                                 }
+                                 const {
+                                    contents: imageDataContents,
+                                    file: imageDataFile,
+                                    type: imageDataType,
+                                 } = imageFileObj.data;
+                                 const file =
+                                    (imageDataContents != null &&
+                                       imageDataFile != null &&
+                                       imageDataType != null &&
+                                       (await storage.convertBase64DataToFile(
+                                          imageDataFile,
+                                          imageDataContents,
+                                          {
+                                             type: imageDataType,
+                                          }
+                                       ))) ||
+                                    null;
+                                 const imageFile = files.find(
+                                    (imageFile) => imageFile.uuid === imageUUID
                                  );
-                              cachedState.items = cachedState.items.filter(
-                                 (item) => item.uuid !== result.taskUUID,
-                              );
-                              $app.toast
-                                 .create({
-                                    icon: '<i class="fa-2x fas fa-star"></i>',
-                                    text: "<t>Item Saved</t>",
-                                    position: "center",
-                                 })
-                                 .open();
-                              const swiper =
-                                 document.querySelector(
-                                    ".swiper-container",
-                                 ).swiper;
-                              swiper.removeSlide(swiper.realIndex);
-                              busy.hide();
-                              if (swiper.slides.length !== 0) return;
-                              $app.popup.close();
-                           } catch (err) {
-                              console.error(err);
-                              analytics.logError(err);
-                              busy.hide();
-                              await new Promise((resolve) => {
-                                 dialog
-                                    .alert(
-                                       `<t>${err.message}</t>`,
-                                       "<t>Error</t>",
-                                       () => {
-                                          resolve();
-                                       },
-                                    )
-                                    .open();
-                              });
-                           }
-                        })();
+                                 if (file == null) {
+                                    const newImageFile = {
+                                       caption: "Missing a reciept image.",
+                                       url: URL_MISSING_IMAGE,
+                                       uuid: imageUUID,
+                                    };
+                                    if (imageFile != null) {
+                                       imageFile.caption = newImageFile.caption;
+                                       imageFile.url = newImageFile.url;
+                                    } else files.push(newImageFile);
+                                    child.send({
+                                       type: "image",
+                                       fileData: newImageFile,
+                                    });
+                                    return;
+                                 }
+                                 const newImageFile = {
+                                    caption: file.name,
+                                    url: URL.createObjectURL(file),
+                                    uuid: imageUUID,
+                                 };
+                                 if (imageFile != null) {
+                                    if (imageFile.url === URL_MISSING_IMAGE) {
+                                       imageFile.caption = newImageFile.caption;
+                                       imageFile.url = newImageFile.url;
+                                    }
+                                 } else files.push(newImageFile);
+                                 child.send({
+                                    type: "image",
+                                    fileData: newImageFile,
+                                 });
+                              } catch (err) {
+                                 console.error(err);
+                                 analytics.logError(err);
+                              }
+                           };
+                           createFileUrl();
+                           break;
+                        case "command":
+                           const callResult = commands[event.action](
+                              ...event.args
+                           );
+                           callResult instanceof Promise && (await callResult);
+                           break;
+                        default:
+                           break;
                      }
-                     // go get images either stored locally already or download now
-                     else if (d.task.type === "image")
-                        financialApp.getReceiptsImages([d.task.image]);
                   });
 
                   // load the source of the iframe in order to delay the image loading
@@ -193,7 +285,7 @@
                         f.contentWindow.document.location.protocol +
                            "//" +
                            f.contentWindow.document.location.host +
-                           "/sdc-app/www/lib/applications/inbox/templates/formio.html",
+                           "/sdc-app/www/lib/applications/inbox/templates/formio.html"
                      );
                      activeIframes.push(index);
                   };
@@ -231,24 +323,24 @@
                      realIndexChange: () => {
                         Array.from(
                            document.getElementsByClassName(
-                              "swiper-slide-visible",
-                           ),
+                              "swiper-slide-visible"
+                           )
                         ).forEach((slide) => {
                            initSlideFrame(
                               slide.querySelectorAll("iframe")[0].dataset
-                                 .currentIndex,
+                                 .currentIndex
                            );
                         });
                      },
                      update: () => {
                         Array.from(
                            document.getElementsByClassName(
-                              "swiper-slide-visible",
-                           ),
+                              "swiper-slide-visible"
+                           )
                         ).forEach((slide) => {
                            initSlideFrame(
                               slide.querySelectorAll("iframe")[0].dataset
-                                 .currentIndex,
+                                 .currentIndex
                            );
                         });
                      },
@@ -291,15 +383,6 @@
                         return html;
                      },
                   },
-               });
-            });
-            $app.router.off("photoDownloaded");
-            $app.router.on("photoDownloaded", (photo) => {
-               children.forEach((child) => {
-                  child.send({
-                     type: "photoDownloaded",
-                     image: photo,
-                  });
                });
             });
          },
