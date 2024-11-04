@@ -44,7 +44,6 @@ class Storage extends EventEmitter {
                try {
                   await lock.acquire();
                   await this.clear("file", queueUUID);
-                  lock.release();
                   throw new Error(res.message);
                } catch (err) {
                   lock.release();
@@ -81,7 +80,6 @@ class Storage extends EventEmitter {
                try {
                   await lock.acquire;
                   await this.clear("file", queueUUID);
-                  lock.release();
                   throw new Error(res.message);
                } catch (err) {
                   lock.release();
