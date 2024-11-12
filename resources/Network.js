@@ -664,7 +664,7 @@ class NetworkRelay extends NetworkRest {
       let keys = (await storage.getAllKeys("jobPacket")) || [];
 
       let jtKeys = keys.filter((k) => k.indexOf(ref) > -1);
-      jtKeys = jtKeys.map((k) => k.replaceAll(`${ref}_`, ""));
+      jtKeys = jtKeys.map((k) => k.replaceAll(`jt-${ref}_`, ""));
       jtKeys = jtKeys.map((k) => parseInt(k));
       return jtKeys;
    }
