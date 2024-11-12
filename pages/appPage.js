@@ -42,11 +42,13 @@ class AppPage extends Common {
          settings,
          welcome,
       };
-      this.excludeDataCollections = ["Family Worker Information",
-                     "powerUserReports",
-                     "powerUserItems",
-                     "powerUserRCs",
-                     "powerUserPRJs",];
+      this.excludeDataCollections = [
+         "Family Worker Information",
+         "powerUserReports",
+         "powerUserItems",
+         "powerUserRCs",
+         "powerUserPRJs",
+      ];
       this.f7App = null;
       this.menuView = null;
       this.on("ready", async (callback) => {
@@ -189,6 +191,8 @@ class AppPage extends Common {
                   await new Promise((resolve) => {
                      resolveInit = resolve;
                   });
+                  const waitForNexStepSecs = TIME_DATA_UPDATE / 2;
+                  await this._waitInMiliSecs(waitForNexStepSecs);
                   await Promise.all(
                      abDCs.map((dc) =>
                         (async () => {
@@ -207,6 +211,8 @@ class AppPage extends Common {
                         })(),
                      ),
                   );
+                  await this._waitInMiliSecs(waitForNexStepSecs);
+                  await this.updateSyncUI();
                   for (const dcError of dcErrors)
                      await new Promise((resolve) => {
                         dialog
@@ -363,27 +369,36 @@ class AppPage extends Common {
       }, TIME_DATA_UPDATE);
    }
 
+   async _waitInMiliSecs(miliSecs) {
+      await new Promise((resolve) => {
+         setTimeout(() => {
+            resolve();
+         }, miliSecs);
+      });
+   }
+
    async init(app) {
       await super.init(app);
 
       document.addEventListener("backbutton", onBackKeyDown, false);
       window.addEventListener("beforeunload", onBackKeyDown, false);
       function onBackKeyDown(e) {
-            e.preventDefault();
+         e.preventDefault();
 
-            app.toast
-               ?.create({
-               text: 'Do you want to exit?',
+         app.toast
+            ?.create({
+               text: "Do you want to exit?",
                closeButton: true,
-               closeButtonText: 'Exit',
-                  closeButtonColor: 'lime',
+               closeButtonText: "Exit",
+               closeButtonColor: "lime",
                on: {
                   closeButtonClick: function () {
-                  navigator.app.exitApp();
+                     navigator.app.exitApp();
                      e.preventDefault();
                   },
-               }
-            }).open();
+               },
+            })
+            .open();
       }
 
       // Framework7 is the UI library
