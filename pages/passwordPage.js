@@ -277,7 +277,10 @@ class PasswordPage extends Common {
          await storage.set("user", "passwordHash", hash);
          _scanAnimationStop();
          _splitAnimation();
-         location.reload();
+         ev.preventDefault();
+         this.emit("passwordReady");
+         this.emit("passwordDone");
+
       });
    }
 }
