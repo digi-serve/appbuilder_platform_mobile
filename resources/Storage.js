@@ -118,7 +118,7 @@ class Storage extends EventEmitter {
     * @return {string}
     */
    _decrypt(encoded) {
-      if (encoded == null) return null;
+      if (typeof encoded !== "string" || !encoded.match(":::")) return null;
       const [ciphertext, ivHex] = encoded.split(":::");
       if (ciphertext == null || ivHex == null) return null;
       const iv = CryptoJS.enc.Hex.parse(ivHex);
@@ -678,7 +678,7 @@ class Storage extends EventEmitter {
 
    set config(values = {}) {
       this._config.encrypt = values.encrypt ?? this._config.encrypt;
-      this._config.key = values.encrypt || this._config.key;
+      this._config.key = values.key || this._config.key;
    }
 
    get validFileTypes() {
