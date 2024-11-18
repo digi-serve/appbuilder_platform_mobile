@@ -275,6 +275,7 @@ class PasswordPage extends Common {
          }
          const hash = await this._hash($setup_p1.val());
          await storage.set("user", "passwordHash", hash);
+         storage.config = { encrypt: true, key: hash };
          _scanAnimationStop();
          _splitAnimation();
          ev.preventDefault();

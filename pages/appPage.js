@@ -498,6 +498,7 @@ class AppPage extends Common {
       // importCredentials then refresh the page
       const resources = this.app.resources;
       await resources.network.importCredentials(preToken, tenantUUID);
+      await resources.account.loadUserData(true);
    }
 
    async updateSyncUI(keys, data) {
