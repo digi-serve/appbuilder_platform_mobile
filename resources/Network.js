@@ -291,7 +291,7 @@ class NetworkRest extends EventEmitter {
 
          // recursively process each pending queue request
          const processRequest = async (callback) => {
-            if (queue.length == 0) {
+            if (!queue?.shift || queue.length == 0) {
                callback();
                return;
             }
