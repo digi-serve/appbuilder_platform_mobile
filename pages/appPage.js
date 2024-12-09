@@ -66,14 +66,14 @@ class AppPage extends Common {
             // Import pre-token from the URL. Generate new authToken.
             // Parse J.R.R. Token and tenant from URL;
             // const hash = String(location.hash);
-            // await network.importCredentials(
+            await network.importCredentials(
             //    hash.match(/JRR=(\w+)/)?.[1],
             //    hash.match(/tenant=(\w+)/)?.[1],
-            // );
+            );
 
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
-            // isAuth = true;
+            isAuth = true;
             busy.hide();
          } catch (err) {
             console.error(err);
