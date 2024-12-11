@@ -43,12 +43,18 @@
 <!-- framework7 component template -->
 <template>
    <div class="popup">
-      {{#if imageURL}}
-      <div class="page with-preview-image" id="feedback-page">
+
+      <div class="page{{#if imageURL}} with-preview-image{{/if}}" id="feedback-page">
          <div class="navbar">
             <div class="navbar-bg"></div>
             <div class="navbar-inner sliding">
-               <div class="title" translate="1">Send Feedback</div>
+               <div class="title sliding" translate="1">Send Feedback</div>
+               <div class="right">
+                  <!-- use inline-style to communicate to use that this element is non-interactable until it is updated -->
+                  <a class="link icon-only submit-send-feedback" href="#" data-cy="submit-send-feedback">
+                     <i class="fa fa-paper-plane"></i>
+                  </a>
+               </div>
             </div>
          </div>
          <div class="page-content">
@@ -64,8 +70,7 @@
                               <textarea
                                  id="feedback-note"
                                  placeholder="Describe your issue or share your ideas."
-                              >
-{{note}}</textarea
+                              >{{#if note}}{{note}}{{/if}}</textarea
                               >
                               <span class="input-clear-button"></span>
                            </div>
@@ -77,6 +82,7 @@
 
             <div class="list">
                <ul>
+                  {{#if imageURL}}{{else}}
                   <li id="info-feedback-image">
                      <div class="item-content item-input">
                         <div class="item-inner">
@@ -92,6 +98,7 @@
                         </div>
                      </div>
                   </li>
+                  {{/if}}
                   <li id="attach-feedback-image">
                      <div class="item-content">
                         <div class="item-inner">
@@ -113,12 +120,11 @@
                   </li>
                   <li id="preview-feedback-image">
                      <div class="item-inner">
-                        <img src="{{imageURL}}" />
+                        <img src="{{#if imageURL}}{{imageURL}}{{/if}}" />
                      </div>
                   </li>
                </ul>
             </div>
-
             <div class="block block-strong row">
                <div class="col">
                   <a
@@ -132,8 +138,7 @@
                <div class="col">
                   <a
                      href="#"
-                     class="button link"
-                     id="submit-send-feedback"
+                     class="button link submit-send-feedback"
                      translate="1"
                      >Send</a
                   >
@@ -141,104 +146,6 @@
             </div>
          </div>
       </div>
-      {{else}}
-      <div class="page" id="feedback-page">
-         <div class="navbar">
-            <div class="navbar-bg"></div>
-            <div class="navbar-inner sliding">
-               <div class="title" translate="1">Send Feedback</div>
-            </div>
-         </div>
-         <div class="page-content">
-            <div class="list">
-               <ul>
-                  <li>
-                     <div class="item-content item-input">
-                        <div class="item-inner">
-                           <div class="item-title item-label" translate="1">
-                              Note
-                           </div>
-                           <div class="item-input-wrap">
-                              <textarea
-                                 id="feedback-note"
-                                 placeholder="Describe your issue or share your ideas."
-                              >
-{{note}}</textarea
-                              >
-                              <span class="input-clear-button"></span>
-                           </div>
-                        </div>
-                     </div>
-                  </li>
-               </ul>
-            </div>
-            <div class="list">
-               <ul>
-                  <li id="info-feedback-image">
-                     <div class="item-content item-input">
-                        <div class="item-inner">
-                           <div class="item-title item-label" translate="1">
-                              Optional
-                           </div>
-                           <div class="item-text">
-                              <t
-                                 >You may use your phone to take a screenshot,
-                                 and then return here to attach the image.</t
-                              >
-                           </div>
-                        </div>
-                     </div>
-                  </li>
-                  <li id="attach-feedback-image">
-                     <div class="item-content">
-                        <div class="item-inner">
-                           <a class="button button-fill">
-                              <i class="fas fa-paperclip"></i>
-                              <t>Include Screenshot</t>
-                           </a>
-                        </div>
-                     </div>
-                  </li>
-                  <li id="clear-feedback-image">
-                     <div class="item-content">
-                        <div class="item-inner">
-                           <a class="button button-fill">
-                              <i class="fas fa-trash"></i>
-                           </a>
-                        </div>
-                     </div>
-                  </li>
-                  <li id="preview-feedback-image">
-                     <div class="item-inner">
-                        <img src="{{imageURL}}" />
-                     </div>
-                  </li>
-               </ul>
-            </div>
-
-            <div class="block block-strong row">
-               <div class="col">
-                  <a
-                     href="#"
-                     class="button link popup-close"
-                     id="cancel-send-feedback"
-                     translate="1"
-                     >Cancel</a
-                  >
-               </div>
-               <div class="col">
-                  <a
-                     href="#"
-                     class="button link"
-                     id="submit-send-feedback"
-                     translate="1"
-                     >Send</a
-                  >
-               </div>
-            </div>
-         </div>
-      </div>
-      {{/if}}
    </div>
 </template>
 
@@ -274,6 +181,8 @@
                   "src",
                   feedback.photoURL
                );
+               cachedState.imageURL = feedback.photoURL
+               this.$setState(cachedState);
 
                // This reveals the <img> and hides the attach button
                $("#feedback-page").addClass("with-preview-image");
@@ -290,7 +199,7 @@
             });
 
             // Send feedback
-            this.$("#submit-send-feedback").on("click", async (ev) => {
+            this.$(".submit-send-feedback").on("click", async (ev) => {
                ev.preventDefault();
 
                const $textarea = $("#feedback-note");

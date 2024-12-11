@@ -930,13 +930,14 @@ class NetworkRelay extends NetworkRest {
    }
 
    /**
-    * Obtain the pre-token from the URL. And then generate a new authToken.
+    * If sent pre-token-URL, generate a new authToken.
+    * Else if local credentials exist, return them
     *
     * @param {string} preToken
     * @param {string} tenantUUID
     * @return {Promise}
     */
-   async importCredentials(preToken, tenantUUID) {
+   async importCredentials(preToken=null, tenantUUID=null) {
       if (this._importInProgress) {
          console.error("::: importSettings(): already in progress");
          throw new Error("Import already in progress");

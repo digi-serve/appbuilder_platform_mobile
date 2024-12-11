@@ -24,22 +24,9 @@ class Feedback extends Common {
       this.photoFilename = null;
       this.photoURL = null;
       this.on("feedback-photo-upload", () => {});
-      // network.on("feedback-photo-upload", (context, data) => {
-      //    Promise.resolve()
-      //       .then(() => {
-      //          var updatedFeedback = {
-      //             uuid: context.uuid,
-      //             Screenshot: data.uuid,
-      //          };
-
-      //          this.object("Feedback")
-      //             .model()
-      //             .update(updatedFeedback.uuid, updatedFeedback);
-      //       })
-      //       .catch((err) => {
-      //          this.page.f7App.dialog.alert(err.message || err, "<t>Error</t>");
-      //       });
-      // });
+      // Should we set default values?
+      this.objectID = "281b5672-bc04-4463-b22e-de3494d872a7";
+      this.imageFieldID = "59d65c3c-c62b-4c3f-865b-ce79b280c6d7";
    }
 
    /**
@@ -50,35 +37,24 @@ class Feedback extends Common {
    async init(page) {
       await super.init(page);
       this.dc = this.page.app.abDCs.find(
-         (abDC) =>
-            abDC.id === "Feedback" ||
-            // TODO (Guy):
-            abDC.name === "Feedback"
+         (abDC) => abDC.id === "Feedback" || abDC.name === "Feedback",
       );
-      // Load previous attached photo if it's still there
-      // await storage
-      //    .get("feedback-data")
-      //    .then((data) => {
-      //       if (data) {
-      //          this.note = data.note;
-      //          this.photoFilename = data.photoFilename;
-      //          // assert that this is a function
-      //          console.assert(
-      //             typeof camera.loadPhotoByName == "function",
-      //             "camera.loadPhotoByName is not a function"
-      //          );
-      //          return camera.loadPhotoByName(this.photoFilename);
-      //       }
-      //    })
-      //    .then((photo) => {
-      //       if (photo) {
-      //          this.photoURL = photo.url;
-      //       }
-      //    })
-      //    .catch((err) => {
-      //       this.photoFilename = null;
-      //       this.photoURL = null;
-      //    });
+      this.objectID = this.dc.datasource.id;
+      const imageField = this.dc.datasource.fields(
+         (field) => field.columnName === "Screenshot",
+      )[0];
+      this.imageFieldID = imageField.id 
+
+      this.cachedState = {
+         file: null,
+      };
+
+      // this.imageFieldID = "59d65c3c-c62b-4c3f-865b-ce79b280c6d7";
+      // const page = this.page;
+      const app = page.app;
+      const resources = app.resources;
+      const storage = resources.storage;
+      const network = resources.network;
    }
 
    /**
@@ -88,30 +64,9 @@ class Feedback extends Common {
     */
    async deletePhoto() {
       let filename = this.photoFilename;
+      URL.revokeObjectURL(this.cachedState.file);
       this.photoFilename = null;
       this.photoURL = null;
-      // await this.dc.setData()
-      // await storage.set(this.dc.refStorage(), "feedback-data", {
-      //    note: this.note,
-      // });
-      // return Promise.resolve()
-      //    .then(() => {
-      //       var filename = this.photoFilename;
-
-      //       this.photoFilename = null;
-      //       this.photoURL = null;
-
-      //       storage.set("feedback-data", {
-      //          note: this.note,
-      //       });
-
-      //       if (filename) {
-      //          return camera.deletePhoto(filename);
-      //       }
-      //    })
-      //    .catch((err) => {
-      //       return null;
-      //    });
    }
 
    /**
@@ -123,19 +78,10 @@ class Feedback extends Common {
     * @return {Promise}
     */
    async getPhoto() {
-      // return this.deletePhoto()
-      //    .then(() => {
-      //       return camera.getLibraryPhoto();
-      //    })
-      //    .then((photo) => {
-      //       this.photoFilename = photo.filename;
-      //       this.photoURL = photo.url;
-      //       storage.set("feedback-data", {
-      //          note: this.note,
-      //          photoFilename: this.photoFilename,
-      //       });
-      //       this.photoURL = photo.url;
-      //    });
+      this.cachedState.file =
+         await this.page.app.resources.camera.getPhoto(false);
+      this.photoFilename = this.cachedState.file.name;
+      this.photoURL = URL.createObjectURL(this.cachedState.file);
    }
 
    /**
@@ -148,6 +94,25 @@ class Feedback extends Common {
    async sendFeedback(note = "") {
       if (!note && !this.photoFilename) throw new Error("Nothing to send");
 
+      const app = this.page.app;
+      const page = this.page;
+      const busy = app.resources.busy;
+      const username = app.resources.account.userData?.user;
+      busy.show();
+      const file = this.cachedState.file;
+      var fileid = null;
+      if (file) {
+         fileid = await this.page.app.resources.storage.uploadFile(
+            this.objectID,
+            this.imageFieldID,
+            {
+               file,
+               uploadedBy: username,
+            },
+         );
+         this.cachedState.file = null
+      }
+
       await new Promise((resolve, reject) => {
          const loadingPage = app.pages.loadingPage;
          let timeout = setTimeout(() => {
@@ -156,14 +121,12 @@ class Feedback extends Common {
             reject(new Error("Feedback timed out!"));
          }, FEEDBACK_TIMEOUT);
 
-         const page = this.page;
-         const author = page.components.profile.userProfile;
-         if (author == null) {
+         if (username == null) {
             // TODO (Guy): Alert to the user.
             reject(new Error("No user profile!"));
          }
+
          const data = {
-            // uuid: app.utils.uuidv4(),
             Description: note,
             userAgent: navigator.userAgent,
             packageInfoversion: "",
@@ -172,53 +135,40 @@ class Feedback extends Common {
             packageInfodeploymentKey: "",
             route: "",
             history: "",
-            "Submitted By": author,
+            "Submitted By": username,
+            Source: "Mobile App",
+            Timestamp: moment(new Date().toISOString()), // note that this is the user's local time
+            Time: moment(new Date().toISOString()),
          };
+         if (fileid?.data?.uuid) {
+            data["Screenshot"] = fileid.data.uuid;
+         }
          const router = page.appView.router;
          data.route = router.previousRoute.path;
          data.history = router.history.join(" --> ");
-         data.packageInfoversion = info.version;
-         data.packageInfodescription = info.description;
-         data.packageInfolabel = info.label;
-         data.packageInfodeploymentKey = info.deploymentKey;
+         data.packageInfoversion = app.buildTimeStamp;
          (async () => {
             try {
-               loadingPage.overlay();
+               // loadingPage.overlay();
                await this.dc.setData(null, data);
-               const app = page.app;
-               const base64 = await app.resources.camera.base64ByName(
-                  this.photoFilename
-               );
-               // Add screenshot base64 data if available
-               if (base64 != null) {
-                  // for the URL API:
-                  // now fire off the Relay Request.
-                  // NOTE: the Feedback app should already be listening for this event
-                  // and will send that to our updateReceipt funtion
-                  return app.resources.network.post(
-                     {
-                        url: "/opsportal/imageBase64",
-                        data: {
-                           appKey: "Feedback",
-                           permission: "opstool.AB_Feedback.view",
-                           image: base64,
-                        },
-                     },
-                     {
-                        key: "feedback-photo-upload",
-                        context: {
-                           uuid: data.uuid,
-                        },
-                     }
-                  );
-               }
-               loadingPage.hide();
+               busy.hide();
+               app.pages.appPage.f7App.toast
+                  .create({
+                     icon: '<i class="fa-2x fas fa-inbox"></i>',
+                     text: "<t>Feedback Sent</t>",
+                     position: "center",
+                  })
+               .open();
                if (timeout !== false) {
                   clearTimeout(timeout);
                   resolve();
                }
             } catch (err) {
-               loadingPage.hide();
+               busy.hide();
+               if (timeout !== false) {
+                  clearTimeout(timeout);
+                  resolve();
+               }
                reject(err);
             }
          })();
