@@ -158,6 +158,18 @@ class App extends EventEmitter {
       return this._applications;
    }
 
+   /*
+    * IndexedDB versions must be integers (whole numbers). 
+    * AB version 1.3.1 becomes 10301
+    */
+   get versionNumber(){
+      const parseVersion = (version) => {
+         const [major, minor, patch] = version.split('.').map(Number);
+         return major * 10000 + minor * 100 + patch;
+      };
+      return parseVersion(this._abApps[0]?.json?.versionData?.versionNumber);
+   }
+
    get buildTimeStamp() {
       return new Date(BUILD_TIMESTAMP).toLocaleDateString("en-US", {
          year: "numeric",

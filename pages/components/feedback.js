@@ -39,11 +39,13 @@ class Feedback extends Common {
       this.dc = this.page.app.abDCs.find(
          (abDC) => abDC.id === "Feedback" || abDC.name === "Feedback",
       );
-      this.objectID = this.dc.datasource.id;
-      const imageField = this.dc.datasource.fields(
-         (field) => field.columnName === "Screenshot",
-      )[0];
-      this.imageFieldID = imageField.id 
+      if (this.dc) {
+         this.objectID = this.dc.datasource.id;
+         const imageField = this.dc.datasource.fields(
+            (field) => field.columnName === "Screenshot",
+         )[0];
+         this.imageFieldID = imageField.id 
+      }
 
       this.cachedState = {
          file: null,
@@ -169,6 +171,14 @@ class Feedback extends Common {
                   clearTimeout(timeout);
                   resolve();
                }
+
+               app.pages.appPage.f7App.toast
+                  .create({
+                     icon: '<i class="fa-2x fas fa-exclamation-triangle"></i>',
+                     text: "<t>Error sending feedback!</t>",
+                     position: "center",
+                  })
+               .open();
                reject(err);
             }
          })();

@@ -199,7 +199,13 @@ class PasswordPage extends Common {
          )
             $iOSInstruct.show();
          else {
-            $setup.show();
+            if (/android/.test(userAgent.toLowerCase()) &&
+               !window.matchMedia('(display-mode: standalone)')?.matches) {
+               // console.log("This is an Android device, without the app added to home screen");
+               $iOSInstruct.show();
+            } else {
+               $setup.show();
+            }
          }
       } catch (error) {
          console.error(
