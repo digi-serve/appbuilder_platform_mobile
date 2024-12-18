@@ -154,13 +154,14 @@ class Storage extends EventEmitter {
    async init(app) {
       this.app = app;
       const dcs = this.app.abDCs;
+      const version = this.app.versionNumber;
       // IndexedDB is standard on modern browsers
       const _db =
          this._db ||
          (this._db = await new Promise((resolve, reject) => {
             console.assert(indexedDB, "IndexedDB is not available");
             console.assert(DB_NAME, "DB_NAME is not set");
-            const request = indexedDB.open(DB_NAME);
+            const request = indexedDB.open(DB_NAME, version);
             request.onerror = (event) => {
                reject(event.target.error);
             };
@@ -171,11 +172,16 @@ class Storage extends EventEmitter {
             // On first time, set up the obect store
             request.onupgradeneeded = (event) => {
                const db = event.target.result;
+               const createStore = (tableKey) => {
+                  if (!db.objectStoreNames.contains(tableKey)) {
+                     db.createObjectStore(tableKey);
+                  }
+               }
                defaultTableKeys.forEach((defaultTableKey) => {
-                  db.createObjectStore(defaultTableKey);
+                  createStore(defaultTableKey);
                });
                dcs.forEach((dc) => {
-                  db.createObjectStore(dc.refStorage());
+                  createStore(dc.refStorage());
                });
             };
          }));
