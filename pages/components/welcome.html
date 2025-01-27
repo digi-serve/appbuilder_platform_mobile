@@ -82,7 +82,7 @@
                </button>
             </div>
          </div>
-         <div class="card" id="setPowerUser">
+         <div class="card" id="setPowerUser" style="display: none">
             <div class="card-header bg-color-yellow text-color-black" translate="1">
                <b>Power User Mode</b>
                <div id="updatePowerUserMode">
@@ -248,6 +248,7 @@
             this.$update();
             const $syncData = $("#sync-data");
             const $jsQRStoragePanel = $("#jsqr-storage-panel");
+            const $setPowerUser = $("#setPowerUser");
             const app = this.$root.app;
 
             // Sync with server
@@ -301,7 +302,6 @@
             $toggleInput.prop("checked", cachedState.isPowerUser);
             $toggleInput.on("change", async function () {
                try {
-                  $("#updatePowerUserMode").addClass("disabled");
                   const isChecked = $(this).is(":checked");
                   // Set power user mode based on toggle state
                   await resources.account.setPowerUser(isChecked);
@@ -342,12 +342,13 @@
                $syncData.show();
                $jsQRStoragePanel.hide();
                // show the toggle, but disable it
-               $("#updatePowerUserMode").addClass("disabled");
+               $setPowerUser.hide();
                return;
             } else {
                $syncData.hide();
+               $setPowerUser.show();
                $jsQRStoragePanel.show();
-            }
+            };
             $syncData.hide();
             $jsQRStoragePanel.show();
             const video = document.createElement("video");
