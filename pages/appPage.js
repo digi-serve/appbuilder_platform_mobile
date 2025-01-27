@@ -161,7 +161,7 @@ class AppPage extends Common {
                if (isPowerUser) {
                   this.excludeDataCollections = [
                      "Family Worker Information",
-                     "My Team RCs",
+                     "My Team RCs - Mobile", 
                      "Project",
                      // TODO update the UI to not use these anymore
                      // "Report Items Tab",
