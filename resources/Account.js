@@ -141,6 +141,8 @@ class Account extends EventEmitter {
       return (this.powerUser === true ) || false;
    }
    async setPowerUser(userWantsALotOfData) {
+      this.powerUser = userWantsALotOfData;
+      // ! the following may be unnecessary
       const lock = this._lock;
       const resources = this.app.resources;
       const storage = resources.storage;
