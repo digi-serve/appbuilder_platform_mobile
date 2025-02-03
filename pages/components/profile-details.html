@@ -13,9 +13,7 @@
                     </div>
                     <div class="title sliding">
                         <t>Profile</t>
-                    </div>
-
-        <!--
+                  </div>
         <div class="right">
             <a href="#" class="link" id="edit-page" translate=1>
                 Edit
@@ -23,9 +21,7 @@
             <a href="#" class="link" id="save-page" style="display: none;" translate=1>
                 Save
             </a>
-        </div>
-        -->
-
+      </div>
     </div>
     </div>
     <div id="user-profile" class="page-content ptr-content" ptr-data-ptr-distance="55" ptr-data-ptr-mousewheel="true">
@@ -73,39 +69,37 @@
         </div>
     </div>
 
-    <div class="swiper-container" id="profile-swiper-container">
-        <div class="swiper-pagination"></div>
-        <div id="profile-form" class="swiper-wrapper">
-
+   <div class="swiper-container" id="profile-swiper-container">
+      <div class="swiper-pagination"></div>
+      <div id="profile-form" class="swiper-wrapper">
             <div class="swiper-slide">
-
-                <div class="block-title" translate=1 data-cy="nameForm">Name</div>
-                {{#if loading}}
-                <div class="list inset" style="margin-top: 15px;">
-                    <ul>
-                        <!-- <li class="item-content disabled item-input item-input-with-value">
-                                            <div class="item-inner">
-                                                <div class="item-title item-label" translate=1>Given Name</div>
-                                                <div class="item-input-wrap">
-                                                    <input type="text" placeholder="Your first name" value="" disabled=1>
-                                                </div>
-                                            </div>
-                                        </li> -->
-                        <li class="item-content disabled item-input item-input-with-value">
-                            <div class="item-inner">
-                                <div class="item-title item-label" translate=1>Surname</div>
-                                <div class="item-input-wrap">
-                                    <input type="text" placeholder="Your last name" value="" disabled=1>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="item-content disabled item-input item-input-with-value">
-                            <div class="item-inner">
-                                <div class="item-title item-label" translate=1>Preferred Name</div>
-                                <div class="item-input-wrap">
-                                    <input type="text" placeholder="Preferred name" value="" disabled=1>
-                                </div>
-                            </div>
+               <div class="block-title" translate=1 data-cy="nameForm">Name</div>
+               {{#if loading}}
+               <div class="list inset" style="margin-top: 15px;">
+                  <ul>
+                     <!-- <li class="item-content disabled item-input item-input-with-value">
+                                          <div class="item-inner">
+                                             <div class="item-title item-label" translate=1>Given Name</div>
+                                             <div class="item-input-wrap">
+                                                   <input type="text" placeholder="Your first name" value="" disabled=1>
+                                             </div>
+                                          </div>
+                                       </li> -->
+                     <li class="item-content disabled item-input item-input-with-value">
+                           <div class="item-inner">
+                              <div class="item-title item-label" translate=1>Surname</div>
+                              <div class="item-input-wrap">
+                                 <input type="text" placeholder="Your last name" value="" disabled=1>
+                              </div>
+                           </div>
+                     </li>
+                     <li class="item-content disabled item-input item-input-with-value">
+                           <div class="item-inner">
+                              <div class="item-title item-label" translate=1>Preferred Name</div>
+                              <div class="item-input-wrap">
+                                 <input type="text" placeholder="Preferred name" value="" disabled=1>
+                              </div>
+                           </div>
                         </li>
                         </ul>
                         </div>
@@ -262,17 +256,20 @@
                 </div>
 
             </div>
-            <div class="swiper-slide">
+            <div class="swiper-slide" id="person-contact-form">
 
-                <div class="block-title">
-                    <t data-cy="email">Email</t>
-                </div>
-                {{#if loading}}
-                {{else}}
-                {{#each emails}}
-                <button @click="deleteItem" data-cy="deleteEmail" data-uuid="{{data.uuid}}" data-object="Email"
-                    data-collection="familyEmailDC" class="deleteButton hidden button button-round text-color-white bg-color-red"><i
-                        class="fa fa-times"></i></button>
+               <div class="block-title">
+                  <t data-cy="email">Email</t>
+                  <button class="button button-in-line button-fill color-blue" data-cy="addEmail" id="addEmail"><i class="fa fa-plus"></i>
+                  <t>Add</t>
+                  </button>
+               </div>
+               {{#if loading}}
+               {{else}}
+               {{#each emails}}
+               <button @click="deleteItem" data-cy="deleteEmail" data-uuid="{{data.uuid}}" data-object="Email"
+                  data-collection="familyEmailDC" class="deleteButton hidden button button-round text-color-white bg-color-red"><i
+                     class="fa fa-times"></i></button>
                 <form class="emailForm list inset" style="margin-top: 0px; margin-bottom: 15px;">
                     <ul>
                         <li class="item-content disabled item-input item-input-with-value" email_id='{{data.uuid}}'>
@@ -299,25 +296,23 @@
                                             <ul>
                                                 <li>
                                                     <center class="text-color-gray" style="padding: 20px 0;">
-                                <i class="fas fa-question-circle fa-5x"></i><br />
                                 <br />
                                 <span translate=1>There are no email records.</span>
                                 </center>
-                                </li>
-                                </ul>
-                                </div>
-                                {{/each}}
-                                <div class="block">
-                    <button class="button button-large button-fill color-blue hidden" data-cy="addEmail" id="addEmail"><i
-                            class="fa fa-plus"></i>
-                        <t>Add Email</t>
-                    </button>
-                    </div>
-                    {{/if}}
+                        </li>
+                        </ul>
+                        </div>
+                        {{/each}}
+                        <div class="block">
+                     </div>
+                     {{/if}}
 
-                <div key="socialmedia" class="block-title">
-                    <t>Social Media</t>
-                </div>
+               <div key="socialmedia" class="block-title">
+                  <t>Social Media</t>
+                  <button class="button button-in-line button-fill color-blue" id="addSocialMedia"><i class="fa fa-plus"></i>
+                     <t>Add</t>
+                  </button>
+               </div>
                 {{#if loading}}
                 {{else}}
                 {{#each socialMedia}}
@@ -353,7 +348,6 @@
                                             <ul>
                                                 <li>
                                                     <center class="text-color-gray" style="padding: 20px 0;">
-                                <i class="fas fa-question-circle fa-5x"></i><br />
                                 <br />
                                 <span translate=1>There are no social media records.</span>
                                 </center>
@@ -362,9 +356,6 @@
                                 </div>
                                 {{/each}}
                                 <div class="block">
-                    <button class="button button-large button-fill color-blue hidden" id="addSocialMedia"><i class="fa fa-plus"></i>
-                        <t>Add Social Media</t>
-                    </button>
                     </div>
 
 
@@ -388,19 +379,14 @@
                 {{#each assignments}}
                 <div id={{print this.data 'uuid' }} class="list inset" style="margin-top: 15px;">
                     <ul>
+                        {{#js_if "this.data['Is Primary Assignment']"}}
                         <li class="item-content">
-                            <div class="item-inner">
-                                <div translate=1>City Name</div>
-                                {{print this.data.CityTeam__relation 'City Name'}}
-                            </div>
+                           <div class="item-inner">
+                              <div translate=1>Primary Assignment</div>
+                           </div>
                         </li>
-                        <li class="item-content">
-                            <div class="item-inner">
-                                <div translate=1>Position</div>
-                                {{translate 'PROFILE' data.Role195__relation 'Label'}}
-                            </div>
-                        </li>
-                        {{#js_if "this['Ministry Team']"}}
+                        {{/js_if}}
+                        {{#js_if "this.data.MinistryTeam__relation"}} 
                         <li class="item-content">
                             <div class="item-inner">
                                 <div translate=1>Project Team</div>
@@ -408,13 +394,20 @@
                             </div>
                         </li>
                         {{/js_if}}
-                        {{#js_if "this.data['Is Primary Assignment']"}}
+                        {{#js_if "this.data.CityTeam__relation"}} 
                         <li class="item-content">
                             <div class="item-inner">
-                                <div translate=1>Primary Assignment</div>
+                                <div translate=1>City Name</div>
+                                {{print this.data.CityTeam__relation 'City Name'}}
                             </div>
                         </li>
                         {{/js_if}}
+                        <li class="item-content">
+                            <div class="item-inner">
+                                <div translate=1>Position</div>
+                                {{translate 'PROFILE' data.Role195__relation 'Label'}}
+                            </div>
+                        </li>
                     </ul>
                 </div>
                 {{else}}
@@ -422,7 +415,6 @@
                     <ul>
                         <li>
                             <center class="text-color-gray" style="padding: 20px 0;">
-                                <i class="fas fa-question-circle fa-5x"></i><br />
                                 <br />
                                 <span translate=1>There are no assignment records.</span>
                                 </center>
@@ -458,6 +450,10 @@
         margin-top: 15px;
         margin-bottom: 15px;
     }
+   .button-in-line {
+      float: right;
+      max-width: 50%;
+   }
 </style>
 <!-- framework7 component script -->
 <script>
@@ -495,22 +491,19 @@
             // var workerInfoDC = profileApp.dataCollection("Family Worker Information");
             // 21e13cd7-26a7-41fc-8abd-fbe8e5616d3a
             const appPage = this.$root.app.pages.appPage;
-            const familyMemberDC = appPage.dataCollection("Family Members");
-            const assignmentsDC = appPage.dataCollection(
-               "Assignments - mobile",
-            );
-            const cityDC = appPage.dataCollection("City");
-            const familyEmailsDC = appPage.dataCollection("Email - mobile");
-            const socialMediaDC = appPage.dataCollection(
-               "Social Media - mobile",
-            );
-            const userPersonDC = appPage.dataCollection("User Person");
+            const familyMemberDC = profileApp.familyMemberDC;
+            const assignmentsDC = profileApp.assignmentDC;
+            const cityDC = profileApp.cityDC
+            const familyEmailsDC = profileApp.emailDC;
+            const socialMediaDC = profileApp.socialDC;
 
             AB = familyMemberDC.AB;
 
             var familyEmailsListenerFN = (event, value) => {
                var emails = familyEmailsDC.getAllRecords().filter((r) => {
-                  if (r.data.Person == personID) return true;
+                  if (r.data.Person == personID || r.data.Person__relation.uuid == personID) {
+                     return true;
+                  }
                });
                self.$setState(
                   {
@@ -530,9 +523,10 @@
 
             var socialMediaListenerFN = (event, value) => {
                var socialMedia = socialMediaDC.getAllRecords().filter((r) => {
-                  if (r.data.Person == personID) return true;
+                  if (r.data?.Person == personID || r.data?.Person__relation?.uuid == personID) {
+                     return true;
+                  }
                });
-               console.log("social media:", socialMedia);
                self.$setState(
                   {
                      socialMedia: socialMedia,
@@ -552,7 +546,6 @@
             // we need to check app status on pageInit in case you are loading
             // a page that was previously unloaded and has data stored in your local database
             if (profileApp.isReady()) {
-               // console.log("🚀 @achoobert ~ file: profile-details.html:769 ~ profileApp ready:", profileApp);
                profileAppReady();
             } else {
                profileApp.on("status", function (value) {
@@ -564,11 +557,14 @@
                var familyMember = familyMemberDC.getAllRecords().find((r) => {
                   return r?.id == personID;
                });
+               const HRKey = familyMember?.data["HR Key"];
                console.log("person: ", familyMember);
                familyID = familyMember.Family;
 
                var emails = familyEmailsDC.getAllRecords().filter((r) => {
-                  if (r.data.Person == personID) return true;
+                  if (r.data.Person == personID || r.data.Person__relation.uuid == personID) {
+                     return true;
+                  }
                });
                console.assert(
                   emails.length > 0,
@@ -578,7 +574,9 @@
                console.log("emails: ", emails);
 
                var socialMedia = socialMediaDC.getAllRecords().filter((r) => {
-                  if (r.data.Person == personID) return true;
+                  if (r.data.Person == personID || r.data.Person__relation.uuid == personID) {
+                     return true;
+                  }
                });
                console.log("social media:", socialMedia);
 
@@ -589,7 +587,7 @@
                var assignments = assignmentsDC.getAllRecords().filter((r) => {
                   r = r.data || r;
                   if (
-                     r.personTeam__relation?.uuid == personID && // filter out ended assignments
+                     r.personTeam__relation["HR Key"] == HRKey && // filter out ended assignments
                      (r["Assignment End"] == null ||
                         moment().diff(r["Assignment End"], "days") < 0)
                   ) {
@@ -663,24 +661,26 @@
             };
 
             function enableFields() {
-               var inputs = obj.$("#user-profile .disabled");
+               // The only fields that are actually user-editable are the email and social media fields
+               // user-profile -> person-contact-form
+               var inputs = obj.$("#person-contact-form .disabled");
                for (var i = 0; i < inputs.length; i++) {
                   inputs[i].classList.remove("disabled");
                   inputs[i].classList.add("enabled");
                }
-               var formInputs = obj.$("#user-profile [disabled]");
+               var formInputs = obj.$("#person-contact-form [disabled]");
                for (var i = 0; i < formInputs.length; i++) {
                   formInputs[i].removeAttribute("disabled");
                }
 
-               var addNewButtons = obj.$("#user-profile .hidden");
+               var addNewButtons = obj.$("#person-contact-form .hidden");
                for (var i = 0; i < addNewButtons.length; i++) {
                   addNewButtons[i].classList.remove("hidden");
                   addNewButtons[i].classList.add("addNewButtons");
                }
+            }
                addEmailButton();
                addSocialMediaButton();
-            }
 
             this.$("#edit-page").on("click", function () {
                enableFields();
@@ -690,7 +690,7 @@
             });
 
             function disableFields() {
-               var inputs = obj.$("#user-profile .enabled");
+               var inputs = obj.$("#person-contact-form .enabled");
                for (var i = 0; i < inputs.length; i++) {
                   inputs[i].classList.remove("enabled");
                   inputs[i].classList.add("disabled");
@@ -700,8 +700,7 @@
 
             this.$("#save-page").on("click", function () {
                // SUBMIT button was clicked
-               var userInput = app.form.convertToData("#profile-form");
-
+               // var userInput = app.form.convertToData("#profile-form");
                Promise.resolve()
                   .then(() => {
                      // Validate
@@ -713,28 +712,21 @@
                      }
                   })
                   .then(() => {
-                     // freeze the page while it loads?
-                     // this.$root.busy.show();
-                     // person
-                     var personUpdatedValues = {
-                        "Preferred Name": userInput["Preferred Name"],
-                        Surname: userInput["Surname"],
-                        // 'Family Point of Contact': boolTest(userInput['Family Point of Contact'])
-                     };
-
-                     //d10ba98c-9e6f-48c5-962f-19c39a5b6e92
-                     AB.objectByID("Person")
-                        .model()
-                        .update(personID, personUpdatedValues)
-                        .then(() => {
-                           app.toast
-                              .create({
-                                 icon: '<i class="fa-2x fas fa-star"></i>',
-                                 text: "<t>Person Updated</t>",
-                                 position: "center",
-                              })
-                              .open();
-                        });
+                     // // None of these person fields are currently user-editable 
+                     // var personUpdatedValues = {
+                     //    "Preferred Name": userInput["Preferred Name"],
+                     //    Surname: userInput["Surname"],
+                     // };
+                     // profileApp.personDC.setData(personID, personUpdatedValues)
+                     //    .then(() => {
+                     //       app.toast
+                     //          .create({
+                     //             icon: '<i class="fa-2x fas fa-star"></i>',
+                     //             text: "<t>Person Updated</t>",
+                     //             position: "center",
+                     //          })
+                     //          .open();
+                     //    });
                      var emailOperations = [];
                      $(".emailForm").each((index, form) => {
                         var emailVals = $(form)
@@ -750,10 +742,8 @@
                            emailVals.Secure = 0;
                         }
                         emailOperations.push(
-                           AB
-                              .objectByID("Email")
-                              .model()
-                              .update(emailVals?.uuid, emailVals),
+                           profileApp.emailDC
+                              .setData(emailVals?.uuid || null, emailVals),
                         );
                      });
 
@@ -777,9 +767,8 @@
                               return obj;
                            }, {});
                         socialMediaOperations.push(
-                           AB.objectByID("Social Media")
-                              .model()
-                              .update(socialMediaVals?.uuid, socialMediaVals),
+                           profileApp.socialDC
+                              .setData(socialMediaVals?.uuid || null, socialMediaVals),
                         );
                      });
 
@@ -897,20 +886,15 @@
                this.$("#addSocialMedia").unbind("click");
                this.$("#addSocialMedia").on("click", () => {
                   // Create a form with input fields for social media details
-                  const listPlatforms = profileApp
-                     .listItems("Social Media", "Platform")
-                     .map((platform) => {
-                        return `<option value="${platform.id}">${platform.label}</option>`;
-                     })
-                     .join("");
+                  // const listPlatforms = profileApp
+                  //    .listItems("Social Media", "Platform")
+                  //    .map((platform) => {
+                  //       return `<option value="${platform.id}">${platform.label}</option>`;
+                  //    })
+                  //    .join("");
                   const socialMediaForm = `<form id="socialMediaForm" ><div class="popupForm">
                         <input class="item-input item-input-with-value" placeholder="@myName" type="text"  data-cy='handle' id="label" name="label" required>
                         <span class="input-clear-button"></span>
-                        </div>
-                        <div class="item-input-wrap input-dropdown-wrap popupForm">
-                            <select id="PlatformPopup">
-                                ${listPlatforms}
-                            </select>
                         </div>
                     </form>
                     `;

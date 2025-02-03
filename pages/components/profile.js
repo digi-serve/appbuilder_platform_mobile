@@ -29,14 +29,27 @@ class Profile extends Common {
 
    async init(page) {
       await super.init(page);
-      this.dc = this.page.app.abDCs.find(
-         (abDC) =>
-            abDC.id === "User Person" ||
-            // TODO (Guy):
-            abDC.name === "User Person",
+      this.personDC = this.page.app.abDCs.find(
+         (abDC) => abDC.id === "User Person" || abDC.name === "User Person",
       );
-      if (this.dc) {
-         this.dc.on("loadData", () => {
+      this.dc = this.personDC;
+      this.emailDC = this.page.app.abDCs.find(
+         (abDC) => abDC.id === "Email - mobile" || abDC.name === "Email - mobile",
+      );
+      this.socialDC = this.page.app.abDCs.find(
+         (abDC) => abDC.id === "Social Media - mobile" || abDC.name === "Social Media - mobile",
+      );
+      this.assignmentDC = this.page.app.abDCs.find(
+         (abDC) => abDC.id === "Assignments - mobile" || abDC.name === "Assignments - mobile",
+      );
+      this.familyMemberDC = this.page.app.abDCs.find(
+         (abDC) => abDC.id === "Family Members" || abDC.name === "Family Members",
+      );
+      this.cityDC = this.page.app.abDCs.find(
+         (abDC) => abDC.id === "City" || abDC.name === "City",
+      );
+      if (this.personDC) {
+         this.personDC.on("loadData", () => {
             this.loadProfileData();
          });
       }
