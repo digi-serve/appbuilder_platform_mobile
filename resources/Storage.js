@@ -370,6 +370,13 @@ class Storage extends EventEmitter {
          req.onsuccess = () => {
             resolve();
          };
+         req.onerror = () => {
+            if (req.error?.name === "InvalidStateError") {
+               // Thrown if the object store has been deleted.
+               resolve();
+            }
+            reject(req.error);
+         };
       });
    }
 

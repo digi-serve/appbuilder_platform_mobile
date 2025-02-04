@@ -501,7 +501,7 @@
 
             var familyEmailsListenerFN = (event, value) => {
                var emails = familyEmailsDC.getAllRecords().filter((r) => {
-                  if (r.data.Person == personID || r.data.Person__relation.uuid == personID) {
+                  if (r.data.Person == personID || r.data?.Person__relation?.uuid == personID) {
                      return true;
                   }
                });
@@ -642,7 +642,7 @@
                );
             }
 
-            var obj = this;
+            const pageObj = this;
             var boolTest = function (input) {
                // true if  or "1" or 1 or ["1"]
                if (input === undefined) {
@@ -663,17 +663,17 @@
             function enableFields() {
                // The only fields that are actually user-editable are the email and social media fields
                // user-profile -> person-contact-form
-               var inputs = obj.$("#person-contact-form .disabled");
+               var inputs = pageObj.$("#person-contact-form .disabled");
                for (var i = 0; i < inputs.length; i++) {
                   inputs[i].classList.remove("disabled");
                   inputs[i].classList.add("enabled");
                }
-               var formInputs = obj.$("#person-contact-form [disabled]");
+               var formInputs = pageObj.$("#person-contact-form [disabled]");
                for (var i = 0; i < formInputs.length; i++) {
                   formInputs[i].removeAttribute("disabled");
                }
 
-               var addNewButtons = obj.$("#person-contact-form .hidden");
+               var addNewButtons = pageObj.$("#person-contact-form .hidden");
                for (var i = 0; i < addNewButtons.length; i++) {
                   addNewButtons[i].classList.remove("hidden");
                   addNewButtons[i].classList.add("addNewButtons");
@@ -685,12 +685,12 @@
             this.$("#edit-page").on("click", function () {
                enableFields();
                this.style.display = "none";
-               obj.$("#save-page")[0].style.display = "";
+               pageObj.$("#save-page")[0].style.display = "";
                swiper.update();
             });
 
             function disableFields() {
-               var inputs = obj.$("#person-contact-form .enabled");
+               var inputs = pageObj.$("#person-contact-form .enabled");
                for (var i = 0; i < inputs.length; i++) {
                   inputs[i].classList.remove("enabled");
                   inputs[i].classList.add("disabled");
@@ -786,14 +786,14 @@
                // set classes back to disabled
                disableFields();
 
-               var addNewButtons = obj.$("#user-profile .addNewButtons");
+               var addNewButtons = pageObj.$("#user-profile .addNewButtons");
                for (var i = 0; i < addNewButtons.length; i++) {
                   addNewButtons[i].classList.remove("addNewButtons");
                   addNewButtons[i].classList.add("hidden");
                }
 
                this.style.display = "none";
-               obj.$("#edit-page")[0].style.display = "";
+               pageObj.$("#edit-page")[0].style.display = "";
                swiper.update();
             });
             function addEmailButton() {
@@ -831,11 +831,13 @@
                                        var values = {
                                           uuid,
                                           Person: personID,
+                                          Person__relation: {uuid: personID},
                                           Email: email, // Add the email to the values object
                                        };
                                        var allOperations = [];
                                        allOperations.push(
-                                          AB.objectByID("Email")
+                                          // AB.objectByID("Email")
+                                          profileApp.emailDC
                                              .model()
                                              .create(values),
                                        );
@@ -919,12 +921,14 @@
                                        var values = {
                                           uuid,
                                           Person: personID,
+                                          Person__relation: {uuid: personID},
                                           Handle, // Add the email to the values object
                                           Platform,
                                        };
                                        var allOperations = [];
                                        allOperations.push(
-                                          AB.objectByID("Social Media")
+                                          // AB.objectByID("Social Media")
+                                          profileApp.socialDC
                                              .model()
                                              .create(values),
                                        );

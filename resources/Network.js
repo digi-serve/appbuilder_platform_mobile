@@ -681,7 +681,11 @@ class NetworkRelay extends NetworkRest {
       let keys = await this.jtGetAllKeys(refStorage);
       let allClears = [];
       keys.forEach((k) => {
-         allClears.push(this.app.resources.storage.clear("jobPacket", k));
+         allClears
+            .push(this.app.resources.storage.clear("jobPacket", k))
+            .catch((err) => {
+               console.warn(`Failed to clear key ${k}:`, err);
+            });
       });
       await Promise.all(allClears);
    }
