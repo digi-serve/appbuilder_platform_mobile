@@ -380,8 +380,12 @@ class AppPage extends Common {
    async init(app) {
       await super.init(app);
 
-      document.addEventListener("backbutton", onBackKeyDown, false);
-      window.addEventListener("beforeunload", onBackKeyDown, false);
+      // If testing, disable this as it disrupts Cypress
+      const MCC_URL = process.env.MCC_URL;
+      if (MCC_URL != "http://localhost:83"){
+         document.addEventListener("backbutton", onBackKeyDown, false);
+         window.addEventListener("beforeunload", onBackKeyDown, false);
+      }
       function onBackKeyDown(e) {
          e.preventDefault();
 
