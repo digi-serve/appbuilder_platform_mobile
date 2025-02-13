@@ -79,14 +79,6 @@ class App extends EventEmitter {
       for (const key in pages) pendingPromises.push(pages[key].init(this));
       await Promise.all(pendingPromises);
 
-      // handle inactivity by closing app
-      let handleInactivity = () => {
-         window.location.reload(true);
-      };
-      // start inactivity tracker
-      resources.inactiveTracker.setCallback(handleInactivity);
-      const tracker = resources.inactiveTracker.startTracking();
-
       // Force garbage collector.
       pendingPromises = null;
       const appPage = pages.appPage;
@@ -178,6 +170,15 @@ class App extends EventEmitter {
          hour: "2-digit",
          minute: "2-digit",
       });
+   }
+   startInactiveLock() {
+      // handle inactivity by closing app
+      let handleInactivity = () => {
+         window.location.reload(true);
+      };
+      // start inactivity tracker
+      this.resources.inactiveTracker.setCallback(handleInactivity);
+      const tracker = this.resources.inactiveTracker.startTracking();
    }
 }
 

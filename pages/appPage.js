@@ -84,6 +84,7 @@ class AppPage extends Common {
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
             isAuth = true;
+            app.startInactiveLock();
             busy.hide();
          } catch (err) {
             busy.hide();
