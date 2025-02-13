@@ -63,21 +63,29 @@ class AppPage extends Common {
          busy.show("Checking an account.");
          try {
             // Load authToken
-            // Import pre-token from the URL. Generate new authToken.
-            // Parse J.R.R. Token and tenant from URL;
-            // const hash = String(location.hash);
-            await network.importCredentials(
-            //    hash.match(/JRR=(\w+)/)?.[1],
-            //    hash.match(/tenant=(\w+)/)?.[1],
-            );
+            let existingToken = await network.hasAuthToken();
+            if (existingToken != null) {
+               await network.importCredentials();
+            } else if (location?.hash) {
+               console.log(location.hash);
+               // Import pre-token from the URL. Generate new authToken.
+               // Parse J.R.R. Token and tenant from URL;
+               const hash = String(location.hash);
+               busy.hide();
+               busy.show("Logging in...");
+               await network.importCredentials(
+                  hash.match(/JRR=(\w+)/)?.[1],
+                  hash.match(/tenant=(\w+)/)?.[1],
+               );
+            } else {
+               throw new Error({code: "E_NOJRRTOKEN"})
+            }
 
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
             isAuth = true;
             busy.hide();
          } catch (err) {
-            console.error(err);
-            analytics.logError(err);
             busy.hide();
             await new Promise((resolve) => {
                switch (err.code) {
@@ -104,6 +112,8 @@ class AppPage extends Common {
                         .open();
                      break;
                   default:
+                     console.error(err);
+                     analytics.logError(err);
                      dialog
                         .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
                            resolve();

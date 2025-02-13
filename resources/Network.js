@@ -934,6 +934,18 @@ class NetworkRelay extends NetworkRest {
    }
 
    /**
+    * check for authToken.
+    *
+    * @return {Promise} bool
+    */
+   async hasAuthToken() {
+      const storage = this.app.resources.storage;
+      return Boolean(
+         this._authToken ||
+            (this._authToken = await storage.get("user", "authToken")) == null,
+      );
+   }
+   /**
     * If sent pre-token-URL, generate a new authToken.
     * Else if local credentials exist, return them
     *
