@@ -360,6 +360,10 @@ class Storage extends EventEmitter {
     */
    clear(tableKey, key) {
       return new Promise((resolve, reject) => {
+         if (key === undefined || key === null) {
+            console.error("Invalid key passed to store.clear():", key);
+            return reject(new Error("Invalid key passed to clear()"));
+         }
          const transaction = this._db.transaction(tableKey, "readwrite");
          transaction.onerror = (event) => {
             console.error("DB error during clear", event.error);
