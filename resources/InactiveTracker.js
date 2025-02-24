@@ -15,7 +15,6 @@ class InactiveTracker {
       this._callback = null; //callback;
       this._inactivityTimer = null;
       this._events = ["mousemove", "keydown", "scroll", "touchstart"];
-      this.startTracking();
    }
 
    init(app) {

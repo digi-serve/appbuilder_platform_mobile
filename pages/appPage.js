@@ -84,7 +84,6 @@ class AppPage extends Common {
             // Remove tokens from current URL, for bookmarkability
             history.replaceState(null, null, "#");
             isAuth = true;
-            app.startInactiveLock();
             busy.hide();
          } catch (err) {
             busy.hide();
@@ -224,6 +223,7 @@ class AppPage extends Common {
                   );
                   await this._waitInMiliSecs(waitForNexStepSecs);
                   await this.updateSyncUI();
+                  app.startInactiveLock();
                   for (const dcError of dcErrors)
                      await new Promise((resolve) => {
                         dialog

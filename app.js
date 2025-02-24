@@ -59,6 +59,7 @@ class App extends EventEmitter {
          uuidv4,
          languageDefault: this.languageDefault,
       };
+      this._inactiveTracker = this.resources.inactiveTracker.init(this);
    }
 
    async init(appbuilderDefinitions, applications) {
@@ -177,8 +178,8 @@ class App extends EventEmitter {
          window.location.reload(true);
       };
       // start inactivity tracker
-      this.resources.inactiveTracker.setCallback(handleInactivity);
-      const tracker = this.resources.inactiveTracker.startTracking();
+      this._inactiveTracker.setCallback(handleInactivity);
+      this._inactiveTracker.startTracking();
    }
 }
 
