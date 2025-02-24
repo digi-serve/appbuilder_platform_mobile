@@ -14,6 +14,7 @@ const EVENT_BACKUP_METHOD_UPDATE_SYNC_DATA = "updateSyncData";
 const EVENT_PATH = "abDCs.id=:id";
 const TIME_WAIT = 1000;
 const PENDING_PROMISE_LIMIT = 100;
+const SUPPRESS_ERROR_LIST = ["set `Project` = NULL"];
 module.exports = class ABDataCollection extends ABDataCollectionCore {
    constructor(attributes, AB) {
       super(attributes, AB);
@@ -739,6 +740,17 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
                   this._removeInterruptingData(id);
                   console.error(err);
                   this._analytics.logError(err);
+                  for (
+                     let index = 0;
+                     index < SUPPRESS_ERROR_LIST.length;
+                     index++
+                  ) {
+                     const uniqueString = SUPPRESS_ERROR_LIST[index];
+                     if (err.message.includes(uniqueString)) {
+                        // if on list, don't push error to user
+                        return;
+                     }
+                  }
                   await new Promise((resolve) => {
                      this._page.f7App.dialog
                         .alert(`<t>${err.message}</t>`, "<t>Error</t>", () => {
