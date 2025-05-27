@@ -82,7 +82,11 @@ class Storage extends EventEmitter {
                   await this.clear("file", queueUUID);
                   throw new Error(res.message);
                } catch (err) {
-                  lock.release();
+                  try{
+                     lock.release();
+                  } catch (e) {
+                     analytics.logError(e);
+                  }
                   throw err;
                }
             }

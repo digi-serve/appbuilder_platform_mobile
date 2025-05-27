@@ -1,5 +1,6 @@
 import { cloneDeep } from "lodash";
 import moment from "moment";
+import Papa from "papaparse";
 
 import ABFactoryCore from "./core/ABFactoryCore";
 
@@ -101,5 +102,16 @@ export default class ABFactory extends ABFactoryCore {
    notify(...args) {
       console.warn("TODO: AB.notify");
       console.log(...args);
+   }
+
+   csvToJson(csvData) {
+      return Papa.parse(csvData, {
+         header: true,
+         skipEmptyLines: true,
+      });
+   }
+
+   jsonToCsv(jsonData) {
+      return Papa.unparse(jsonData);
    }
 }

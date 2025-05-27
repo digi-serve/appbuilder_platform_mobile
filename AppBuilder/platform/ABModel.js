@@ -84,6 +84,10 @@ module.exports = class ABModel extends ABModelCore {
                   reject(err);
                   return;
                }
+               if (this.isCsvPacked(result)) {
+                  result = this.csvUnpack(result);
+               }
+               this.normalizeData(result.data);
 
                // if a limit was set (we are paging)
                if (result?.limit > 0) {
@@ -141,6 +145,12 @@ module.exports = class ABModel extends ABModelCore {
     */
    create(value, options = {}) {
       this.prepareMultilingualData(value);
+      // add default values record if no value is passed for column
+      this.object.fields().forEach((f) => {
+         if (value[f.columnName] === undefined) {
+            f.defaultValue(value);
+         }
+      });
       return this._processRequest(
          "post",
          this.urlParamsCreate(value),
