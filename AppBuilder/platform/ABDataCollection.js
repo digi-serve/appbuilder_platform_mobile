@@ -871,6 +871,8 @@ module.exports = class ABDataCollection extends ABDataCollectionCore {
          try {
             await lock.acquire();
             for (let value of dcData.data) {
+               if (value.data)
+                  value = value.data;
                pendingPromises.push(
                   (async () => {
                      if (
